@@ -24,8 +24,33 @@ final class AppModel {
     private(set) var loading = false
     private(set) var sync = SyncState()
     private(set) var person: Account.Person?
-    var place: Place = .today { didSet { if place != oldValue { Task { await loadList() } } } }
-    var selection: Set<String> = []
+    var place: Place = .today {
+        didSet {
+            guard place != oldValue else { return }
+            selected = []
+            anchor = nil
+            openId = nil
+            popover = nil
+            Task { await loadList() }
+        }
+    }
+    /// The rows chosen ("t:<id>", "p:<id>"), and the one the keyboard moves from.
+    var selected: Set<String> = []
+    var anchor: String?
+    /// The to-do open in place as its card, and whether its title takes the keyboard.
+    var openId: String?
+    var focusTitle = false
+    /// Made a moment ago: its card shows an empty title rather than "New To-Do".
+    var newId: String?
+    /// The picker showing, and for which to-do.
+    var popover: Popover?
+
+    enum Popover: Equatable {
+        case when(String), deadline(String), tags(String), move(String)
+        var todoId: String {
+            switch self { case .when(let id), .deadline(let id), .tags(let id), .move(let id): id }
+        }
+    }
     /// What the last thing done says, with its Undo (a toast at the foot of the list).
     var notice: String?
 
@@ -190,10 +215,10 @@ final class AppModel {
     /// Something done, said at the foot of the window, with its opposite
     /// registered for ⌘Z (and the notice's Undo), and the thing itself again
     /// for ⇧⌘Z.
-    func act(_ name: String, notice text: String, do work: @escaping Step, undo: @escaping Step) async {
+    func act(_ name: String, notice text: String?, do work: @escaping Step, undo: @escaping Step) async {
         do {
             try await work(self)
-            notice = text
+            if let text { notice = text }
             register(name, undo: undo, redo: work)
         } catch { notice = error.localizedDescription }
     }
@@ -203,7 +228,7 @@ final class AppModel {
     /// follows. Registered inside a group of its own: from outside a key
     /// event an undo manager would otherwise open one and leave it open until
     /// the run loop next turns over, and an Undo in between undoes nothing.
-    private func register(_ name: String, undo: @escaping Step, redo: @escaping Step) {
+    func register(_ name: String, undo: @escaping Step, redo: @escaping Step) {
         guard let u = undoManager else { return }
         let own = u.groupingLevel == 0
         if own { u.beginUndoGrouping() }
