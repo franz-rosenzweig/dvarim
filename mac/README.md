@@ -37,7 +37,106 @@ adds only the things a browser cannot do:
   says how many are waiting. The window itself is the web app, whose own outbox
   covers everything else.
 
-One codebase stays one codebase. Nothing here re-implements a list.
+One engine stays one engine. Dvarim Native (below) draws every screen itself,
+but nothing in it re-implements a rule: it asks the same engine the server runs,
+inside the app, and draws the answers. This app asks the server, or the page's
+own copy of the engine.
+
+## Dvarim Native
+
+I'm making Dvarim for the Mac the way a Mac app is made: SwiftUI and AppKit for
+every screen, not the web app in a window. It's being built in rounds and sits
+beside this app as its own app, **Dvarim Native** (`moe.ptr.dvarim.native`), so I
+can use both. When it does everything this one does, it becomes Dvarim.
+
+**One engine.** Dvarim's rules live in `engine/`, and the server and the web app
+already run it. Dvarim Native runs the same engine inside the app in
+JavaScriptCore (`Native/EngineHost.swift`). The Mac gives it what a browser
+would: timers, randomness, URL parsing and the network, plus the folder itself
+(`Shared/FolderFiles.swift`, the same file operations the folder mode here
+uses). The screens ask the engine the same API the server answers. Against the
+server they ask the server instead, so a list looks the same either way. The
+Markdown files are still the database.
+
+**Where my to-dos live** (Settings):
+- *On this Mac, synced with the server*, the default. It keeps a copy in
+  `~/Library/Application Support/Dvarim Native/Copies/<server>/<who>/` and keeps
+  it in step with the server's `/dav/` using its own token. The token is named
+  "<this Mac> (Dvarim Native)" and kept in the Keychain. The app opens and
+  works with no network.
+- *On the server only*: every list is asked of the server, and the server's
+  event stream says when something changed elsewhere.
+- *In a folder on this Mac*: any folder of Markdown, read and written here.
+
+I sign in once, with my server's password. The password goes to the server and
+nowhere else. Signing out syncs first, and refuses if the latest changes can't
+reach the server yet. Then it takes the token off the server and moves the copy
+to the Trash.
+
+**Round 1** (this one):
+- **The window.** The sidebar has Inbox, Today, Upcoming, Anytime, Someday,
+  Logbook and Trash, then my areas and projects, with counts and each project's
+  progress. ⌘1 to ⌘7 go to the lists.
+- **Every list, as native rows.** Each row has the box, the title, small marks
+  for notes, a checklist or a repeat, tags, the project it's in, its start date
+  and its deadline. Today has This Evening, Upcoming has its days, Anytime has
+  its projects, Logbook has its dates, and a project has its headings.
+- **Ticking off.** Click the box. ⌘Z undoes it, and ⇧⌘Z does it again. The
+  notice at the foot of the window has Undo too.
+- **Always current.** A change in the folder from Obsidian or Syncthing, a sync
+  round, or a change on the server from another device shows up by itself. The
+  toolbar says whether the copy is in step, syncing or offline.
+
+**Not yet**, in the rounds to come:
+- the to-do opening into its card, new to-dos, moving, deleting and the rest of
+  the keyboard;
+- Quick Find;
+- drag and drop;
+- several windows;
+- and everything this app does beyond the window: Quick Entry on ⌃Space, the
+  menu bar, the Dock badge, reminders, Shortcuts and Siri, the Services menu,
+  the outbox and opening at login.
+
+Until then this app is still the one for those.
+
+**Building and testing it:**
+
+```sh
+./build-native.sh                       # build-native/Dvarim Native.app
+./selftest-native.sh                    # takes over the screen for about a minute
+```
+
+The self-test starts a throwaway server of its own on a dated copy of
+`sample-vault`, with a password of its own, on a free port on 127.0.0.1. It
+never touches my vault or my server. Then it runs the real app against it:
+- signing in;
+- the copy filling;
+- every list against the server's own answer;
+- a tick and ⌘Z, both in the Markdown and on the server, then ⇧⌘Z;
+- a line written into the folder by someone else;
+- the storage contract's checks;
+- Remote mode;
+- signing out.
+
+It writes PASS and FAIL lines and a picture of each step to
+`build-native/selftest/`. It keeps its settings, folder, token and cookies to
+itself, and removes them afterwards.
+
+What I learned building it:
+- **Foundation's JSON parser drops a byte-order mark, even inside a string.**
+  So the engine and the folder trade values directly, not JSON. Otherwise a
+  file with a BOM would come back changed.
+- **The window pictures come from the window server**, with
+  `CGWindowListCreateImage` looked up at run time. The macOS 26 SDK marks it
+  unavailable, but it still pictures an app's own windows without the Screen
+  Recording permission. `cacheDisplay` misses glass and draws a selected
+  sidebar row as a black bar.
+- **A fixed test port can belong to someone else**, an `ssh -R` tunnel for
+  example, so the self-test picks a free one and checks that the server
+  answering is its own.
+- **Undo registers its own reverse straight away, inside a group of its own.**
+  That way redo works, and an undo from outside a key event doesn't leave a
+  group open.
 
 ## What you need
 

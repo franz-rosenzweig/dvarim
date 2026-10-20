@@ -25,7 +25,7 @@ cat > $OUT/appintents-protocols.json <<'PROTOCOLS'
 ["AppEntity","AppEnum","AppIntent","AppShortcutsProvider","DynamicOptionsProvider","EntityQuery","Resolver"]
 PROTOCOLS
 swiftc -O -wmo -sdk "$(xcrun --show-sdk-path)" -target "$(uname -m)-apple-macos$MACOS" -swift-version 5 \
-    -parse-as-library -module-name Dvarim Dvarim/*.swift ${=DVARIM_EXTRA:-} \
+    -parse-as-library -module-name Dvarim Dvarim/*.swift Shared/*.swift ${=DVARIM_EXTRA:-} \
     -emit-const-values-path $OUT/Dvarim.swiftconstvalues \
     -Xfrontend -const-gather-protocols-file -Xfrontend $OUT/appintents-protocols.json \
     -o $APP/Contents/MacOS/Dvarim
@@ -62,7 +62,7 @@ fi
 # just does not appear in Shortcuts.
 PROCESSOR=$(xcrun -f appintentsmetadataprocessor 2>/dev/null || true)
 if [[ -n $PROCESSOR ]]; then
-    printf '%s\n' $PWD/Dvarim/*.swift > $OUT/appintents-sources.txt
+    printf '%s\n' $PWD/Dvarim/*.swift $PWD/Shared/*.swift > $OUT/appintents-sources.txt
     echo "${OUT:A}/Dvarim.swiftconstvalues" > $OUT/appintents-constvals.txt
     $PROCESSOR --toolchain-dir "$(dirname "$(dirname "$(xcrun -f swiftc)")")" --module-name Dvarim \
         --sdk-root "$(xcrun --show-sdk-path)" --xcode-version "$(xcodebuild -version | tail -1 | awk '{print $3}')" \

@@ -13,6 +13,8 @@ data/
 mac/Dvarim.xcodeproj/
 mac/Dvarim/Info.plist
 mac/build/
+mac/Native/Info.plist
+mac/build-native/
 
 # Android: the signing key is the app's identity and cannot be replaced, so it
 # must never reach git. The rest is what `bubblewrap init` and `build` generate.
