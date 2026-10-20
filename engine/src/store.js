@@ -1857,6 +1857,9 @@ export class Store {
       } else s[k] = v;
     }
     this.saveState();
+    // heard like any change: other tabs, and a copy's sync (the mirror's),
+    // which would otherwise keep it until something else changed
+    this.notify([]);
     return { ...s };
   }
 }

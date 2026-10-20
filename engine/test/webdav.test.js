@@ -206,3 +206,30 @@ test('pointed at another folder, a device starts again there and loses nothing',
   assert.deepEqual(ids, ['else0001', 'inbx0001']);
   assert.equal(other.files.get('Inbox.md').text, A.storage.files.get('Inbox.md').text);
 });
+
+test('settings the server no longer has are sent again, and a change made since reaches it', async () => {
+  const cloud = new Nextcloudish();
+  const A = await device('a', cloud, VAULT);
+  A.store.putSettings({ weekStartsOn: 1 });
+  await A.sync.sync();
+  assert.match(cloud.files.get('.dvarim/state.json').text, /"weekStartsOn": 1/u);
+  // the folder's settings went (deleted by hand, or the folder made again):
+  // what was agreed about them no longer says anything about what is there
+  cloud.files.delete('.dvarim/state.json');
+  cloud.files.delete('.dvarim/stamps.json');
+  const again = await A.sync.sync();
+  assert.deepEqual(again.waiting, []);
+  assert.match(cloud.files.get('.dvarim/state.json').text, /"weekStartsOn": 1/u, 'sent again, unchanged');
+  cloud.files.delete('.dvarim/state.json');
+  cloud.files.delete('.dvarim/stamps.json');
+  A.store.putSettings({ logCompleted: 'daily' });
+  const r = await A.sync.sync();
+  assert.deepEqual(r.waiting, [], 'nothing left waiting on a file that is not there');
+  assert.match(cloud.files.get('.dvarim/state.json').text, /"logCompleted": "daily"/u);
+  assert.ok(cloud.files.has('.dvarim/stamps.json'));
+  // and a second device that comes along now gets them
+  const B = await device('b', cloud);
+  await B.sync.sync();
+  assert.equal(B.store.getSettings().logCompleted, 'daily');
+  assert.equal(B.store.getSettings().weekStartsOn, 1);
+});
