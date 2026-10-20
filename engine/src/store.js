@@ -188,6 +188,7 @@ export class Store {
     this.meta = new Map();        // path -> { mtime, sha }
     this.todoIndex = new Map();   // to-do id -> path
     this._repaired = new Set();   // files whose copies were given ids of their own, not yet written (_repairIds)
+    this._renames = new Map();    // rel -> those new ids, and how to undo each, until written
     this.fileIndex = new Map();   // project/area id -> path
     this.listeners = [];
     this.tree = { files: new Set(), dirs: new Set() };
@@ -450,6 +451,7 @@ export class Store {
     this.todoIndex = new Map();
     this.fileIndex = new Map();
     this._repaired = new Set();
+    this._renames = new Map();
     for (const rel of this._iterMd().sort(cmpStr)) this._load(rel);
     this._repairIds();
     // areas whose folder exists but has no note
@@ -481,6 +483,7 @@ export class Store {
     const previous = new Map();
     if (this.files.has(rel)) for (const t of this.files.get(rel).allTodos()) previous.set(t.id, t.status);
     const f = parse(r.text, rel);
+    this._renames.delete(rel);                       // made on the copy read before: _repairIds works them out again
     const kind = this._classify(rel, f);
     if (kind === null) return null;
     let dirty = false;
@@ -528,6 +531,8 @@ export class Store {
   }
 
   _drop(rel) {
+    this._renames.delete(rel);
+    this._repaired.delete(rel);
     this.files.delete(rel);
     this.meta.delete(rel);
     for (const [tid, p] of [...this.todoIndex]) if (p === rel) this.todoIndex.delete(tid);
@@ -546,6 +551,7 @@ export class Store {
     }
     const text = serialize(f);
     this._repaired.delete(f.path);
+    this._renames.delete(f.path);                    // written: theirs now
     this._putFile(f.path, text);
     const lines = {};
     text.split('\n').forEach((line, i) => {
@@ -681,22 +687,40 @@ export class Store {
    * in Trash, and the page, which draws its lists by id, would draw none.
    *
    * So the copy gets an id of its own. The one that keeps it is the one not
-   * in Trash, then the first path in order, then the first in its file. The
-   * new id is made from the old one and the copy's path (derivedId), so every
-   * device that reads the same files repairs them the same way, and the sync
-   * has nothing to disagree about. It is done in memory at once and written
-   * when the file is next written, or once it has been left alone
-   * (normalizeQuietFiles): writing into a file someone is typing into in
-   * Obsidian only makes a conflict copy. Returns the files it changed.
+   * in Trash, then one no longer open (done or canceled: a to-do moved on one
+   * device and ticked in its old place on another is in two files, and the
+   * tick stays with the id everyone knows), then the first path in order, then
+   * the first in its file. The new id is made from the old one and the copy's
+   * path (derivedId), so every device that reads the same files repairs them
+   * the same way, and the sync has nothing to disagree about. It is done in
+   * memory at once and written when the file is next written, or once it has
+   * been left alone (normalizeQuietFiles): writing into a file someone is
+   * typing into in Obsidian only makes a conflict copy. Until then it is
+   * undone and worked out again at every scan, so a copy whose double has
+   * gone in the meantime (synced away, deleted) keeps the id it had. Returns
+   * the files whose ids it changed.
    */
   _repairIds() {
+    const was = new Map();                         // rel -> the new ids it held, before
+    for (const [rel, list] of this._renames) {
+      // only on the file as it was then: one written since, under another
+      // name, has its new ids for good
+      const live = list.filter((x) => this.files.get(rel) === x.f);
+      if (!live.length) continue;
+      was.set(rel, live.map((x) => x.id).join(' '));
+      for (const x of live) x.undo();
+    }
+    this._renames = new Map();
+    const renamed = (rel, was, id, undo) => {
+      if (!this._renames.has(rel)) this._renames.set(rel, []);
+      this._renames.get(rel).push({ f: this.files.get(rel), was, id, undo });
+    };
     const rank = (rel) => [this._inTrash(rel) ? 1 : 0, rel];
     const before = (a, b) => {
       const x = rank(a), y = rank(b);
       return x[0] - y[0] || cmpStr(x[1], y[1]);
     };
     const paths = [...this.files.keys()].sort(before);
-    const touched = new Set();
     // to-dos
     const holders = new Map();                     // id -> [{rel, t}], the keeper first
     for (const rel of paths) {
@@ -707,11 +731,14 @@ export class Store {
       }
     }
     const taken = new Set(holders.keys());
+    const settled = ({ rel, t }) => (this._inTrash(rel) ? 2 : t.status === 'open' ? 1 : 0);
     for (const [id, list] of holders) {
+      if (list.length < 2) continue;
+      list.sort((a, b) => settled(a) - settled(b));    // stable: then the order of paths
       list.slice(1).forEach(({ rel, t }, i) => {
         t.id = derivedId(`${id}|${rel}|${i}`, taken);
         taken.add(t.id);
-        touched.add(rel);
+        renamed(rel, id, t.id, () => { t.id = id; });
       });
     }
     // projects and areas
@@ -729,18 +756,22 @@ export class Store {
         const f = this.files.get(rel);
         f.frontmatter.id = derivedId(`${fid}|${rel}|${i}`, fileIds, f.kind === 'area' ? 'a' : 'p');
         fileIds.add(f.frontmatter.id);
-        touched.add(rel);
+        renamed(rel, fid, f.frontmatter.id, () => { f.frontmatter.id = fid; });
       });
     }
-    if (!touched.size) return [];
+    this._repaired = new Set(this._renames.keys());
+    // what changed since the last time: new ids, other ones, or ids given back
+    const ids = (rel) => (this._renames.get(rel) || []).map((x) => x.id).join(' ');
+    const touched = [...new Set([...was.keys(), ...this._renames.keys()])].filter((rel) => ids(rel) !== (was.get(rel) || ''));
+    if (!touched.length) return [];
     for (const rel of touched) {
-      this._repaired.add(rel);
-      this._logSync({ path: rel, kind: 'ids already held elsewhere given new ones', conflicts: [] });
+      const list = this._renames.get(rel);
+      if (list) this._logSync({ path: rel, kind: 'ids already held elsewhere given new ones', conflicts: [], ids: Object.fromEntries(list.map((x) => [x.was, x.id])) });
     }
     this.todoIndex = new Map();
     this.fileIndex = new Map();
     for (const rel of [...this.files.keys()].sort(before).reverse()) this._index(this.files.get(rel));
-    return [...touched];
+    return touched;
   }
 
   _inTrash(rel) { return rel === TRASH || rel.startsWith(TRASH_DIR + '/'); }

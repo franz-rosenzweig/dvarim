@@ -14,7 +14,8 @@
 // - every to-do either device made is still somewhere;
 // - every to-do either device completed is done wherever it is.
 // Moves between files concurrent with edits can leave a to-do in two files
-// (docs/SYNC.md, "what it does not do yet"); that is counted, not failed.
+// (docs/SYNC.md, "what it does not do yet"); that is counted, not failed. The
+// copy that is then given an id of its own is still that to-do.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Day } from '../src/day.js';
@@ -43,7 +44,12 @@ async function device(name, files, opts = {}) {
     // each device's own ids, so the two never invent the same one by chance
     newId: (p = '') => p + `${name}${(++n).toString(36)}`.padStart(8 - p.length, '0'),
   });
-  return { name, storage, store };
+  // every id the repair gave a copy of its own (store.js, _repairIds): the
+  // store keeps the last fifty of what it did, this keeps all of it
+  const renamed = [];
+  const log = store._logSync.bind(store);
+  store._logSync = (e) => { if (e.ids) renamed.push(...Object.entries(e.ids)); log(e); };
+  return { name, storage, store, renamed };
 }
 
 /** Syncthing, near enough: per file, what both sides last agreed on. With
@@ -209,10 +215,21 @@ test(`two devices and ${kind} agree, and lose nothing, over ${SESSIONS} sessions
       assert.deepEqual(A.store.state.settings, B.store.state.settings, 'the two devices hold different settings');
       for (const [key, value] of settings) assert.deepEqual(A.store.state.settings[key], value, `${key}: the last change made, ${value}, did not stick`);
       const ids = vault(A.storage);
-      for (const id of made) assert.ok(ids.has(id), `${id}, made on a device, is gone`);
+      // a to-do's places: under its id, and under the ids its copies were given
+      const renames = [...A.renamed, ...B.renamed];
+      const places = (id) => {
+        const all = new Set([id]);
+        for (let grew = true; grew;) {
+          grew = false;
+          for (const [from, to] of renames) if (all.has(from) && !all.has(to)) { all.add(to); grew = true; }
+        }
+        return [...all].filter((x) => ids.has(x)).flatMap((x) => ids.get(x));
+      };
+      for (const id of made) assert.ok(places(id).length, `${id}, made on a device, is gone`);
       for (const id of completed) {
-        if (!ids.has(id)) continue;                  // made and removed by someone: not ours to judge here
-        assert.ok(ids.get(id).some((c) => c.status === 'done'), `${id}, completed on a device, is not done anywhere: ${JSON.stringify(ids.get(id))}`);
+        const where = places(id);
+        if (!where.length) continue;                 // made and removed by someone: not ours to judge here
+        assert.ok(where.some((c) => c.status === 'done'), `${id}, completed on a device, is not done anywhere: ${JSON.stringify(where)}`);
       }
       tally.twoFiles += [...ids.values()].filter((c) => new Set(c.map((x) => x.path)).size > 1).length;
     } catch (e) {

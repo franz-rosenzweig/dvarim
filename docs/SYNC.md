@@ -301,7 +301,12 @@ so the page itself opens with no network too, and it never answers for `/dav/`.
 - **A to-do moved to another file on one device and edited on the other** is
   one merge per file, so it can end up in both files. Nothing is lost; there
   are two copies until one is deleted. In the two-device suite this happens to
-  about one to-do in every few sessions.
+  about one to-do in every few sessions. Two copies cannot share an id, so one
+  is given an id of its own, alike on every device. A copy that is done keeps
+  the id, so a box ticked in the old place stays ticked on the to-do everyone
+  knows. The new id is written only when its file is next written, and if the
+  other copy is gone by then (the move's other half arrived), it is not
+  needed, and the copy keeps the id it had.
 - **With arrivals merged** (a sync without conflict copies), an undo in
   Obsidian of something Dvarim did loses to the merge. Undo in Dvarim instead.
   (See *When a file arrives* above.)

@@ -161,6 +161,15 @@ async function device(name, s) {
   return { name, storage, store, sync: new WebDavSync(store, { url: s.url, token: s.token }) };
 }
 
+/** Every id the repair gave a copy of its own (store.js, _repairIds), from
+ *  here on: the store keeps the last fifty of what it did, this all of it. */
+function renames(store) {
+  const out = [];
+  const log = store._logSync.bind(store);
+  store._logSync = (e) => { if (e.ids) out.push(...Object.entries(e.ids)); log(e); };
+  return out;
+}
+
 /** Every note as a device (or the server) has it. */
 async function notes(store) {
   const all = await store.syncTexts();
@@ -355,6 +364,7 @@ test(`two devices and the server, working at random and syncing now and then, en
       const r = rng(Number(process.env.DVARIM_SEED || 1) * 1000 + session);
       const srv = s.app.store;
       const A = await device('a', s), B = await device('b', s);
+      const renamed = [A.store, B.store, srv].map(renames);
       const made = new Set(), completed = new Set();
       for (let step = 0; step < STEPS; step++) {
         const k = r();
@@ -372,8 +382,19 @@ test(`two devices and the server, working at random and syncing now and then, en
       assert.deepEqual(na, ns, 'a device and the server differ');
       const ids = new Map();
       for (const [path, text] of Object.entries(na)) for (const q of parse(text, path).allTodos()) if (q.id) ids.set(q.id, [...(ids.get(q.id) || []), q.status]);
-      for (const id of made) assert.ok(ids.has(id), `${id}, made somewhere, is gone`);
-      for (const id of completed) if (ids.has(id)) assert.ok(ids.get(id).includes('done'), `${id}, completed somewhere, is not done`);
+      // a to-do in two files (a project deleted on one device and changed on
+      // another comes back, beside its copy in Trash) is still that to-do in
+      // both, under the id the repair gave the copy
+      const places = (id) => {
+        const all = new Set([id]);
+        for (let grew = true; grew;) {
+          grew = false;
+          for (const [from, to] of renamed.flat()) if (all.has(from) && !all.has(to)) { all.add(to); grew = true; }
+        }
+        return [...all].filter((x) => ids.has(x)).flatMap((x) => ids.get(x));
+      };
+      for (const id of made) assert.ok(places(id).length, `${id}, made somewhere, is gone`);
+      for (const id of completed) if (places(id).length) assert.ok(places(id).includes('done'), `${id}, completed somewhere, is not done`);
       assert.deepEqual(A.store.getSettings(), srv.getSettings(), 'settings differ');
       assert.deepEqual(B.store.getSettings(), srv.getSettings(), 'settings differ');
     } catch (e) {
