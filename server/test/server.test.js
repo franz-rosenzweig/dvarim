@@ -137,6 +137,14 @@ test('the app\'s files: the shell always asked for again, the bundles kept for e
   await s.close();
 });
 
+test('asset links name every package listed: an app that moved to a new id, beside the old', async (t) => {
+  const s = await serve({}, { android: { package: 'xyz.example.old, xyz.example.new', fingerprints: ['AB:CD'] } }, t);
+  const links = await s.call('GET', '/.well-known/assetlinks.json');
+  assert.deepEqual(links.json.map((l) => [l.target.package_name, l.target.sha256_cert_fingerprints]),
+    [['xyz.example.old', ['AB:CD']], ['xyz.example.new', ['AB:CD']]]);
+  await s.close();
+});
+
 test('main: the environment the Python server read starts this one', async () => {
   const f = fixture({ password: 'correct horse battery' });
   writeFileSync(join(f.root, 'Inbox.md'), '- [ ] Already here 🆔 aa11bb22\n');

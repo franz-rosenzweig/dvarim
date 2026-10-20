@@ -129,7 +129,8 @@ function jsonObject(text) {
  * @param {string} [cfg.authFile]    DVARIM_AUTH_FILE
  * @param {{vault: string, prefix: string}|null} [cfg.obsidian]
  * @param {object} [cfg.services]    for the router: events, calendars, reminders, tasksync
- * @param {{package: string, fingerprints: string[]}} [cfg.android]
+ * @param {{package: string, fingerprints: string[]}} [cfg.android] `package` may
+ *   name several, comma-separated: an app that moved to a new id, beside the old
  * @param {boolean} [cfg.mergeArrivals]  DVARIM_MERGE_ARRIVALS: see Store
  * @param {(r: {name: string, email: string, message: string}) => any} [cfg.onRequest]
  *   someone asked for an account: tell the owner (main.js: over Signal)
@@ -487,11 +488,12 @@ export async function createApp(cfg) {
    *  to this site (android/README.md). */
   function assetlinks(res) {
     const a = cfg.android || {};
-    if (!a.package || !(a.fingerprints || []).length) return send(res, 200, [], { 'Cache-Control': 'no-store' });
-    return send(res, 200, [{
+    const names = String(a.package || '').split(',').map((n) => n.trim()).filter(Boolean);
+    if (!names.length || !(a.fingerprints || []).length) return send(res, 200, [], { 'Cache-Control': 'no-store' });
+    return send(res, 200, names.map((name) => ({
       relation: ['delegate_permission/common.handle_all_urls'],
-      target: { namespace: 'android_app', package_name: a.package, sha256_cert_fingerprints: a.fingerprints },
-    }], { 'Cache-Control': 'max-age=300' });
+      target: { namespace: 'android_app', package_name: name, sha256_cert_fingerprints: a.fingerprints },
+    })), { 'Cache-Control': 'max-age=300' });
   }
 
   // ---- every request

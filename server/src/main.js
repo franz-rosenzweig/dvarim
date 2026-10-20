@@ -13,7 +13,7 @@
 //   DVARIM_TASKSYNC      1 to mirror to-dos to CalDAV; _EVERY seconds, _SOMEDAY 1 to include Someday
 //   DVARIM_SIGNAL_URL / _CLI, _FROM, _TO               reminders over Signal
 //   DVARIM_OBSIDIAN_VAULT, _PREFIX                     "Open in Obsidian" links
-//   DVARIM_ANDROID_PACKAGE, _FINGERPRINT               Android's asset links
+//   DVARIM_ANDROID_PACKAGE, _FINGERPRINT               Android's asset links (each may list several, comma-separated)
 //   PORT, HOST           where to listen                       (default 8420, 0.0.0.0)
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
