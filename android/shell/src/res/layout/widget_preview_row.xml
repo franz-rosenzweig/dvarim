@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A row shape for the picker's preview: the real one carries text from the
+     server, which the picker has no way to fetch. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="7dp"
+    android:paddingBottom="7dp">
+    <ImageView android:layout_width="20dp" android:layout_height="20dp"
+        android:layout_marginEnd="10dp"
+        android:src="@drawable/widget_check" android:contentDescription="@null" />
+    <View android:layout_width="0dp" android:layout_height="9dp"
+        android:layout_weight="1" android:background="@drawable/widget_placeholder" />
+</LinearLayout>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This Evening, the same mark the web app uses on the heading. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="14dp" android:height="14dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="@color/widgetMoon"
+        android:pathData="M20.5,15.2 A9,9 0 1 1 8.8,3.5 A7.2,7.2 0 0 0 20.5,15.2 Z" />
+</vector>

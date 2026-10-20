@@ -1,0 +1,76 @@
+{
+  "packageId": "xyz.tiresia.dvarim",
+  "host": "dvarim.tiresia.xyz",
+  "name": "Dvarim",
+  "launcherName": "Dvarim",
+  "display": "standalone",
+  "themeColor": "#F5F5F7",
+  "themeColorDark": "#000000",
+  "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#E9EAEE",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://dvarim.tiresia.xyz/icons/icon.svg",
+  "maskableIconUrl": "https://dvarim.tiresia.xyz/icons/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "/Users/home/Documents/Claude/Projects/dvarim/android/android.keystore",
+    "alias": "dvarim"
+  },
+  "appVersionName": "15",
+  "appVersionCode": 15,
+  "shortcuts": [
+    {
+      "name": "New To-Do",
+      "shortName": "New",
+      "url": "https://dvarim.tiresia.xyz/new",
+      "chosenIconUrl": "https://dvarim.tiresia.xyz/icons/icon-192.png"
+    },
+    {
+      "name": "Today",
+      "shortName": "Today",
+      "url": "https://dvarim.tiresia.xyz/today",
+      "chosenIconUrl": "https://dvarim.tiresia.xyz/icons/icon-192.png"
+    },
+    {
+      "name": "Inbox",
+      "shortName": "Inbox",
+      "url": "https://dvarim.tiresia.xyz/inbox",
+      "chosenIconUrl": "https://dvarim.tiresia.xyz/icons/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://dvarim.tiresia.xyz/manifest.webmanifest",
+  "fallbackType": "webview",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://dvarim.tiresia.xyz/",
+  "minSdkVersion": 21,
+  "shareTarget": {
+    "action": "https://dvarim.tiresia.xyz/share",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "orientation": "default",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [],
+  "appVersion": "15"
+}

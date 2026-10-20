@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The empty checkbox, drawn the same way the web app draws it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp" android:height="20dp"
+    android:viewportWidth="20" android:viewportHeight="20">
+    <path android:pathData="M10,2.2 a7.8,7.8 0 1 1 0,15.6 a7.8,7.8 0 1 1 0,-15.6 Z"
+        android:strokeColor="@color/widgetCheck" android:strokeWidth="1.5" />
+</vector>

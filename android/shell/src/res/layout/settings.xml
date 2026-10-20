@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The shell's own settings; see SettingsActivity.java.
+
+     fitsSystemWindows is what keeps the title clear of the clock and the front
+     camera. From Android 15 an app targeting 36 draws edge to edge whether it
+     asked to or not, so a screen that does nothing lands with its first line
+     under the status bar — which is precisely what the web app's own Settings
+     sheet did until env(safe-area-inset-top) was put on it. clipToPadding lets
+     the content scroll up through that padding instead of stopping short of it. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:clipToPadding="false">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="40dp">
+
+        <TextView style="@style/DvarimTitle" android:text="@string/settingsTitle" />
+
+        <!-- On this phone, synced with the server (AppCopy, the default); on the
+             server only, as always; or in a folder on this phone that the app
+             reads and writes itself (Folder.java, docs/BRIDGE.md). -->
+        <TextView style="@style/DvarimHeading" android:text="@string/settingsWhere" />
+
+        <RadioGroup
+            android:id="@+id/where"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <RadioButton
+                android:id="@+id/onPhone"
+                style="@style/DvarimValue"
+                android:text="@string/settingsOnPhone" />
+            <RadioButton
+                android:id="@+id/onServer"
+                style="@style/DvarimValue"
+                android:text="@string/settingsOnServer" />
+            <RadioButton
+                android:id="@+id/inFolder"
+                style="@style/DvarimValue"
+                android:text="@string/settingsInFolder" />
+        </RadioGroup>
+
+        <LinearLayout android:id="@+id/folderRow" style="@style/DvarimRow">
+            <TextView
+                android:id="@+id/folderName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_gravity="center_vertical"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:ellipsize="middle"
+                android:singleLine="true" />
+            <Button
+                android:id="@+id/chooseFolder"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/settingsChoose" />
+        </LinearLayout>
+
+        <TextView android:id="@+id/folderNote" style="@style/DvarimNote" />
+
+        <TextView style="@style/DvarimHeading" android:text="@string/settingsServer" />
+
+        <EditText
+            android:id="@+id/server"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/settingsServerHint"
+            android:importantForAutofill="no"
+            android:imeOptions="actionDone"
+            android:inputType="textUri"
+            android:maxLines="1" />
+
+        <TextView android:id="@+id/serverState" style="@style/DvarimNote" />
+
+        <LinearLayout style="@style/DvarimRow">
+            <Button
+                android:id="@+id/test"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:text="@string/settingsTest" />
+            <Button
+                android:id="@+id/save"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/settingsSave" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/builtIn"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="-8dp"
+            android:layout_marginStart="-8dp"
+            android:text="@string/settingsUseBuiltIn" />
+
+        <TextView style="@style/DvarimNote" android:text="@string/settingsServerNote" />
+
+        <TextView style="@style/DvarimHeading" android:text="@string/settingsNotifications" />
+
+        <!-- Whether this phone reminds at all. The server's Signal reminders are
+             a second delivery of the same thing; the Mac has the same switch. -->
+        <Switch
+            android:id="@+id/remind"
+            style="@style/DvarimValue"
+            android:text="@string/settingsRemind" />
+        <TextView style="@style/DvarimNote" android:text="@string/settingsRemindNote" />
+
+        <TextView android:id="@+id/notifyState" style="@style/DvarimValue" />
+        <TextView android:id="@+id/alarmState" style="@style/DvarimNote" />
+
+        <!-- One per line: side by side, the pair ran off the edge of a phone
+             and the second wrapped onto two lines of its own. -->
+        <Button
+            android:id="@+id/notify"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/settingsNotifySystem" />
+        <Button
+            android:id="@+id/alarms"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/settingsAlarmSettings" />
+
+        <Button
+            android:id="@+id/testReminder"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="-8dp"
+            android:layout_marginStart="-8dp"
+            android:text="@string/settingsTestReminder" />
+
+        <TextView style="@style/DvarimHeading" android:text="@string/settingsAbout" />
+
+        <TextView android:id="@+id/version" style="@style/DvarimValue" />
+        <TextView android:id="@+id/appId" style="@style/DvarimNote" />
+        <TextView android:id="@+id/serving" style="@style/DvarimNote" />
+
+        <Button
+            android:id="@+id/clearCache"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="-8dp"
+            android:layout_marginStart="-8dp"
+            android:text="@string/settingsClearCache" />
+    </LinearLayout>
+</ScrollView>

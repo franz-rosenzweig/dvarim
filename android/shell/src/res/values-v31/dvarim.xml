@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget, tinted to the wallpaper.
+     From Android 12 the system derives a palette from whatever wallpaper is set
+     and publishes it as ordinary framework colours, so a widget can ask for
+     "the neutral surface" rather than naming a colour and clashing with the home
+     screen. These override the fixed values in res/values/dvarim.xml on 31 and
+     up; older phones keep the web app's own colours, which is the right
+     fallback since there is no palette to follow.
+     Only the widget uses these. The app itself is a WebView and takes its
+     colours from the stylesheet, where they belong. -->
+<resources>
+    <color name="widgetBg">@android:color/system_accent2_50</color>
+    <color name="widgetText">@android:color/system_neutral1_900</color>
+    <color name="widgetText2">@android:color/system_neutral2_700</color>
+    <color name="widgetCheck">@android:color/system_neutral2_400</color>
+    <color name="widgetMoon">@android:color/system_accent1_600</color>
+</resources>

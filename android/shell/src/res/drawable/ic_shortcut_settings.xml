@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Settings" in the launcher's long-press menu; see SettingsActivity.
+
+     Drawn like the three the build generates: a 48dp square, a pale ground, and
+     the app's own blue over it, because the launcher frames all four the same
+     way and one of them looking homemade shows. The sliders are the web app's
+     Settings icon, which is what this screen is a shorter version of. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <path android:pathData="M0,0 H48 V48 H0 Z"
+        android:fillColor="@color/shortcut_background" />
+    <path android:pathData="M9,16 H39 M9,24 H39 M9,32 H39"
+        android:strokeColor="#2B7DE9" android:strokeWidth="2.6"
+        android:strokeLineCap="round" />
+    <path android:pathData="M13.8,16 a4.2,4.2 0 1,0 8.4,0 a4.2,4.2 0 1,0 -8.4,0
+                            M25.8,24 a4.2,4.2 0 1,0 8.4,0 a4.2,4.2 0 1,0 -8.4,0
+                            M17.8,32 a4.2,4.2 0 1,0 8.4,0 a4.2,4.2 0 1,0 -8.4,0"
+        android:fillColor="@color/shortcut_background"
+        android:strokeColor="#2B7DE9" android:strokeWidth="2.6" />
+</vector>

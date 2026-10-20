@@ -1,0 +1,12 @@
+{
+  "name": "@dvarim/engine",
+  "private": true,
+  "version": "0.1.0",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "description": "Dvarim's rules — the Markdown format, the lists, dates and repeats — for every device",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}

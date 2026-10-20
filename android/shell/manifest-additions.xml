@@ -1,0 +1,94 @@
+<!-- Components that are ours rather than bubblewrap's. shell/apply.sh splices
+     this into <application> in the generated AndroidManifest.xml, between a
+     pair of dvarim:shell markers, so adding one here is the whole job.
+
+     Only what the system itself has to reach is exported. Everything else is
+     driven by PendingIntents this app made, which the system fires under our
+     own identity and which therefore reach a closed component. -->
+
+        <service android:name=".NewTodoTile"
+            android:label="@string/newTodoTile"
+            android:icon="@drawable/ic_tile_new"
+            android:exported="true"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- A widget provider is a receiver the home screen broadcasts to, so it
+             has to be open. Its refresh and row taps are explicit PendingIntents
+             and deliberately have no filter here. -->
+        <receiver android:name=".TodayWidget" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/widget_today_info" />
+        </receiver>
+
+        <service android:name=".TodayWidgetService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <!-- The shell's own settings. Exported because two things outside this
+             app start it: the launcher, for the "Settings" entry in the
+             long-press menu, and the WebView, which hands any navigation off
+             the page's own origin to an ACTION_VIEW intent — that is how the
+             link in the web app's Settings arrives here. BROWSABLE is
+             deliberately absent, so a page in a browser cannot open it.
+
+             The scheme is a build placeholder for the same reason the
+             FileProvider authority is: a test build installed beside the real
+             app must not answer to the same thing. It did, and tapping the
+             link in either one raised an "Open with Dvarim / Dvarim dev"
+             chooser. The test build answers dvarim-debug://settings now. -->
+        <activity android:name=".SettingsActivity"
+            android:label="@string/settingsTitle"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:theme="@style/Theme.Dvarim">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="${settingsScheme}" android:host="settings" />
+            </intent-filter>
+        </activity>
+
+        <!-- The app on a folder (Folder.java, docs/BRIDGE.md): the web app from
+             inside the APK in a plain WebView. The launcher and the share
+             sheet hand over to it in folder mode; nothing outside starts it.
+             uiMode is left out of configChanges so that a change to dark mode
+             recreates it and the page follows (Theme.Dvarim). Back reaches the
+             page only with enableOnBackInvokedCallback off: from targetSdk 36
+             the system otherwise keeps it, and every Back closed the app (see
+             fallback_back in apply.sh). -->
+        <activity android:name=".FolderActivity"
+            android:theme="@style/Theme.Dvarim"
+            android:enableOnBackInvokedCallback="false"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
+
+        <!-- The first sign-in for the copy the app keeps (AppCopy): the server's
+             page in the app's own WebView, whose cookie the app can read.
+             Only the launcher hands over to it. -->
+        <activity android:name=".CopySignInActivity"
+            android:theme="@style/Theme.Dvarim"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
+
+        <receiver android:name=".ReminderReceiver" android:exported="false" />
+
+        <!-- Sends the ticks Outbox kept while the server was out of reach, once
+             there is a network. Only the system binds to it. -->
+        <service android:name=".OutboxJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <receiver android:name=".BootReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>

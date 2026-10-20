@@ -1,0 +1,887 @@
+/* Dvarim global stylesheet. Tokens and shared list/card/popover classes are copied
+   from mockup/dvarim.html so the app renders identically to the approved design. */
+:root{
+  /* Settings -> Text size. 1 = default; the type below is expressed against it
+     so the whole interface scales together. */
+  --text-scale:1;
+  --page:#E9EAEE; --sidebar:#F5F5F7; --main:#FFFFFF; --card:#FFFFFF;
+  --text:#1C1C1E; --text2:#6E6E73; --text3:#A1A1A6; --hair:#E5E5EA; --hair2:#EFEFF2;
+  --sel:#E4E4E9; --rowsel:#CFE1FA; --hover:#F2F2F5; --pill:#EDEDF0; --pillon:#8E8E93; --pillon-text:#fff;
+  --accent:#2B7DE9; --plus:#5499FA; --star:#F5C33B; --upc:#EE4D67; --any:#3FB4A6; --some:#C5A166; --log:#4CB35B; --trash:#9A9AA0; --dead:#E23F3F; --moon:#4C7BD9; --event:#5A9CF2; --event2:#4CB35B;
+  --shadow:0 20px 60px rgba(20,20,40,.18), 0 2px 8px rgba(20,20,40,.08);
+  --cardshadow:0 6px 24px rgba(20,20,40,.14), 0 1px 3px rgba(20,20,40,.08);
+  --pop:#1E232C; --poptext:#F2F2F7; --popsel:#3B82F6; --popmuted:#98989D;
+  --check:#C7C7CC; --checkon:#2B7DE9;
+  --mdmark:rgba(255,214,10,.42);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --page:#121214; --sidebar:#1E1E21; --main:#2A2A2D; --card:#333336;
+  --text:#F2F2F7; --text2:#A1A1A6; --text3:#6E6E73; --hair:#3A3A3E; --hair2:#333337;
+  --sel:#3A3A40; --rowsel:#2A3F5C; --hover:#323236; --pill:#3A3A3E; --pillon:#8E8E93;
+  --accent:#4C9AFF; --plus:#4C9AFF; --dead:#FF5C5C; --moon:#7AA2F7; --event:#7EB3FF; --event2:#6BCB77;
+  --shadow:0 20px 60px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
+  --cardshadow:0 6px 24px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.4);
+  --pop:#1E232C; --check:#5A5A60; --checkon:#4C9AFF;
+  --mdmark:rgba(255,204,0,.30);
+  color-scheme: dark;
+}}
+:root[data-theme="dark"]{
+  --page:#121214; --sidebar:#1E1E21; --main:#2A2A2D; --card:#333336;
+  --text:#F2F2F7; --text2:#A1A1A6; --text3:#6E6E73; --hair:#3A3A3E; --hair2:#333337;
+  --sel:#3A3A40; --rowsel:#2A3F5C; --hover:#323236; --pill:#3A3A3E; --pillon:#8E8E93;
+  --accent:#4C9AFF; --plus:#4C9AFF; --dead:#FF5C5C; --moon:#7AA2F7; --event:#7EB3FF; --event2:#6BCB77;
+  --shadow:0 20px 60px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
+  --cardshadow:0 6px 24px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.4);
+  --pop:#1E232C; --check:#5A5A60; --checkon:#4C9AFF;
+  --mdmark:rgba(255,204,0,.30);
+  color-scheme: dark;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--page);color:var(--text);font:14px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible,[tabindex]:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+input,textarea{font:inherit;color:inherit}
+textarea{resize:none}
+#app{height:100%}
+
+/* app frame (the mockup's .window, filling the viewport) */
+.app{position:relative;height:100dvh;display:grid;grid-template-columns:236px 1fr;overflow:hidden;background:var(--main)}
+/* The drawer's two gesture surfaces exist only on a phone; see the phone block
+   below. Off by default, or an undefined --drawer would leave the scrim opaque
+   over the whole window. */
+.edge,.navscrim,.fab,.selbar,.pullmark,.pophead,.cardbar{display:none}
+.row .swipeic,.row .pick{display:none}
+.topbar .qfind{display:none}
+/* sidebar */
+.sidebar{background:var(--sidebar);border-right:1px solid var(--hair);display:flex;flex-direction:column;min-height:0;padding-top:env(safe-area-inset-top)}
+.nav{flex:1;overflow:auto;padding:14px 10px 10px;display:flex;flex-direction:column;gap:2px}
+.nav .gap{height:14px;flex:none}
+.item{display:flex;align-items:center;gap:9px;height:28px;padding:0 8px;border-radius:7px;color:var(--text);font-size:13.5px;text-align:left;width:100%;flex:none}
+.item:hover{background:var(--hover)}
+.item.on{background:var(--sel)}
+/* ---- Dragging ----------------------------------------------------------- */
+.item.drop{background:var(--accent);color:#fff}
+.item.drop svg{color:#fff}
+.item.drop .cnt,.item.drop .badge{color:#fff}
+.row.ghosted{opacity:.35}
+/* the anchor of a multi-selection: where the keyboard moves from */
+.row.anchor{box-shadow:inset 2px 0 0 var(--accent)}
+body.dragging{cursor:grabbing;user-select:none;-webkit-user-select:none}
+body.dragging *{cursor:grabbing!important}
+/* ---- A row, lifted --------------------------------------------------------
+   Held (a thumb) or moved a few pixels (a pointer), a row comes off the list
+   and follows. The place it left closes up, a selection gathers into one, and
+   the list parts where it would land: no insertion line, because the room is
+   the line and it shows how much room. See components/DragLayer.svelte. */
+.row.ghosted,body.dragging .row.sel{
+  height:0;min-height:0;padding-top:0;padding-bottom:0;margin-top:0;margin-bottom:0;opacity:0;overflow:hidden
+}
+.drag-card{
+  position:fixed;z-index:80;pointer-events:none;box-sizing:border-box;
+  background:var(--card,var(--main));border-radius:8px;
+  box-shadow:0 10px 24px rgba(20,20,40,.22),0 2px 6px rgba(20,20,40,.14);
+  /* A small step out of the slot at the lift, so the card reads as off the page
+     before the pointer has moved anywhere: with left/top taken straight from
+     the pointer it would sit exactly over its own gap. A finger gets scale
+     instead (it is covering what it moved), which is set in the 720px block. */
+  transform:translate(10px,-6px)
+}
+/* Let go over a list: the card slides onto the room that was opened for it —
+   no overshoot — and once it is there the shadow goes with the slab, so the
+   two read as the card becoming the row. */
+.drag-card.settling{
+  transform:none;
+  transition:left .24s cubic-bezier(.2,.8,.2,1),top .24s cubic-bezier(.2,.8,.2,1),
+             transform .24s cubic-bezier(.2,.8,.2,1),box-shadow .12s linear .2s;
+  box-shadow:0 10px 24px rgba(20,20,40,0),0 2px 6px rgba(20,20,40,0)
+}
+/* The rest of a multi-selection, on its way into the one card: each flies from
+   where its row was to where the card is, fading as it goes, in about a tenth
+   of a second. The rows themselves have already closed up behind them — the
+   room they left is the placeholder. */
+.drag-card.gathering{animation:gathering .11s ease-out both;box-shadow:none;z-index:79}
+@keyframes gathering{to{transform:translate(var(--gx),var(--gy));opacity:0}}
+@media (prefers-reduced-motion:reduce){ .drag-card.gathering{display:none} }
+.drag-card .row{margin:0;width:100%;background:none;transform:none;border-radius:8px}
+.drag-card .row .swipeic,.drag-card .row .pick{display:none}
+/* The room a list makes for what is about to land in it (lib/gap.js). */
+/* The room a to-do will take: a flat grey strip across the list — not a
+   rounded pill the width of a row — a few pixels shorter than the opening
+   it sits in, so the rows above and below keep their air. */
+.listgap{height:0;margin:0 -12px;border-radius:3px;background:none;position:relative;transition:height .18s cubic-bezier(.2,.9,.25,1);overflow:hidden}
+.listgap:not(.heading)::before{content:"";position:absolute;inset:3px 0;background:var(--hover);border-radius:3px}
+/* The header has no box of its own any more, so the day it stands for is shown
+   with a halo rather than padding: nothing moves as it lights. */
+.hd.day.drop{background:var(--accent);color:#fff;border-radius:4px;box-shadow:0 0 0 6px var(--accent)}
+.hd.day.drop b,.hd.day.drop span{color:#fff}
+.hd.day.drop span{border-top-color:rgba(255,255,255,.55)}
+.item .ic{width:17px;height:17px;flex:none;display:grid;place-items:center}
+.item .lbl{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .cnt{font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums}
+.item .badge{font-size:11px;font-weight:600;color:#fff;background:var(--upc);border-radius:9px;padding:1px 6px;line-height:15px}
+.item.area{font-weight:600;margin-top:2px}
+.item.area .ic svg{color:var(--text2)}
+.item.proj{padding-left:8px}
+.sidefoot{border-top:1px solid var(--hair);display:flex;align-items:center;justify-content:space-between;padding:9px 14px;color:var(--text2);font-size:13px;padding-bottom:calc(9px + env(safe-area-inset-bottom))}
+.sidefoot button{display:flex;align-items:center;gap:6px;color:var(--text2)}
+.sidefoot button:hover{color:var(--text)}
+/* main */
+.main{display:flex;flex-direction:column;min-height:0;position:relative}
+.topbar{height:40px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;flex:none;position:relative;margin-top:env(safe-area-inset-top)}
+.topbar .back{position:absolute;left:14px;display:none;align-items:center;gap:2px;color:var(--accent);font-size:15px}
+.topbar .wtitle{display:flex;align-items:center;gap:4px}
+.topbar .wtitle .chev{font-size:10px}
+.topbar .newwin{position:absolute;right:14px;color:var(--text3);display:grid;place-items:center}
+.content{flex:1;overflow:auto;padding:14px 48px 40px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+.col{max-width:640px;margin:0 auto}
+h1.t{display:flex;align-items:center;gap:10px;font-size:26px;font-weight:700;letter-spacing:-.01em;margin:8px 0 6px;text-wrap:balance}
+h1.t .ic{width:24px;height:24px;display:grid;place-items:center;flex:none}
+h1.t .ic svg{width:24px;height:24px}
+h1.t .name{flex:1;min-width:0;outline:none;word-break:break-word}
+h1.t .name:focus{outline:none}
+h1.t .more{color:var(--text3);font-size:18px;letter-spacing:1px;margin-left:2px;flex:none}
+h1.t .more:hover{color:var(--text2)}
+.pnotes{color:var(--text2);font-size:13.5px;line-height:1.45;margin:2px 0 14px;max-width:60ch;width:100%;display:block;border:0;background:none;outline:none;padding:0;overflow:hidden}
+.pnotes::placeholder{color:var(--text3)}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 18px}
+.filters button{font-size:12.5px;padding:3px 10px;border-radius:12px;color:var(--text2)}
+.filters button.on{background:var(--pillon);color:var(--pillon-text)}
+.filters button:hover:not(.on){background:var(--pill)}
+.filters .more{color:var(--text3);letter-spacing:1px}
+/* headings */
+.hd{display:flex;align-items:center;justify-content:space-between;color:var(--accent);font-weight:600;font-size:13.5px;border-bottom:1px solid var(--hair);padding:0 0 6px;margin:22px 0 4px}
+.hd .hname{flex:1;min-width:0;outline:none}
+.hd.gray{color:var(--text);font-weight:600}
+.hd.archived{color:var(--text3)}
+.hd .more{color:var(--text3);letter-spacing:1px}
+.hd .more:hover{color:var(--text2)}
+/* A day is not a section heading with a rule under it. The number is set
+   large on the left, the rule starts level with its top, and the weekday hangs
+   under the rule — with a day's worth of air above the next one. */
+.hd.day{border-bottom:0;padding:0;margin:56px 0 8px;align-items:flex-start;justify-content:flex-start;gap:7px;color:var(--text)}
+.hd.day.first{margin-top:22px}
+.hd.day b{font-size:calc(24px * var(--text-scale));font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.hd.day span{flex:1;margin-top:3px;border-top:1px solid var(--hair);padding-top:8px;font-size:calc(13px * var(--text-scale));font-weight:600;color:var(--text2)}
+.hd.evening{color:var(--text);gap:6px;justify-content:flex-start;margin-top:34px}
+.hd.evening svg{color:var(--moon)}
+.hd.grp{justify-content:flex-start;gap:7px;color:var(--text2);font-weight:600}
+.hd.grp .pie{width:14px;height:14px}
+.hd.grp .sub{color:var(--text3);font-weight:400}
+.hd.month{color:var(--text);font-size:15px;margin-top:30px}
+/* events */
+.events{background:var(--hover);border-radius:9px;padding:9px 12px;margin:8px 0 26px;font-size:12.5px;display:flex;flex-direction:column;gap:3px}
+/* The grey card is a Today device; under a day header they are plain lines,
+   with air before the first to-do. */
+.events.bare{background:none;border-radius:0;padding:0;margin:14px 0 22px;gap:1px}
+.events .ev{display:flex;gap:7px;align-items:baseline;color:var(--text2)}
+.events .ev time{color:var(--event);font-variant-numeric:tabular-nums;min-width:38px}
+.events .ev.allday::before{content:"";width:3px;height:11px;background:var(--event2);border-radius:2px;align-self:center;flex:none}
+.events .ev.allday.b::before{background:var(--event)}
+/* rows */
+.rows{display:flex;flex-direction:column}
+.row{display:flex;align-items:flex-start;gap:10px;padding:6px 8px;margin:0 -8px;border-radius:8px;position:relative;text-align:left;width:calc(100% + 16px);color:inherit;user-select:none;-webkit-user-select:none}
+/* No hover state, deliberately: one here reads as wrong the moment the
+   pointer crosses a list. What a row does answer to is being chosen, and that
+   is a pale blue of its own — --sel stays grey for the phone's press and swipe
+   fills. */
+.row.sel{background:var(--rowsel)}
+.row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.row .cb{width:16px;height:16px;border:1.5px solid var(--check);border-radius:4px;flex:none;margin-top:3px;display:grid;place-items:center;transition:all .15s;color:#fff}
+.row .cb:hover{border-color:var(--checkon)}
+.row .cb svg{opacity:0;transform:scale(.5);transition:all .15s}
+.row.done .cb{background:var(--checkon);border-color:var(--checkon)}
+.row.done .cb svg{opacity:1;transform:scale(1);color:#fff}
+.row.canceled .cb{background:var(--text3);border-color:var(--text3)}
+.row.canceled .cb svg{opacity:1;transform:scale(1)}
+.row.done .title,.row.canceled .title{color:var(--text3)}
+.row .body{flex:1;min-width:0}
+.row .title{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:14px;line-height:1.35}
+.row .title .txt{overflow:hidden;text-overflow:ellipsis}
+.row .sub{font-size:11.5px;color:var(--text3);margin-top:1px;display:flex;align-items:center;gap:5px}
+.row .sub .pie{width:10px;height:10px}
+.row .inds{display:inline-flex;gap:4px;color:var(--text3);align-items:center}
+.row .inds svg{width:12px;height:12px}
+.row .tag{font-size:11px;color:var(--text2);border:1px solid var(--check);border-radius:9px;padding:0 7px;line-height:16px}
+/* A real desk/phone divergence rather than a size: at a desk the row names
+   the tag, on a phone it only marks that there is one. Both are in the row;
+   this picks. */
+.row .inds .tagic{display:none}
+.row .dl.when{color:var(--text2)}
+.row .dl{font-size:11px;color:var(--text2);background:var(--pill);border-radius:5px;padding:0 6px;line-height:17px;font-variant-numeric:tabular-nums}
+.row .flag{margin-left:auto;display:flex;gap:4px;align-items:center;font-size:12px;color:var(--text2);flex:none;padding-top:1px}
+.row .flag.red{color:var(--dead);font-weight:500}
+.row .star{color:var(--star);display:inline-flex}.row .moonic{color:var(--moon);display:inline-flex}
+.row .rep{color:var(--text3)}
+.row .restore{margin-left:auto;font-size:12px;color:var(--accent);flex:none}
+.row.fade{opacity:.35;text-decoration:line-through;transition:opacity .35s}
+.row .pieic{margin-top:3px;display:inline-flex;flex:none}
+/* A calendar in the gutter at a desk. It reaches the row, so
+   there is no dead strip between them, and it is not there under a thumb —
+   which has the swipe, and no hover to show it with. */
+.row .whenbtn{
+  position:absolute;left:-26px;top:0;bottom:0;width:26px;display:grid;place-items:center;
+  opacity:0;color:var(--text3);transition:opacity .12s ease
+}
+.row .whenbtn svg{width:14px;height:14px}
+.row:hover .whenbtn,.row .whenbtn:focus-visible{opacity:1}
+.row .whenbtn:hover{color:var(--accent)}
+.app.selecting .row .whenbtn{display:none}
+.card .icons{margin-left:auto}
+.showdone{color:var(--text3);font-size:12.5px;margin-top:12px;padding-left:2px}
+.showdone:hover{color:var(--text2)}
+.empty{color:var(--text3);text-align:center;padding:60px 0 20px;font-size:14px}
+.empty .eic{width:44px;height:44px;display:block;margin:0 auto 12px;color:var(--hair)}
+.empty .eic svg{width:44px;height:44px}
+.empty b{display:block;color:var(--text2);font-weight:600;margin-bottom:4px}
+/* expanded card */
+/* The card is a sheet of paper laid on the list: real air above and below
+   (about one row pitch over, nearly two under), a small corner and a hairline.
+   The 10px corner it once had was wrong. */
+.card{background:var(--card);border-radius:6px;border:1px solid var(--hair2);box-shadow:var(--cardshadow);margin:30px -16px 44px;padding:14px 16px 12px;position:relative;animation:pop .18s ease-out}
+.rows > .titem:first-child .card{margin-top:8px}
+.card textarea,.card input{caret-color:var(--accent)}
+@keyframes pop{from{transform:scale(.985);opacity:.6}to{transform:none;opacity:1}}
+.card .head{display:flex;gap:10px;align-items:flex-start}
+.card .cb{width:16px;height:16px;border:1.5px solid var(--check);border-radius:4px;flex:none;margin-top:4px;display:grid;place-items:center;color:#fff}
+.card .cb svg{opacity:0;transform:scale(.5);transition:all .15s}
+.card .cb:hover{border-color:var(--checkon)}
+.card .cb.done{background:var(--checkon);border-color:var(--checkon)}
+.card .cb.done svg{opacity:1;transform:scale(1)}
+.card .ttl{font-weight:400;flex:1;outline:none;line-height:1.35;border:0;background:none;padding:0;margin:0;width:100%;overflow:hidden;display:block}
+.card .note{margin:8px 0 6px 26px;min-height:3em;color:var(--text);font-size:13.5px;line-height:1.5;white-space:pre-wrap;border:0;background:none;outline:none;padding:0;width:calc(100% - 26px);display:block;overflow:hidden}
+.card .note::placeholder{color:var(--text3)}
+/* Notes are Markdown (NotesField + lib/notes-editor.js). The field keeps the
+   size and type the textarea had; the editor inside fills it, so a click below
+   the last line still puts the caret in the note. */
+.notesfield{white-space:normal}
+.notesfield .cm-editor,.notesfield .cm-scroller,.notesfield .cm-content{min-height:inherit}
+.notesfield .nf-wait{white-space:pre-wrap}
+.notesfield .nf-wait.empty{color:var(--text3)}
+.card .ttl::placeholder{color:var(--text3)}
+.card .cl{margin:8px 0 0 26px;border-top:1px solid var(--hair2)}
+.card .cli{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--hair2);font-size:13.5px;position:relative}
+/* The ring is drawn inside the button rather than on it, so the phone can make
+   the button a thumb wide without the ring growing with it, and so the tick has
+   a second box to live in. */
+.card .cli .dot{width:12px;height:12px;flex:none;display:block;padding:0;border:0;background:none;position:relative}
+.card .cli .dot::before{content:"";position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:1.5px solid var(--accent);box-sizing:border-box}
+/* Ticked is not a blue disc and a line through the words. The ring goes, a
+   thin grey tick is left where it was, and the label greys. */
+.card .cli .dot::after{content:"";position:absolute;left:50%;top:50%;width:5px;height:9px;margin:-6px 0 0 -3px;border:solid var(--text3);border-width:0 1.5px 1.5px 0;transform:rotate(43deg);box-sizing:border-box;opacity:0}
+.card .cli.done .dot::before{opacity:0}
+.card .cli.done .dot::after{opacity:1}
+.card .cli input{flex:1;border:0;background:none;outline:none;padding:0;min-width:0}
+.card .cli.done input{color:var(--text3)}
+/* The row being typed in is a field: grey, rounded, its own hairline, and the
+   one under it hidden. The -1px top margin pays back the padding it gains, so
+   the rows below do not move as the caret walks down them. */
+.card .cli:focus-within{margin:-1px -6px 0;padding:6px 6px 5px;background:var(--hover);border-radius:5px;border-bottom-color:transparent;box-shadow:inset 0 0 0 1px var(--hair2);z-index:1}
+.card .cli .grip{color:var(--text3);opacity:0;width:16px;height:16px;display:grid;place-items:center;touch-action:none;cursor:grab}
+.card .cli:hover .grip,.card .cli:focus-within .grip{opacity:1}
+.card .cli.lifted{background:var(--hover);border-radius:5px;border-bottom-color:transparent;box-shadow:var(--cardshadow);z-index:2}
+.card .cli.lifted .grip{cursor:grabbing;opacity:1}
+/* The first row of a new checklist slides in from the right while it fades —
+   the same entrance the chip has. Only the first: the rest are typed into. */
+.card .cli.clin{animation:clin .25s cubic-bezier(.2,.9,.25,1)}
+@keyframes clin{from{opacity:0;transform:translateX(40px)}}
+@media (prefers-reduced-motion:reduce){.card .cli.clin{animation:none}}
+.card .foot{display:flex;align-items:center;justify-content:space-between;margin:12px 0 0 26px}
+.card .when{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500}
+.card .when.empty{color:var(--text3);padding:0}
+/* The chip taking a field's place comes in from the right while it fades, about
+   a field's width of travel — it reads as the day sliding out of what was typed
+   rather than one thing blinking into another. */
+.card .when.chipin{animation:chipin .32s cubic-bezier(.2,.9,.25,1)}
+@keyframes chipin{from{opacity:0;transform:translateX(55px)}}
+@media (prefers-reduced-motion:reduce){ .card .when.chipin{animation:none} }
+.card .when.star svg{color:var(--star)}.card .when.moon svg{color:var(--moon)}.card .when.date svg{color:var(--upc)}.card .when.some svg{color:var(--some)}
+.card .icons{display:flex;gap:16px;color:var(--text3)}
+.card .icons button{color:var(--text3);display:grid;place-items:center;width:18px;height:18px}
+.card .icons button svg{width:16px;height:16px}
+.card .icons button:hover{color:var(--text)}
+/* A detail icon that has been clicked does not stay an icon: at a desk it
+   unrolls in place into a small grey field, with the panel hanging under it. The
+   icon row is right-aligned, so a field grows leftward and what is to the right
+   of it does not move; the text is simply clipped on the way. Under a thumb the
+   phone's own sheet is right, so none of this is armed there (openField()). */
+@media (min-width:721px){
+  .card .fld{
+    display:flex;align-items:center;gap:5px;flex:none;
+    width:18px;height:22px;border-radius:5px;overflow:hidden;
+    transition:width .3s cubic-bezier(.16,1,.3,1),background-color .3s ease,padding .3s cubic-bezier(.16,1,.3,1)
+  }
+  .card .fld.open{width:124px;padding:0 6px;background:var(--pill)}
+  .card .fld input{
+    flex:1;min-width:0;border:0;background:none;outline:none;padding:0;
+    font:inherit;font-size:12.5px;color:var(--text);caret-color:var(--accent)
+  }
+  .card .fld input::placeholder{color:var(--text3)}
+  @media (prefers-reduced-motion:reduce){ .card .fld{transition:none} }
+}
+.card .tags{display:flex;gap:5px;margin:10px 0 0 26px;flex-wrap:wrap}
+.card .tags button{font-size:11.5px;color:var(--text2);border:1px solid var(--hair);border-radius:9px;padding:1px 8px}
+.card .dlrow{margin:8px 0 0 26px;font-size:12.5px;color:var(--dead);display:flex;gap:5px;align-items:center}
+.card .dlrow.muted{color:var(--text2)}
+/* toolbar */
+.toolbar{position:relative;flex:none;height:44px;border-top:1px solid var(--hair);display:flex;align-items:center;justify-content:space-around;padding:0 60px;color:var(--text2);padding-bottom:env(safe-area-inset-bottom);box-sizing:content-box}
+.toolbar button{width:36px;height:30px;display:grid;place-items:center;border-radius:6px;color:var(--text2)}
+.toolbar button:hover{background:var(--hover);color:var(--text)}
+/* popovers */
+.scrim{position:absolute;inset:0;z-index:5}
+/* At a desk the panel simply fades in — no scale, under a tenth of a
+   second. The phone's grows out of the row it is about instead (popgrow,
+   in the 720px block), because there it covers most of the screen. */
+.pop{position:absolute;z-index:6;background:var(--pop);color:var(--poptext);border-radius:11px;box-shadow:var(--cardshadow);width:250px;padding:8px;font-size:13px;animation:popfade .08s linear;color-scheme:dark}
+@keyframes popfade{from{opacity:0}}
+.pop.wide{width:290px}
+.pop .in{display:flex;align-items:center;gap:6px;background:#424850;border-radius:6px;padding:5px 8px;margin-bottom:6px}
+.pop .in input{flex:1;background:none;border:0;color:var(--poptext);font:inherit;font-weight:600;outline:none;min-width:0;caret-color:#4C9AFF}
+.pop .in .clr{color:var(--popmuted);width:15px;height:15px;display:grid;place-items:center;flex:none;border-radius:50%}
+.pop .in .clr:hover{color:var(--poptext);background:rgba(255,255,255,.14)}
+.pop .in input::placeholder{color:var(--popmuted)}
+.pop .opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;width:100%;text-align:left;color:var(--poptext)}
+.pop .opt:hover,.pop .opt.on{background:var(--popsel)}
+.pop .opt.muted{color:var(--popmuted)}
+.pop .opt.danger{color:#FF7B7B}
+.pop .opt.danger:hover,.pop .opt.danger.on{color:#fff}
+.pop .opt.ind{padding-left:30px}
+.pop .opt .r{margin-left:auto;color:var(--popmuted);font-size:12px;font-variant-numeric:tabular-nums;flex:none}
+.pop .opt.on .r{color:rgba(255,255,255,.8)}
+.pop .opt .ic{width:14px;height:14px;display:grid;place-items:center;flex:none}
+.pop .opt svg{width:14px;height:14px}
+.pop .opt .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pop .sep{height:1px;background:rgba(255,255,255,.1);margin:4px 0}
+.pop .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:4px 6px 2px;font-size:11.5px;text-align:center;color:var(--popmuted)}
+.pop .cal b{color:var(--poptext);font-weight:500}
+.pop .cal .d{padding:3px 0;border-radius:5px;color:var(--poptext);font-variant-numeric:tabular-nums}
+.pop .cal .d:hover{background:rgba(255,255,255,.12)}
+.pop .cal .d.today{background:var(--popsel);font-weight:600}
+.pop .cal .d.dim{color:var(--popmuted)}
+.pop .cal .d.pick{outline:1.5px solid var(--poptext)}
+.pop .calhead{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 0;color:var(--poptext);font-weight:500;font-size:12.5px}
+.pop .calhead button{color:var(--popmuted);width:22px;height:20px;display:grid;place-items:center;border-radius:5px}
+.pop .calhead button:hover{background:rgba(255,255,255,.12);color:var(--poptext)}
+.pop .hint{color:var(--popmuted);font-size:11px;padding:4px 8px 2px}
+.pop .ttl{color:var(--popmuted);font-size:11px;padding:4px 8px 2px;text-transform:uppercase;letter-spacing:.04em}
+.pop input[type=time]{background:rgba(255,255,255,.1);border:0;border-radius:6px;color:var(--poptext);padding:4px 8px;outline:none}
+/* quick find */
+.qf{position:absolute;top:48px;left:50%;transform:translateX(-50%);width:min(440px,90%);z-index:7;background:var(--card);border-radius:10px;box-shadow:var(--cardshadow);border:1px solid var(--hair);overflow:hidden;animation:pop .15s ease-out}
+.qf .in{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--hair);color:var(--text2)}
+.qf .in input{flex:1;border:0;background:none;font:inherit;font-size:15px;color:var(--text);outline:none;min-width:0}
+.qf .res{max-height:360px;overflow:auto;padding:6px}
+.qf .r{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px;width:100%;text-align:left;font-size:13.5px}
+.qf .r.on{background:var(--accent);color:#fff}
+.qf .r.on .m{color:rgba(255,255,255,.8)}
+.qf .r .m{margin-left:auto;font-size:12px;color:var(--text3);flex:none}
+.qf .r .ic{width:16px;height:16px;display:grid;place-items:center;flex:none}
+.qf .r .cbx{width:13px;height:13px;border:1.5px solid var(--check);border-radius:3px;display:block}
+.qf .r .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qf .grp{font-size:11px;color:var(--text3);padding:8px 8px 3px;text-transform:uppercase;letter-spacing:.04em}
+.qf .none{color:var(--text3);padding:14px 8px;text-align:center;font-size:13px}
+.pie{width:16px;height:16px;display:inline-block;flex:none}
+/* toast */
+.toast{position:absolute;left:50%;bottom:56px;transform:translateX(-50%);z-index:8;background:var(--pop);color:var(--poptext);border-radius:10px;box-shadow:var(--cardshadow);padding:9px 14px;font-size:13px;display:flex;gap:14px;align-items:center;max-width:min(420px,90%);animation:pop .15s ease-out}
+.toast.err{color:#FFB4B4}
+.toast button{color:#8FB4FF;font-weight:600}
+.toast button:hover{color:#fff}
+/* project rows */
+.prow .txt{font-weight:500}
+/* reduced motion */
+@media (prefers-reduced-motion:reduce){
+  .card,.pop,.qf,.toast{animation:none}
+  .row .cb,.row .cb svg,.row.fade,.card .cb svg{transition:none}
+  .content{scroll-behavior:auto}
+}
+/* The Mac app without a title bar (lib/shell.js). The traffic lights sit over the
+   top-left of the page, so the sidebar starts under them; and the strip where
+   the title bar was, 28pt deep, still drags the window and takes every click
+   that lands on it — so nothing of the page's that can be clicked lives there.
+   With the sidebar put away, the lights are over the list instead, and the bar's
+   title moves clear of them. */
+.chromeless .sidebar{padding-top:38px}
+.chromeless .topbar{height:52px;align-items:flex-end;padding-bottom:7px;box-sizing:border-box}
+.chromeless .topbar .newwin{bottom:5px}
+.chromeless .app.slim .topbar .wtitle{padding-left:64px}
+/* The sidebar put away, so a list can live in a narrow window. The
+   column closes and the sidebar goes with it, rather than being squashed; it is
+   inert while away so Tab cannot wander into it. See lib/slim.svelte.js. */
+@media (min-width:721px){
+  .app{transition:grid-template-columns .28s cubic-bezier(.2,.9,.25,1)}
+  .app .sidebar{width:236px;transition:transform .28s cubic-bezier(.2,.9,.25,1),visibility 0s linear 0s}
+  .app.slim{grid-template-columns:0 1fr}
+  /* With the sidebar showing, it already says where you are, so the bar is
+     left empty; put away, the bar takes over saying it. */
+  .topbar .wtitle .name{transition:opacity .2s ease}
+  .app:not(.slim) .topbar .wtitle .name{opacity:0;pointer-events:none}
+  .app.slim .sidebar{transform:translateX(-236px);visibility:hidden;transition:transform .28s cubic-bezier(.2,.9,.25,1),visibility 0s linear .28s}
+}
+@media (prefers-reduced-motion:reduce){ .app,.app .sidebar{transition:none !important} }
+/* phone */
+@media (max-width:720px){
+  /* minmax(0,…): a bare 1fr will not go narrower than its content, and a title
+     that does not wrap is as wide as it likes. */
+  .app{grid-template-columns:minmax(0,1fr)}
+  .main{min-width:0}
+  /* The navigation is a drawer here rather than a screen of its own: it slides
+     over the page and stops short of the right edge, so what you were reading
+     stays visible behind it and nobody mistakes the navigation for the app.
+     --drawer runs 0 to 1; a finger sets it directly while dragging (see
+     lib/drawer.svelte.js) and CSS animates it the rest of the way. */
+  .app{--drawer:0;--slate:rgba(63,73,84,.93);--wash:#F2F2F4;--capsule:#22252B}
+  /* The wash an open to-do sits on: a shade back from the page either way, so
+     the card reads as lifted off it and not as a hole in it. */
+  @media (prefers-color-scheme:dark){ .app:not([data-theme="light"]){--wash:#232326;--capsule:#0E0E10} }
+  :root[data-theme="dark"] .app{--wash:#232326;--capsule:#0E0E10}
+  .app.root{--drawer:1}
+  .sidebar{
+    position:absolute;top:0;bottom:0;left:0;z-index:7;
+    width:min(320px,86%);
+    transform:translateX(calc((var(--drawer) - 1) * 100%));
+    transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s ease;
+    touch-action:pan-y
+  }
+  /* Only while it is out: put away, its shadow still fell across the left
+     edge of the page. */
+  .app.root .sidebar,.app.dragging .sidebar{box-shadow:var(--shadow)}
+  /* touch-action is only consulted as far up as the nearest scroller, and the
+     list of lists is one: it has to say so itself, or a finger on it is taken
+     for a scroll before the drawer can be pushed shut. */
+  .sidebar .nav{touch-action:pan-y}
+  .navscrim{
+    display:block;position:absolute;inset:0;z-index:6;background:rgba(0,0,0,.4);
+    opacity:var(--drawer);pointer-events:none;touch-action:none;
+    transition:opacity .22s ease
+  }
+  .app.root .navscrim{pointer-events:auto}
+  /* As wide as the band the shell reserves (EdgeGestures.WIDTH_DP), clear of
+     the row padding, so the swipe that opens the drawer can never be a swipe on
+     a to-do. pan-y leaves the page free to scroll under a finger that starts here. */
+  .edge{display:block;position:absolute;left:0;top:0;bottom:0;width:24px;z-index:6;touch-action:pan-y}
+  .app.root .edge{display:none}
+  /* While a finger is on it, the drawer goes exactly where the finger is. */
+  .app.dragging .sidebar,.app.dragging .navscrim{transition:none}
+  .app.dragging .navscrim{pointer-events:auto}
+  /* The phone bar carries a back chevron and Quick Find, and no title:
+     the list says its own name underneath, at full size, where the eye is
+     already going. Only the offline dot stays. */
+  .topbar{height:44px}
+  .topbar .back{display:flex}.topbar .newwin{display:none}
+  .topbar .back .lbl{display:none}
+  .topbar .back svg{width:15px;height:19px}
+  /* …until that name has scrolled away, when the bar says it small: faded
+     in, so it reads as the title arriving rather than switching. */
+  .topbar .wtitle .name{opacity:0;transform:translateY(4px);transition:opacity .16s ease,transform .16s ease;font-size:15px;font-weight:600;color:var(--text);max-width:62vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topbar .wtitle .name .chev{display:none}
+  .main.scrolled .topbar .wtitle .name{opacity:1;transform:none}
+  .main.scrolled .topbar{box-shadow:0 1px 0 var(--hair)}
+  /* 44px of tappable area around a 22px mark, which is the whole point of
+     putting it in a corner. */
+  .topbar .qfind{display:grid;place-items:center;position:absolute;right:4px;width:44px;height:44px;color:var(--text3)}
+  .topbar .back{left:0;width:52px;height:44px;justify-content:center;padding:0}
+  /* Room at the bottom for the button that now floats over it. */
+  .content{padding:10px 18px 96px}
+  .toolbar{display:none}
+  /* A 50px disc about 13px from the corner, flat, with a shadow at a tenth of
+     black and no offset. A Material FAB is bigger and sits on a much darker
+     one; this one barely leaves the page until it is picked up. */
+  .fab{
+    display:grid;place-items:center;position:absolute;z-index:4;
+    right:14px;bottom:calc(14px + env(safe-area-inset-bottom));
+    width:50px;height:50px;border-radius:50%;
+    background:var(--plus);color:#fff;
+    box-shadow:0 1px 5px rgba(20,20,40,.10);
+    transition:transform .07s ease-out;touch-action:none;
+    user-select:none;-webkit-user-select:none;-webkit-touch-callout:none
+  }
+  .fab svg{width:24px;height:24px;stroke-width:2.4}
+  /* Answering the finger before anything else does: pressed in, then the hold
+     lifts it (lib/plusbutton.svelte.js). */
+  .fab:active{transform:scale(.89)}
+
+  /* A finger on a row is answered in the frame it lands, not at the 420ms mark
+     where the row lifts: a soft grey slab behind it, feathered, which is the
+     same shape the placeholder takes when it does lift. */
+  .row.pressed{background:var(--sel);box-shadow:0 0 8px 2px var(--sel);transition-property:transform}
+  /* The row a card has just shrunk back into: still white, still with the
+     card's shadow, for as long as the shadow takes to go. */
+  .titem.landed .row{animation:landed .5s ease-out}
+  @keyframes landed{
+    0%,72%{background:var(--card);box-shadow:0 8px 20px rgba(20,20,40,.18),0 1px 3px rgba(20,20,40,.12)}
+    100%{background:transparent;box-shadow:0 0 0 rgba(20,20,40,0)}
+  }
+  @media (prefers-reduced-motion:reduce){ .titem.landed .row{animation:none} }
+  .listgap:not(.heading)::before{background:var(--sel)}
+
+  /* ---- Swiping a row ------------------------------------------------------
+     Right for the When popover, left to start choosing several. The row leans
+     by the width of a tab and the tab shows in the room that makes: a small
+     coloured end to the row, not a panel behind it. The tabs hang off the row's
+     ends, so they are hidden until a finger is actually on it. See
+     lib/swipe.svelte.js. */
+  .content{overflow-x:hidden;overscroll-behavior:contain}
+  /* Touch. A browser takes any finger that moves for a scroll unless it is
+     told otherwise before the finger lands, and then cancels the pointer.
+     A row scrolls up and down and is ours sideways; holding one must lift
+     it rather than select its text or raise the system's menu. The reasoning,
+     and the half of this that cannot be said in CSS, is in lib/touch.js. */
+  .row{touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  .row .whenbtn{display:none}
+  /* A touchscreen has no hover, only a finger resting on something: and :hover
+     sticks to whatever that was, so a pull or a scroll greyed the row under it. */
+  /* The row itself does not move. The grey band stays where it is, with
+     rounded ends, and only what is written on it slides; the tab is uncovered
+     in the room that makes rather than carried in from outside. Moving the
+     whole row ran its highlight off the screen's right edge. */
+  .row{overflow:hidden;transition:background-color .15s ease}
+  .row>.cb,.row>.body,.row>.pick{transform:translateX(var(--swipe,0px));transition:transform .22s cubic-bezier(.2,.9,.25,1)}
+  .row.swiping{transition:none;background:var(--sel)}
+  .row.swiping>.cb,.row.swiping>.body,.row.swiping>.pick{transition:none}
+  .row .swipeic{
+    display:grid;place-items:center;position:absolute;top:0;bottom:0;width:34px;
+    visibility:hidden;color:#fff
+  }
+  .row .swipeic svg{width:17px;height:17px;opacity:.55;transform:scale(.8);transition:opacity .12s ease,transform .12s ease}
+  .row.armed .swipeic svg,.row.whenopen .swipeic svg{opacity:1;transform:none}
+  /* Uncovered, not translated: the tab sits at the row's end all along and the
+     clip opens as the content moves off it. The row's own corner rounds it. */
+  .row .swipeic.whentab{left:0;background:var(--star);border-radius:0;clip-path:inset(0 calc(34px - var(--swipe,0px)) 0 0)}
+  .row .swipeic.pickhint{right:0;background:#749EE2;border-radius:0;clip-path:inset(0 0 0 calc(34px + var(--swipe,0px)))}
+  .row.swipe-right .swipeic.whentab,.row.swipe-left .swipeic.pickhint,.row.whenopen .swipeic.whentab{visibility:visible}
+  /* While the When popover is open the row stays where the swipe left it, tab
+     out: it is what the popover is about. */
+  .row.whenopen{--swipe:40px;background:var(--sel)}
+
+  /* ---- Choosing several ---------------------------------------------------
+     Circles down the right, the chosen rows tinted, and a dark bar of things to
+     do with them floating over the bottom of the list. */
+  .app.selecting .row{padding-right:46px}
+  .app.selecting .row.sel{background:color-mix(in srgb,var(--accent) 15%,transparent)}
+  /* The stripe that marks the keyboard's anchor row means nothing to a thumb. */
+  .app.selecting .row.anchor{box-shadow:none}
+  .row .pick{
+    display:block;position:absolute;right:4px;top:50%;transform:translateY(-50%);
+    width:44px;height:44px;border-radius:50%;background:none;touch-action:none
+  }
+  /* 44px to land a thumb on, 22px to look at. */
+  .row .pick::after{
+    content:"";position:absolute;inset:11px;border-radius:50%;
+    border:1.5px solid var(--check);transition:background-color .12s ease,border-color .12s ease
+  }
+  .row .pick.on::after{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--main)}
+  .selbar{
+    display:flex;position:absolute;z-index:8;
+    left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));
+    background:var(--pop);color:var(--poptext);border-radius:12px;overflow:hidden;
+    box-shadow:0 8px 24px rgba(10,10,20,.32),0 2px 6px rgba(10,10,20,.2);
+    animation:selbar .22s cubic-bezier(.2,.9,.25,1)
+  }
+  @keyframes selbar{from{transform:translateY(80px);opacity:0}to{transform:none;opacity:1}}
+  .selbar button{
+    flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
+    height:48px;color:var(--poptext);font-size:14px;font-weight:500
+  }
+  .selbar button:active{background:rgba(255,255,255,.12)}
+  /* One line and an ellipsis: a title that wraps pushes its own icons onto a
+     second line, and with the circles taking room most do. */
+  .row .title{flex-wrap:nowrap;min-width:0}
+  .row .title .txt{white-space:nowrap;min-width:0;flex:0 1 auto}
+  .row .title .inds,.row .title .dl,.row .title .star,.row .title .moonic{flex:none}
+  .row .title .tag{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* ---- Pulling down to search --------------------------------------------
+     The list comes down with the finger and a magnifier with it, in the room
+     that opens under the bar: a grey ring until the pull is far enough, then
+     solid blue, which is when letting go opens Quick Find. */
+  .content{transform:translateY(var(--pull,0px));transition:transform .24s cubic-bezier(.2,.9,.25,1)}
+  .main.pulling .content{transition:none}
+  .pullmark{
+    display:grid;place-items:center;position:absolute;z-index:1;
+    /* in the middle of the gap the list has opened under the bar */
+    top:calc(env(safe-area-inset-top) + 44px + (var(--pull,0px) - 46px) / 2);left:50%;margin-left:-17px;width:34px;height:34px;
+    border-radius:50%;border:1.5px solid var(--text3);color:var(--text3);
+    opacity:var(--pullp,0);transform:scale(calc(.55 + var(--pullp,0) * .45));
+    transition:background-color .12s ease,border-color .12s ease,color .12s ease;
+    pointer-events:none
+  }
+  .pullmark svg{width:16px;height:16px}
+  .pullmark::after{
+    content:"";position:absolute;left:50%;top:calc(100% + 5px);width:7px;height:7px;margin-left:-4px;
+    border-right:1.5px solid var(--text3);border-bottom:1.5px solid var(--text3);transform:rotate(45deg) scale(.9);
+    transition:border-color .12s ease
+  }
+  .main.armed .pullmark{background:var(--accent);border-color:var(--accent);color:#fff}
+  .main.armed .pullmark::after{border-color:var(--accent)}
+
+  /* ---- A to-do, open ------------------------------------------------------
+     An open to-do gets the screen: the card goes edge to edge, white on
+     a grey wash, the list behind it fades back and stops taking taps, the
+     navigation bar goes, and the blue plus is replaced by what you can do with
+     this to-do (components/CardBar.svelte). A tap anywhere outside closes it —
+     with the list not taking taps, that tap lands on the pane and
+     onContentClick already knows what to do with it. */
+  .app.editing .main{background:var(--wash)}
+  .app.editing .col :is(.row,.prow,.hd,h1.t,.pnotes,.filters,.events,.showdone,.empty){
+    opacity:.35;pointer-events:none;transition:opacity .24s ease-out
+  }
+  /* The bar does not fade where it stands: the page carries it off the top as
+     the card opens, translated and clipped. The card's own 430ms is the speed
+     it leaves at. */
+  .app.editing .topbar .back,.app.editing .topbar .qfind,.app.editing .topbar .wtitle{
+    opacity:0;transform:translateY(-16px);pointer-events:none;
+    transition:opacity .22s ease,transform .43s cubic-bezier(.2,.8,.2,1)
+  }
+  .topbar{overflow:hidden}
+  .app.editing .fab{display:none}
+  /* The capsule goes the frame the keyboard starts rising, and comes back
+     when the keyboard goes: while you are typing, what you can do with
+     this to-do is not the question. (lib/keyboard.js sets .kb.) */
+  .app.kb .cardbar,.app.fmt .cardbar{display:none}
+  .app.editing .content{padding-bottom:124px}
+  .card{
+    margin:18px -18px 22px;border-radius:2px;border:0;padding:16px 18px 14px;
+    box-shadow:0 1px 0 var(--hair2),0 -1px 0 var(--hair2);
+    /* clear of the bar at the top and the capsule at the bottom */
+    scroll-margin:16px 0 84px
+  }
+  .cardbar{
+    display:flex;align-items:center;position:absolute;z-index:8;
+    left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));
+    height:52px;padding:0 6px 0 16px;border-radius:14px;
+    background:var(--capsule);color:#fff;
+    box-shadow:0 8px 24px rgba(10,10,20,.34),0 2px 6px rgba(10,10,20,.2);
+    animation:selbar .22s cubic-bezier(.2,.9,.25,1)
+  }
+  .cardbar button{color:#fff;display:grid;place-items:center;width:52px;height:52px;border-radius:12px}
+  .cardbar button:active{background:rgba(255,255,255,.14)}
+  .cardbar .move{grid-auto-flow:column;gap:9px;width:auto;flex:1;justify-content:flex-start;font-size:16px;font-weight:600}
+  .cardbar svg{width:19px;height:19px}
+
+  /* Everything inside the card, at the size of a finger rather than a mouse. */
+  .card .cb{width:22px;height:22px;border-radius:6px;margin-top:3px}
+  .card .cb svg{width:14px;height:14px}
+  .card .ttl{font-size:19px}
+  .card .note,.card .cl,.card .foot,.card .tags{margin-left:32px}
+  .card .note{width:calc(100% - 32px);font-size:15.5px}
+  .events.bare{margin:18px 0 26px}
+  .card .cli{padding:0;font-size:15.5px;gap:8px}
+  .card .cli input{height:44px}
+  /* 44px to land a thumb on, 13px to look at. */
+  .card .cli .dot{width:36px;height:44px;border:0;border-radius:0;margin-left:-11px;background:none;position:relative;flex:none}
+  .card .cli .dot::before{
+    content:"";position:absolute;left:50%;top:50%;width:13px;height:13px;margin:-7px 0 0 -7px;
+    border-radius:50%;border:1.5px solid var(--accent);box-sizing:border-box
+  }
+  .card .cli .dot::after{width:6px;height:11px;margin:-7px 0 0 -3px;border-width:0 1.6px 1.6px 0}
+  .card .cli .grip{width:40px;height:44px;flex:none;opacity:1;color:var(--text3)}
+  .card .cli .grip svg{width:14px;height:14px}
+  /* No grey field under a thumb: the rows are already full width, and the
+     keyboard is the only thing that needs to say where the caret is. */
+  .card .cli:focus-within{margin:0;padding:0;background:none;border-radius:0;border-bottom-color:var(--hair2);box-shadow:none}
+  .card .icons{gap:0;margin-right:-11px}
+  .card .icons button{width:42px;height:44px}
+  .card .icons button svg{width:19px;height:19px}
+  .card .when{font-size:15.5px}
+  .card .when svg{width:17px;height:17px}
+
+  /* A finger is covering what it moved, so the card lifts a little out from
+     under it; a pointer is not, so there is no scale at a desk. */
+  .drag-card.touch{transform:scale(1.03);animation:cardlift .16s cubic-bezier(.2,.9,.25,1)}
+  /* …and it comes back down to the row's own size as it lands. */
+  .drag-card.touch.settling{transform:none;animation:none}
+  @keyframes cardlift{from{transform:none;box-shadow:0 0 0 rgba(0,0,0,0)}to{transform:scale(1.03)}}
+
+  /* ---- The plus, lifted ---------------------------------------------------
+     The button itself goes with the finger, so its place in the corner empties
+     and a cross takes it; the Inbox comes up in the other corner and swells as
+     the button nears it; and the list parts where the to-do would land. */
+  .app.plusing .fab{visibility:hidden}
+  .plusghost{
+    position:fixed;z-index:12;pointer-events:none;
+    width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;
+    display:grid;place-items:center;color:#fff;background:var(--plus);
+    box-shadow:0 4px 18px rgba(20,20,40,.14);
+    transform:scale(1.46);animation:lift .24s cubic-bezier(.3,1.5,.5,1)
+  }
+  /* Pressed in, then up past its size and back: 0.89, 1.53, 1.45 of rest over
+     about a fifth of a second. */
+  @keyframes lift{0%{transform:scale(.89)}55%{transform:scale(1.57)}100%{transform:scale(1.46)}}
+  .plusghost svg{width:24px;height:24px;stroke-width:2.4}
+  /* Taken by a target: it travels there rather than jumping. */
+  .plusghost.snapped{transition:left .16s cubic-bezier(.2,.9,.25,1),top .16s cubic-bezier(.2,.9,.25,1),transform .16s ease;transform:scale(1)}
+  /* Let go over the list: it shrinks away where it is while the new to-do's
+     card grows out of the same spot, so the button is seen to become the to-do. */
+  .plusghost.dropping{animation:plusgone .16s ease-in both}
+  @keyframes plusgone{from{transform:scale(1.46);opacity:1}to{transform:scale(.6);opacity:0}}
+  .card.fromplus{animation:fromplus .2s cubic-bezier(.2,.9,.25,1)}
+  @keyframes fromplus{from{transform:scale(.3);opacity:.3}to{transform:none;opacity:1}}
+  /* The room the new to-do will take. A real element among the rows, so the
+     list below it moves down by itself; height animates from nothing. */
+  .row.placing{display:none}
+  /* At the left margin of a project it is a heading being made: the band gives
+     way to a rule with its name on it. */
+  .listgap.heading{background:none;border-radius:0;position:relative}
+  .listgap.heading::before{content:"";position:absolute;left:8px;right:8px;top:62%;border-top:2px dashed var(--hair)}
+  .listgap.heading::after{
+    content:"NEW HEADING";position:absolute;left:0;right:0;top:12%;text-align:center;
+    font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--text3)
+  }
+  .plustarget{
+    position:absolute;z-index:11;pointer-events:none;
+    bottom:calc(14px + env(safe-area-inset-bottom));
+    display:grid;place-items:center;border-radius:50%;
+    background:var(--slate);color:#fff;
+    animation:targetin .22s cubic-bezier(.3,1.5,.5,1)
+  }
+  @keyframes targetin{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
+  /* The Inbox keeps its centre on the button's; the cross sits 3px down and
+     right of where the button was. */
+  .plustarget.cancel{right:22px;width:28px;height:28px;margin-bottom:8px;transition:transform .14s ease}
+  .plustarget.cancel svg{width:12px;height:12px}
+  .plustarget.cancel.on{transform:scale(1.35)}
+  .plustarget.inbox{left:14px;width:50px;height:50px;margin-bottom:0;animation-delay:.07s;animation-fill-mode:backwards}
+  .plustarget.inbox svg{width:23px;height:23px;color:#C3C9D1}
+  .plustarget.inbox .lbl{display:none}
+  /* Near enough to mean it: the target swells where it already is. The
+     inflated disc is concentric with the small one — Ø 274px against Ø 50 —
+     so most of it is off the bottom-left of the screen and what shows is a
+     circle's arc, not a quarter-round corner. */
+  .plustarget.inbox::before{
+    content:"";position:absolute;left:50%;top:50%;
+    width:50px;height:50px;margin:-25px 0 0 -25px;
+    border-radius:50%;background:var(--slate);z-index:-1;
+    transition:width .2s cubic-bezier(.2,.9,.25,1),height .2s cubic-bezier(.2,.9,.25,1),
+               margin .2s cubic-bezier(.2,.9,.25,1)
+  }
+  .plustarget.inbox.on::before{width:274px;height:274px;margin:-137px 0 0 -137px}
+  .plustarget.inbox.on svg{visibility:hidden}
+  .plustarget.inbox.on .lbl{
+    display:block;position:absolute;left:-6px;bottom:62px;width:90px;
+    font-size:13px;font-weight:600;line-height:1.25;text-align:left
+  }
+
+  /* The bar takes the corner the plus was in, and the list makes room for it. */
+  .app.selecting .fab{display:none}
+  .app.selecting .content{padding-bottom:124px}
+  .topbar .done{position:absolute;right:12px;top:8px;height:28px;padding:0 13px;border-radius:7px;background:var(--accent);color:#fff;font-size:14px;font-weight:600}
+  /* Popovers on a phone: the page dims, and a panel
+     nearly the width of the screen grows out of the row it is about. Centred
+     with left and right rather than a transform, which the animation needs. */
+  .scrim{background:rgba(0,0,0,.22);animation:dim .13s ease-out}
+  @keyframes dim{from{opacity:0}to{opacity:1}}
+  .pop,.pop.wide{
+    /* Not pinned under the bar: the card is centred on the screen, and its
+       shadow is large, soft and offsetless enough to wash out what is behind
+       it. It still grows out of the row it is about — Popover.place() works out
+       where that is relative to the card's own top, because the card no longer
+       starts at a fixed height. */
+    left:5% !important;right:5%;width:auto;
+    top:0 !important;bottom:0;margin-block:auto;height:fit-content;
+    max-height:calc(100% - env(safe-area-inset-top) - 72px);overflow-y:auto;overscroll-behavior:contain;
+    padding:6px 10px 10px;border-radius:9px;font-size:15px;
+    box-shadow:0 0 70px rgba(0,0,0,.5),0 0 0 .5px rgba(0,0,0,.4);
+    /* The panel: a blue charcoal rather than a neutral one, growing out of
+       the tab at the row's left end, a little past its size and back. */
+    --pop:#252A35;
+    transform-origin:0 var(--from,50%);
+    animation:popgrow .235s linear
+  }
+  @keyframes popgrow{0%{transform:scale(.15);opacity:0}30%{transform:scale(.66);opacity:.8}58%{transform:scale(1.06);opacity:1}100%{transform:none;opacity:1}}
+  .pophead{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:40px;font-weight:600;font-size:15px}
+  .pophead span{grid-column:2}
+  .pophead button{grid-column:3;justify-self:end;color:var(--popmuted);font-size:14px;font-weight:400;height:40px;padding:0 4px}
+  .pop .opt{padding:10px 8px;gap:11px}
+  .pop .opt .ic,.pop .opt svg{width:17px;height:17px}
+  .pop .in{padding:8px 10px;margin-bottom:4px}
+  /* A calendar a thumb can hit a day on. */
+  .pop .cal{font-size:14px;gap:1px;padding:4px 0 2px}
+  .pop .cal .d{padding:9px 0;border-radius:8px}
+  .pop .calhead{font-size:14.5px;padding:6px 4px 2px}
+  .pop .calhead button{width:40px;height:34px}
+  .pop .calhead button:disabled{opacity:.3}
+  /* Four weeks at a glance, today marked with its star. */
+  .pop .cal.roll .d{padding:10px 0;position:relative}
+  .pop .cal.roll .d.today{background:none;font-weight:700}
+  .pop .cal.roll .d .star{position:absolute;left:50%;top:1px;margin-left:-6px;width:12px;height:12px;color:var(--star)}
+  .pop .cal.roll .d .star svg{width:12px;height:12px}
+  .pop .cal.roll .d.pick{outline:1.5px solid var(--poptext)}
+  /* Held for a moment when tapped, with a tick, before the panel goes. */
+  .pop .opt.pressed{background:#424850}
+  .pop .opt .tick{margin-left:auto;display:grid;place-items:center;color:#fff}
+  .pop .opt .tick svg{width:15px;height:15px}
+  .pop.closing{animation:popgo .1s ease-in forwards}
+  @keyframes popgo{to{transform:scale(.86);opacity:0}}
+  .scrim.going{animation:dimgo .1s ease-in forwards}
+  @keyframes dimgo{to{opacity:0}}
+  /* Clear of the status bar and the camera. Everything else that floats over
+     the page already allows for it; this was measuring from the very top of the
+     viewport, which on this phone is 34px under the clock. */
+  .qf{top:calc(env(safe-area-inset-top) + 10px);width:calc(100% - 20px)}
+  .qf .in{padding:12px 14px}
+  .qf .in input{font-size:16px}
+  .qf .res{max-height:min(420px,52vh)}
+  .qf .r{padding:10px 8px;font-size:15px}
+  .qf .r .ic{width:19px;height:19px}
+  .row .tag{display:none}
+  .row .inds .tagic{display:inline-flex}
+  /* A day header on a phone: ~28px bold over a regular weekday, and a day's
+     worth of air between groups. */
+  .hd.day{margin-top:60px}
+  .hd.day b{font-size:calc(28px * var(--text-scale))}
+  .hd.day span{font-size:calc(19px * var(--text-scale));font-weight:400;padding-top:7px}
+  /* Touch targets. The sizes above assume a mouse: a 28px list row, a 16px
+     checkbox and a 30px toolbar button are around half of the 48dp a fingertip
+     covers, which is what makes the phone feel fiddly rather than small.
+     Nothing here moves; everything grows. */
+  .item{height:40px;gap:11px;padding:0 10px}
+  .item .ic{width:19px;height:19px}
+  .row{padding:9px 8px;gap:12px}
+  .row .cb{width:20px;height:20px;border-radius:5px;margin-top:1px}
+  .filters{margin:8px 0 14px}
+  .filters button{padding:6px 12px}
+  .toolbar{padding:0 20px;height:52px}
+  .toolbar button{width:48px;height:44px}
+  .toolbar button svg{width:20px;height:20px}
+  .sidefoot{padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+}
+
+
+/* ---- Text size -------------------------------------------------------------
+   One knob, applied where type actually lives. Controls, popovers and the
+   sidebar inherit from these, so the slider moves the whole interface. */
+.window, .sidebar, .content, .toolbar, .topbar { font-size: calc(14px * var(--text-scale)); }
+.row .title, .card .ttl { font-size: calc(14px * var(--text-scale)); }
+.row .sub, .row .tag, .row .dl, .row .flag { font-size: calc(11.5px * var(--text-scale)); }
+.card .note, .card .cli { font-size: calc(13.5px * var(--text-scale)); }
+h1.t { font-size: calc(26px * var(--text-scale)); }
+.hd, .hd.grp, .item { font-size: calc(13.5px * var(--text-scale)); }
+
+/* Phone type. The numbers above are drawn for a Mac window at desk distance;
+   on a phone held at arm's length they read a size too small. Same slider,
+   larger base — this block follows the one above so it wins on source order. */
+@media (max-width:720px){
+  .window, .sidebar, .content, .toolbar, .topbar { font-size: calc(15px * var(--text-scale)); }
+  .row .title { font-size: calc(15.5px * var(--text-scale)); }
+  .card .ttl { font-size: calc(18px * var(--text-scale)); }
+  .row .sub, .row .tag, .row .dl, .row .flag { font-size: calc(12.5px * var(--text-scale)); }
+  .card .note, .card .cli { font-size: calc(14.5px * var(--text-scale)); }
+  h1.t { font-size: calc(28px * var(--text-scale)); }
+  .hd, .hd.grp, .item { font-size: calc(14.5px * var(--text-scale)); }
+}
+
+/* a to-do title's own Markdown, as a row shows it (lib/inline-md.js) */
+.txt strong{font-weight:600}
+.txt mark{background:rgba(255,214,10,.45);color:inherit;border-radius:2px;padding:0 1px}
+.txt code{font-family:ui-monospace,Menlo,monospace;font-size:.88em;background:var(--hover);padding:0 3px;border-radius:3px}
+.txt a.tlink{color:var(--accent);text-decoration:none}
+.txt a.tlink:hover{text-decoration:underline}
+
+/* A part of the page that could not be drawn (App.svelte's boundaries): says
+   so, quietly, and offers to try again, while the rest goes on working. */
+.broke{padding:40px 24px;color:var(--text2);font-size:14px;line-height:1.5}
+.broke p{margin:0 0 8px}
+.broke .why{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--text3, var(--text2));word-break:break-word}
+.broke button{margin-top:8px;font:inherit;padding:6px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--main);color:var(--text);cursor:pointer}
+.sidebar.broke{padding:48px 16px 16px}

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Merged into test builds only; the release build never sees this file.
+     DevActivity opens a server on the development machine over `adb reverse`,
+     which is plain http, and targetSdk 28+ refuses that unless the app says
+     otherwise. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:usesCleartextTraffic="true">
+        <activity
+            android:name=".DevActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Dvarim"
+            android:enableOnBackInvokedCallback="false"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:windowSoftInputMode="adjustResize" />
+    </application>
+</manifest>

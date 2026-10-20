@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One to-do. The checkbox completes it where it stands; the rest of the row
+     opens the app. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/row"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="7dp"
+    android:paddingBottom="7dp">
+
+    <ImageView android:id="@+id/check"
+        android:layout_width="20dp" android:layout_height="20dp"
+        android:layout_marginEnd="10dp"
+        android:src="@drawable/widget_check"
+        android:contentDescription="@string/widgetComplete" />
+
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView android:id="@+id/title"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textSize="14sp"
+            android:textColor="@color/widgetText" />
+
+        <TextView android:id="@+id/sub"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="11.5sp"
+            android:textColor="@color/widgetText2" />
+    </LinearLayout>
+
+    <ImageView android:id="@+id/evening"
+        android:layout_width="14dp" android:layout_height="14dp"
+        android:layout_marginStart="8dp"
+        android:src="@drawable/ic_widget_moon"
+        android:contentDescription="@null" />
+</LinearLayout>

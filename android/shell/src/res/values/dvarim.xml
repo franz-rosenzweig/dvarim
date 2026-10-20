@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's own theme, and the reason the site knows whether the phone is
+     light or dark.
+
+     From targetSdk 33 onwards a WebView does not ask the system about dark
+     mode: it reads android:isLightTheme off the theme of the activity it sits
+     in, and reports that to the page as prefers-color-scheme. Bubblewrap gives
+     every activity the application theme, Theme.Translucent.NoTitleBar, which
+     descends from the original dark Theme — so Dvarim rendered dark on a phone
+     in light mode, and nothing in the web app could tell it otherwise.
+
+     A day/night pair settles it: this file is the light half, res/values-night
+     the dark one, and Android picks. Switching the phone recreates the activity,
+     which is what makes the site follow along.
+
+     windowBackground is the web app's own page colour, so a cold start does not
+     flash white, and windowLightStatusBar keeps the clock and battery readable
+     against it. -->
+<resources>
+    <color name="dvarimPage">#E9EAEE</color>
+
+    <string name="newTodoTile">New To-Do</string>
+    <string name="widgetToday">Today</string>
+    <string name="widgetRefresh">Refresh</string>
+    <string name="widgetComplete">Complete</string>
+    <string name="widgetClear">Nothing for today</string>
+    <string name="widgetSignIn">Open Dvarim to sign in</string>
+    <string name="widgetOffline">Can\'t reach the server</string>
+    <string name="widgetDescription">Today\'s to-dos, with a checkbox on each.</string>
+    <string name="remindersChannel">Reminders</string>
+    <string name="remindersChannelWhy">A to-do\'s ⏰ time, on the day it is due.</string>
+    <string name="remindersComplete">Complete</string>
+
+    <!-- The widget draws against the launcher's wallpaper rather than inside the
+         app, so it carries its own copy of the web app's colours. -->
+    <color name="widgetBg">#FFFFFF</color>
+    <color name="widgetText">#1C1C1E</color>
+    <color name="widgetText2">#6E6E73</color>
+    <color name="widgetCheck">#C7C7CC</color>
+    <color name="widgetMoon">#4C7BD9</color>
+
+    <style name="Theme.Dvarim" parent="@android:style/Theme.DeviceDefault.Light.NoActionBar">
+        <item name="android:windowBackground">@color/dvarimPage</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+    <!-- The shell's own settings screen; see SettingsActivity.java. The styles
+         name no colours of their own: every one of them is a theme attribute,
+         so the same layout comes out light or dark with the phone. -->
+    <string name="settingsTitle">Settings</string>
+    <string name="settingsShortcutLong">Dvarim settings</string>
+
+    <string name="settingsServer">Server</string>
+    <string name="settingsServerHint">dvarim.example.com</string>
+    <string name="settingsServerNote">The address this app talks to. The app is a window on a
+        server you run: the to-dos, the sign-in and the app itself all come from here, and its
+        widget, its tile and its reminders follow. It has to be https — the window that renders
+        the page will not open anything else.</string>
+    <string name="settingsServerBuiltIn">This is the address the app was built for.</string>
+    <string name="settingsServerNeedsHttps">This app can only open an https address.</string>
+    <string name="settingsTest">Test</string>
+    <string name="settingsSave">Save</string>
+    <string name="settingsUseBuiltIn">Use the built-in address</string>
+    <string name="settingsTesting">Knocking…</string>
+    <string name="settingsReachable">A Dvarim answered at %1$s.</string>
+    <string name="settingsUnreachable">No Dvarim answered at %1$s: %2$s</string>
+    <string name="settingsNotAnAddress">That is not an address.</string>
+    <string name="settingsSaved">Opening %1$s…</string>
+
+    <string name="settingsWhere">Where your to-dos live</string>
+    <string name="settingsOnPhone">On this phone, synced with the server</string>
+    <string name="settingsOnServer">On the server only</string>
+    <string name="settingsInFolder">In a folder on this phone</string>
+    <string name="settingsCopyNote">Kept here and synced as “%1$s”. Dvarim opens and works with no network, and catches up when there is one.</string>
+    <string name="settingsCopySignIn">Sign in once in Dvarim, and it keeps a copy here from then on.</string>
+    <string name="settingsChoose">Choose…</string>
+    <string name="settingsNoFolder">No folder chosen</string>
+    <string name="settingsFolderNote">A folder of Markdown — the Tasks folder of your vault, kept in
+        step by Syncthing, say. Dvarim reads and writes it and needs no server. The widget, the
+        reminders and the tile still use the server below.</string>
+    <string name="settingsFolderLost">Dvarim no longer has access to that folder, so it opens the
+        server. Choose it again.</string>
+    <string name="settingsNoWebBundle">This build has no copy of the web app inside it, so it opens
+        the server. Build it with frontend/dist in place.</string>
+    <string name="settingsNoPicker">This phone has no folder picker to ask.</string>
+    <string name="settingsNotifications">Notifications</string>
+    <string name="settingsRemind">Remind me on this phone</string>
+    <string name="settingsRemindNote">A to-do’s ⏰ time, delivered here. The server can send
+        the same reminders over Signal; leave one on, not both.</string>
+    <string name="settingsNotifyOn">Allowed. A to-do’s ⏰ time arrives even with the app
+        closed.</string>
+    <string name="settingsNotifyOff">Not allowed, so ⏰ reminders stay silent.</string>
+    <string name="settingsNotifySystem">Android’s notification settings</string>
+    <string name="settingsAlarmExact">They arrive on the dot.</string>
+    <string name="settingsAlarmInexact">They arrive within a few minutes of their time. Allowing
+        “Alarms &amp; reminders” makes them exact.</string>
+    <string name="settingsAlarmSettings">Alarms &amp; reminders</string>
+    <string name="settingsTestReminder">Send a test reminder</string>
+    <string name="settingsTestSent">Sent. It is in the shade.</string>
+    <string name="settingsTestTitle">Test reminder</string>
+    <string name="settingsTestBody">Reminders reach this phone.</string>
+
+    <string name="settingsAbout">About</string>
+    <string name="settingsVersion">Version %1$s (build %2$d)</string>
+    <string name="settingsClearCache">Clear cached pages</string>
+    <string name="settingsCacheCleared">Cleared. Dvarim fetches the app again next time it
+        opens.</string>
+    <string name="settingsNoScreen">This phone has no screen for that.</string>
+
+    <style name="DvarimTitle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">30sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    </style>
+
+    <style name="DvarimHeading">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+        <item name="android:paddingTop">30dp</item>
+        <item name="android:paddingBottom">8dp</item>
+    </style>
+
+    <style name="DvarimValue">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+        <item name="android:paddingTop">4dp</item>
+    </style>
+
+    <style name="DvarimNote">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+        <item name="android:paddingTop">6dp</item>
+    </style>
+
+    <style name="DvarimRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingTop">8dp</item>
+    </style>
+</resources>

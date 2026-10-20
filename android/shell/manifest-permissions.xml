@@ -1,0 +1,20 @@
+<!-- Permissions that are ours rather than bubblewrap's; shell/apply.sh splices
+     these in above <application>. INTERNET and POST_NOTIFICATIONS are already
+     in the generated manifest. -->
+
+    <!-- Reminders. The exact one is a permission the person grants under
+         "Alarms & reminders"; without it an alarm arrives within a few minutes
+         instead of on the dot, which Reminders.java handles. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- A reboot clears every alarm the system was holding, so re-arm after one. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- The tick under the thumb when a row lifts or a swipe arms. A WebView's
+         navigator.vibrate() does nothing, silently, unless the app holds this. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Outbox.java asks to be run once there is a network, and a job with a
+         connectivity condition is refused — thrown — without this. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- The phone's own calendars in Today and Upcoming, when the to-dos live in
+         a folder (DeviceCalendars.java). Asked for the first time the page wants
+         them, not at install. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />

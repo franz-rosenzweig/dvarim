@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The dark half of the pair in res/values/dvarim.xml. Same names, dark values:
+     Android swaps the whole file in when the phone is in dark mode, the activity
+     is recreated, and the WebView reports prefers-color-scheme: dark. -->
+<resources>
+    <color name="dvarimPage">#121214</color>
+
+    <color name="widgetBg">#1E1E21</color>
+    <color name="widgetText">#F2F2F7</color>
+    <color name="widgetText2">#A1A1A6</color>
+    <color name="widgetCheck">#5A5A60</color>
+    <color name="widgetMoon">#7AA2F7</color>
+
+    <style name="Theme.Dvarim" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/dvarimPage</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+</resources>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bubblewrap's adaptive icon, with a monochrome layer added.
+
+     Everything except <monochrome> is the generated file verbatim: the mark
+     lives in the background layer, inset so it keeps the proportions a WebAPK
+     icon would have. The extra layer is what Android 13's "Themed icons"
+     setting uses, and without it Dvarim stays full colour while every other
+     icon on the home screen turns to match the wallpaper. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background>
+        <layer-list>
+            <item android:drawable="@android:color/white" />
+            <item android:drawable="@mipmap/ic_maskable"
+                android:top="8.5dp"
+                android:right="8.5dp"
+                android:left="8.5dp"
+                android:bottom="8.5dp" />
+        </layer-list>
+    </background>
+    <foreground android:drawable="@android:color/transparent" />
+    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
+</adaptive-icon>
