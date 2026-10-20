@@ -377,3 +377,43 @@ test('the same id twice: the copy gets one of its own, alike on every device, wr
   assert.deepEqual([...again.files.values()].filter((f) => f.kind === 'project').map((f) => [f.path, f.frontmatter.id]).sort(), projects(a));
   assert.equal(again._repaired.size, 0, 'nothing left to repair');
 });
+
+test('a copy given an id of its own keeps the one it had if its double goes before the new one is written', async () => {
+  // A to-do moved on one device is, for a while, in both files on another:
+  // the old file's copy comes before the sync takes it away. The new id waits
+  // to be written; with the double gone, it is not needed, and never written.
+  const step = (id) => `---\ntype: project\nstatus: open\n---\n- [ ] Moved step 🆔 ${id}\n`;
+  const { storage, store } = await vault({ 'Projects/Before.md': step('mv0001aa'), 'Projects/After.md': step('mv0001aa') });
+  await store.flush();                             // the ids and dates it gives the two notes, first
+  assert.equal(store.getTodo('mv0001aa')[0].path, 'Projects/After.md', 'the first path keeps it');
+  const entry = store.syncLog.find((e) => e.kind === 'ids already held elsewhere given new ones');
+  assert.deepEqual(Object.keys(entry.ids), ['mv0001aa'], 'the log says which ids were given new ones');
+  const given = entry.ids.mv0001aa;
+  assert.equal(store.getTodo(given)[0].path, 'Projects/Before.md');
+  // the sync takes it out of After.md
+  await storage.write('Projects/After.md', (await storage.read('Projects/After.md')).text.replace(/- \[ \] Moved step.*\n/u, ''));
+  await store.scanChanges(); await store.flush();
+  assert.equal(store.getTodo('mv0001aa')[0].path, 'Projects/Before.md', 'the one copy left has the id it had');
+  assert.throws(() => store.getTodo(given), NotFound);
+  assert.equal(store._repaired.size, 0, 'nothing left to write');
+  // written for another reason, it keeps it
+  store.createTodo({ title: 'Another', projectId: store.getTodo('mv0001aa')[0].frontmatter.id });
+  await store.flush();
+  assert.match((await storage.read('Projects/Before.md')).text, /Moved step 🆔 mv0001aa/u);
+});
+
+test('of two copies of a to-do, the one ticked keeps the id: a tick in the old place is not lost to a move', async () => {
+  // moved on one device to After.md, ticked on another where it was
+  const files = {
+    'Projects/After.md': '---\ntype: project\nstatus: open\n---\n- [ ] Moved step 🆔 mv0001aa\n',
+    'Projects/Before.md': '---\ntype: project\nstatus: open\n---\n- [x] Moved step 🆔 mv0001aa ✅ 2026-09-23\n',
+  };
+  const a = await vault(files), b = await vault(files);
+  for (const { store } of [a, b]) {
+    const [f, , t] = store.getTodo('mv0001aa');
+    assert.equal(f.path, 'Projects/Before.md');
+    assert.equal(t.status, 'done');
+  }
+  const ids = (s) => [...s.store.files.values()].flatMap((f) => [...f.allTodos()].map((t) => [f.path, t.id])).sort();
+  assert.deepEqual(ids(b), ids(a), 'two devices repair alike');
+});
