@@ -287,7 +287,11 @@ export class WebDavSync {
       out.merged.push(rel);
     }
 
-    // settings and sort orders: merged by their stamps, whichever side changed
+    // settings and sort orders: merged by their stamps, whichever side changed.
+    // They are merged, never deleted (server/src/dav.js), so one agreed on and
+    // not there now was lost with the folder (made again, or reset by hand):
+    // what was agreed says nothing about it any more, and this device's goes.
+    for (const p of STATE_FILES) if (agreed[p] && !remote.has(p)) delete agreed[p];
     const stateThere = STATE_FILES.filter((p) => remote.get(p) !== (agreed[p] && agreed[p].etag) && remote.has(p));
     if (stateThere.length) {
       const got = {};

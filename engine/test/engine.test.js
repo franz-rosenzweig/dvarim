@@ -251,6 +251,20 @@ test('the API answers as the server does: status, body and errors', async () => 
   stop();
 });
 
+test('a setting changed, or an area folded, is heard like any other change: a copy\'s sync waits for it', async () => {
+  const store = await Store.open(new MemoryStorage({ 'Inbox.md': '' }), { today: () => D('2026-09-23') });
+  const api = new Api(store);
+  let heard = 0;
+  const stop = api.subscribe(() => { heard += 1; });
+  await api.handle('PUT', '/api/settings', { logCompleted: 'daily' });
+  assert.equal(heard, 1, 'a setting');
+  await api.handle('PUT', '/api/view-state', { collapsed: ['aper0001'] });
+  assert.equal(heard, 2, 'an area folded');
+  await api.handle('POST', '/api/logbook/log-now', {});
+  assert.equal(heard, 3, 'logged now: once');
+  stop();
+});
+
 test('a new vault starts with "Meet Dvarim", one with notes does not, and Settings makes it again', async () => {
   let n = 0;
   const opts = { today: () => D('2026-09-23'), newId: (p = '') => p + String(++n).padStart(8 - p.length, '0'), tutorial: true };

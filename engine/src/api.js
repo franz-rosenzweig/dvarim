@@ -223,7 +223,6 @@ export class Api {
     if (GET && p === '/logbook/pending') return ok(this._pending());
     if (POST && p === '/logbook/log-now') {
       s.putSettings({ logCutoff: s._onDay(get(data, 'cutoff')) });
-      s.notify([]);
       return ok(this._pending());
     }
     if (POST && p === '/trash/empty') return ok(s.emptyTrash());
@@ -231,6 +230,7 @@ export class Api {
       if (Object.prototype.hasOwnProperty.call(data, 'collapsed')) {
         s.state.collapsed = pyList(data.collapsed);
         s.saveState();
+        s.notify([]);
       }
       return ok({ ok: true });
     }

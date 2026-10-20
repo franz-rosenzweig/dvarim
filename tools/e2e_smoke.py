@@ -157,6 +157,12 @@ async def main() -> int:
         return None
 
     async with Browser(args.devtools) as b:
+        # The page keeps a copy of the vault in the browser (the mirror), and
+        # the browser keeps it between runs. A copy of an earlier run's vault
+        # at the same address brings that run's settings and agreements here.
+        origin = re.match(r"https?://[^/]+", args.url).group(0)
+        await b.send("Storage.clearDataForOrigin", {"origin": origin, "storageTypes": "all"})
+
         print("\n1. Loading the app")
         await b.goto(args.url + "/today")
         ok = await b.wait_for("document.querySelectorAll('.item').length > 3")
@@ -329,8 +335,14 @@ async def main() -> int:
             sel.dispatchEvent(new Event('change', { bubbles: true }));
             return true;
         """)
-        await asyncio.sleep(1.5)
-        srv = httpx.get(args.url + "/api/settings", timeout=10).json()
+        # changed in the page's copy first; the next sync round, a second and
+        # a half after the change, takes it to the server
+        srv = {}
+        for _ in range(30):
+            await asyncio.sleep(0.5)
+            srv = httpx.get(args.url + "/api/settings", timeout=10).json()
+            if srv.get("logCompleted") == "daily":
+                break
         check("changing a setting reaches the server", srv.get("logCompleted") == "daily", str(srv))
 
         print("\n8. An edit made outside the app shows up live")
