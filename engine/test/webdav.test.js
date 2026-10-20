@@ -155,6 +155,21 @@ test('a new device\'s tutorial stays out of a vault that has notes, and goes fro
   assert.ok(cloud.files.has(TUT));
 });
 
+test('a vault with a tour of its own keeps it as it is: a new device\'s untouched one is not merged into it', async () => {
+  const TUT = 'Projects/Meet Dvarim.md';
+  const own = '---\nid: pmeetdvr\ntype: project\nstatus: open\ncreated: 2026-09-01\n---\nOur own words for the tour.\n\n'
+    + '- [ ] Tick this box to complete a to-do 🆔 meetdv02\n    In this vault\'s own wording.\n';
+  const cloud = new Nextcloudish();
+  const A = await device('a', cloud, { ...VAULT, [TUT]: own });
+  await A.sync.sync();
+  const B = await device('b', cloud, {}, undefined, { tutorial: true });
+  await B.sync.sync();
+  await B.store.flush();
+  assert.equal(cloud.files.get(TUT).text, own, 'the vault\'s tour is untouched');
+  assert.equal(B.storage.files.get(TUT).text, own, 'and the device has it word for word');
+  assert.deepEqual(await notes(B.store), await notes(A.store));
+});
+
 test('changed on both: merged against what both last had; a write that lost a race waits for the next round', async () => {
   const cloud = new Nextcloudish();
   const A = await device('a', cloud, VAULT);
