@@ -154,6 +154,31 @@ test('a copy of this device\'s own write, lost to an Obsidian save, is merged ag
   assert.equal(after.split('typed in Obsidian').length, 2, 'the note typed there once, not twice');
 });
 
+test('a copy of this device\'s work, beside a file made from an older version of it, keeps all that work', async () => {
+  // Syncthing: the other device, out of touch since this one opened the
+  // file, saved its own change and won; this device's version is the copy.
+  // The file was made from the version this device opened, not from the one
+  // just before the copy, so nothing done here since is a deletion there.
+  let t = NOW;
+  const { storage, store } = await open({ 'Inbox.md': INBOX }, { now: () => t });
+  const opened = text(storage, 'Inbox.md');
+  const a = store.createTodo({ title: 'Made here first', inbox: true });
+  const b = store.createTodo({ title: 'Made here second', inbox: true });
+  await store.flush();
+  store.completeTodo(a.id);
+  await store.flush();
+  const ours = text(storage, 'Inbox.md');
+  // what the other device saw, and deleted: a line this device had all along
+  await storage.write('Inbox.md', opened.replace('- [ ] Keep me 🆔 keep0001\n', '') + '- [ ] From the other device 🆔 othr0001\n');
+  await storage.write('Inbox.sync-conflict-20260923-120000-ABCDEFG.md', ours);
+  t += 1000;
+  await store.scanChanges(); await store.flush();
+  const after = text(storage, 'Inbox.md');
+  assert.deepEqual(ids(storage, 'Inbox.md').sort(), [a.id, b.id, 'othr0001'].sort(), after);
+  assert.match(after, new RegExp(`- \\[x\\] Made here first 🆔 ${a.id}`, 'u'), 'still ticked');
+  assert.ok(!storage.files.has('Inbox.sync-conflict-20260923-120000-ABCDEFG.md'));
+});
+
 test('a copy waits while its file is being edited, then merges', async () => {
   let t = NOW;
   const { storage, store } = await open({ 'Inbox.md': INBOX }, { quietMs: 30000, now: () => t });

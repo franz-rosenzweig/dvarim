@@ -394,11 +394,12 @@ export class Store {
    * Obsidian here is read from disk like a sync's arrival, but the other
    * device has not seen it, and an arrival from there must not undo it.
    *
+   * @param {{text: string}[]} [h] the versions to look among, oldest first:
+   *   all this device has had, or those up to a conflict copy's
    * @returns {string|null} the base ('' to merge without one), or null to
    *   take the arrival as it is
    */
-  _mergeBase(rel, arrived) {
-    const h = this._history.get(rel);
+  _mergeBase(rel, arrived, h = this._history.get(rel)) {
     if (!h || h.length < 2) return null;                // one version known: nothing here to lose
     const n = h.length - 1;
     // walk forward through them: the arrival descends from each one whose step
@@ -767,12 +768,18 @@ export class Store {
     if (at !== null && this.now() - at > OLD_COPY) {
       this._logSync({ path: copy.original, kind: 'old conflict copy, put away unmerged', copy: copy.path, conflicts: [] });
     } else if (target && history.map((v) => v.text).lastIndexOf(copy.r.text) > 0) {
-      // A version this device itself had: usually its own write, which lost
-      // to a save in Obsidian made from the version before it. So that one
-      // is the base: this device's change goes onto what was typed, and
-      // nothing is added twice, as a merge without a base would.
+      // A version this device itself had: its own work, set aside for a file
+      // made elsewhere from one of the versions before it. The one just
+      // before, when this device's write lost to a save in Obsidian; the one
+      // it opened with, when another device, out of touch since, saved over
+      // it. Which one is found as for any arrival (_mergeBase), and is the
+      // base: this device's work goes onto what was made there, none of it
+      // taken for a deletion there, and nothing is added twice, as a merge
+      // without a base would.
       const k = history.map((v) => v.text).lastIndexOf(copy.r.text);
-      const merged = mergeText(history[k - 1].text, target.text, copy.r.text, copy.original);
+      const base = this._mergeBase(copy.original, target.text, history.slice(0, k + 1));
+      // null: the file carries every change up to the copy, which adds nothing
+      const merged = base === null ? { text: target.text, conflicts: [] } : mergeText(base, target.text, copy.r.text, copy.original);
       if (!sameContent(merged.text, target.text, copy.original)) {
         this._putFile(copy.original, merged.text);
         this._load(copy.original);
