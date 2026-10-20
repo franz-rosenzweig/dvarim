@@ -34,12 +34,15 @@ brings them together.
 - **A sync tool's conflict copy is merged back and put away.** Syncthing's
   `name.sync-conflict-….md`, Dropbox's and Nextcloud's `name (… conflicted
   copy …).md`: the copy is merged into the file it is a copy of, then moved to
-  `.dvarim/conflicts/`, never deleted. Settings → Data says how many there have
-  been. The file is the version the sync tool chose, so its front matter
-  stands. A to-do only the copy has that is now in another file (Trash, a
-  project it moved to) stays where it went, unless the copy changed it: then
-  it is kept with the change, as above. A copy more than two days old is put
-  away without merging, because it was left before anything merged it.
+  `.dvarim/conflicts/`, never deleted. Settings → Data says how many there
+  have been. When the copy is a version this device had, it is merged against
+  the base described below, so nothing done here since the other device last
+  saw the file counts as deleted there. The file is the version the sync tool
+  chose, so its front matter stands. A to-do only the copy has that is now in
+  another file (Trash, a project it moved to) stays where it went, unless the
+  copy changed it: then it is kept with the change, as above. A copy more than
+  two days old is put away without merging, because it was left before
+  anything merged it.
 - **An edit in Obsidian wins**, including one that undoes something Dvarim
   did, such as deleting a to-do the app just added.
 - **A line typed in Obsidian gets the same id on every device** (#59). With
