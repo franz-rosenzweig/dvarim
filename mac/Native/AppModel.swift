@@ -57,7 +57,9 @@ final class AppModel {
                     phase = .signIn(nil)
                     return
                 }
-                try await use(LocalBackend(root: Account.folder(for: copy), sync: (copy.server, token)))
+                // No tour of its own: the server's vault has one, and a device's
+                // untouched one merged into it on the first sync and doubled it.
+                try await use(LocalBackend(root: Account.folder(for: copy), sync: (copy.server, token), tutorial: false))
             case .folder:
                 guard let path = Prefs.store.string(forKey: Prefs.folderKey), !path.isEmpty else {
                     phase = .failed("Choose the folder your to-dos live in, in Settings.")
