@@ -8,7 +8,7 @@
 
   const TOP = [
     ['inbox', 'Inbox', 'inbox'],
-    ['today', 'Today', 'star'],
+    ['today', 'Today', 'sun'],
     ['upcoming', 'Upcoming', 'upcoming'],
     ['anytime', 'Anytime', 'anytime'],
     ['someday', 'Someday', 'someday']

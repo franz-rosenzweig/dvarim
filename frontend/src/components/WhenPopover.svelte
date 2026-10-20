@@ -90,8 +90,8 @@
       ];
     }
     return [
-      { label: 'Today', right: weekdayShort(T), icon: 'starS', color: 'var(--star)', fields: { when: T, evening: false, someday: false } },
-      { label: 'This Evening', right: '', icon: 'moon', color: '#8FB4FF', fields: { when: T, evening: true, someday: false } },
+      { label: 'Today', right: weekdayShort(T), icon: 'sunS', color: 'var(--star)', fields: { when: T, evening: false, someday: false } },
+      { label: 'This Evening', right: '', icon: 'moon', color: 'var(--moon)', fields: { when: T, evening: true, someday: false } },
       // Under a thumb the calendar is right there and a tap on a day is as quick
       // as a tap on a row, so these two are left out of the phone's panel.
       ...(phone ? [] : [
@@ -109,8 +109,8 @@
         let icon = 'cal', color = 'var(--upc)';
         if (mode === 'deadline') { icon = 'flag'; color = 'var(--dead)'; }
         else if (s.someday) { icon = 'zz'; color = 'var(--some)'; }
-        else if (s.evening) { icon = 'moon'; color = '#8FB4FF'; }
-        else if (s.when === T) { icon = 'starS'; color = 'var(--star)'; }
+        else if (s.evening) { icon = 'moon'; color = 'var(--moon)'; }
+        else if (s.when === T) { icon = 'sunS'; color = 'var(--star)'; }
         const fields = mode === 'deadline'
           ? { deadline: s.when || null }
           : { when: s.when ?? null, evening: !!s.evening, someday: !!s.someday, ...(s.reminder ? { reminder: s.reminder } : {}) };
@@ -250,7 +250,7 @@
         {#each rolling as c (c.iso)}
           <button class="d" class:today={c.iso === T} class:dim={c.iso < T} class:pick={picked === c.iso}
                   onclick={() => pickDay(c.iso)} aria-label={labelDate(c.iso)}>
-            {#if c.iso === T}<span class="star"><Icon name="starS" /></span>{/if}{c.n}
+            {#if c.iso === T}<span class="star"><Icon name="sunS" /></span>{/if}{c.n}
           </button>
         {/each}
       </div>
@@ -294,5 +294,5 @@
 <style>
   .rem { gap: 8px; }
   .rem:hover { background: none; }
-  .set { color: #8FB4FF !important; font-weight: 600; }
+  .set { color: var(--popaccent) !important; font-weight: 600; }
 </style>

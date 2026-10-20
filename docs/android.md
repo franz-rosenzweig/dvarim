@@ -18,7 +18,7 @@ These are the gestures:
 - **Swipe a little to the right** and let go, and the When popover opens.
 - **Swipe a little to the left** to start choosing several, then tap the others. The bar at the bottom has **When**, **Move**, **Tags** and **Delete**.
 - **Hold** a to-do to pick it up and drag it somewhere else in the list.
-- **The blue plus** makes a to-do. Hold it and carry it to put the new to-do exactly where you let go, or to the Inbox target at the bottom left, or, in a project, to the left margin to make a heading.
+- **The green plus** makes a to-do. Hold it and carry it to put the new to-do exactly where you let go, or to the Inbox target at the bottom left, or, in a project, to the left margin to make a heading.
 
 ## The Today widget
 

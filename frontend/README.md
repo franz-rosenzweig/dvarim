@@ -48,7 +48,7 @@ src/components/
   Sidebar                  lists with counts/badge, areas → projects with pies, New List (Project/Area), theme menu
   Topbar                   list name (small grey + chevron on desktop, title + Back on phone)
   Toolbar                  + new, calendar = When, arrow = Move, magnifier = Quick Find
-  TodoRow                  collapsed row: checkbox animation, indicators, deadline pill/flag, star/moon, repeat/bell, project subtitle
+  TodoRow                  collapsed row: checkbox animation, indicators, deadline pill/flag, sun/moon, repeat/bell, project subtitle
   TodoCard                 expanded editor: title, autosizing notes, checklist (add/complete/reorder/delete), footer When + tags/checklist/deadline
   TodoList                 rows with the expanded one swapped for its card
   ProjectRow, ListTitle, InlineEdit, EmptyState, EventsBlock, FilterBar, Toast

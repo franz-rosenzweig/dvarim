@@ -37,7 +37,8 @@
     <color name="widgetText">#1C1C1E</color>
     <color name="widgetText2">#6E6E73</color>
     <color name="widgetCheck">#C7C7CC</color>
-    <color name="widgetMoon">#4C7BD9</color>
+    <color name="widgetMoon">#4F5A8E</color>
+    <color name="widgetSun">#D08E2C</color>
 
     <style name="Theme.Dvarim" parent="@android:style/Theme.DeviceDefault.Light.NoActionBar">
         <item name="android:windowBackground">@color/dvarimPage</item>

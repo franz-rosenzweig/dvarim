@@ -92,7 +92,7 @@
 </script>
 
 {#if data}
-  <ListTitle icon="star" name="Today" onmenu={menu} />
+  <ListTitle icon="sun" name="Today" onmenu={menu} />
   <FilterBar {tags} />
   <EventsBlock events={data.events} />
   <!-- Projects due or scheduled today: their pie, and no data-todo-id, so

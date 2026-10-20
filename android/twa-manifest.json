@@ -14,7 +14,7 @@
   "enableNotifications": true,
   "startUrl": "/",
   "iconUrl": "https://dvarim.tiresia.xyz/icons/icon.svg",
-  "maskableIconUrl": "https://dvarim.tiresia.xyz/icons/icon-512.png",
+  "maskableIconUrl": "https://dvarim.tiresia.xyz/icons/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "/Users/home/Documents/Claude/Projects/dvarim/android/android.keystore",
