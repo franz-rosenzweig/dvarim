@@ -73,7 +73,7 @@ nowhere else. Signing out syncs first, and refuses if the latest changes can't
 reach the server yet. Then it takes the token off the server and moves the copy
 to the Trash.
 
-**Round 1** (this one):
+**Round 1:**
 - **The window.** The sidebar has Inbox, Today, Upcoming, Anytime, Someday,
   Logbook and Trash, then my areas and projects, with counts and each project's
   progress. ⌘1 to ⌘7 go to the lists.
@@ -87,10 +87,42 @@ to the Trash.
   round, or a change on the server from another device shows up by itself. The
   toolbar says whether the copy is in step, syncing or offline.
 
+**Round 2:**
+- **The web app's margins.** The list is a column at most 640 points wide,
+  centred, 48 points in from the window's sides. The title is at 26 points,
+  rows are 6 by 8 points round a 16-point box, and the colours are the web
+  app's in light and dark. The app draws the column itself rather than using a
+  system list, so the margins are the web app's and a to-do can open in place.
+- **A to-do opens into its card in place.** Double-click it, or choose it and
+  press Return or Space. The card has the title, the notes, the checklist
+  (Return makes the next item; Return on an empty one ends the list) and the
+  tags, and along its foot its When, its deadline and the buttons for tags, a
+  checklist and a deadline. What I type is kept when the card closes, with
+  Escape or a click outside it.
+- **⌘N makes a new to-do**, open to type in, where the list in front says:
+  - the Inbox, Today, tomorrow in Upcoming, or Someday;
+  - the project or area I'm in;
+  - the project of the to-do chosen in Anytime.
+
+  It goes below the chosen to-do when that's in the same place.
+- **The Items menu**, and the same items on a right-click:
+  - Complete ⌘K, Cancel ⌥⌘K;
+  - When… ⌘S, Today ⌘T, This Evening ⌘E, Anytime ⌘R, Someday ⌘O;
+  - Deadline… ⇧⌘D, Tags… ⇧⌘T, Move… ⇧⌘M, Checklist ⇧⌘C;
+  - Duplicate ⌘D, Move to Trash ⌘⌫ (or ⌫ in the list);
+  - Log Completed ⇧⌘Y.
+
+  When, Deadline, Tags and Move are popovers on the row or the card, and they
+  act on everything chosen.
+- **Choosing.** Click; ⌘-click to add or take away; ⇧-click or ⇧↑/⇧↓ to reach.
+  ↑ and ↓ move. ⌘↑ and ⌘↓ move the chosen to-do a place up or down.
+- **Undo everywhere.** Every one of those changes undoes with ⌘Z and comes back
+  with ⇧⌘Z, as does typing in the card. The notice at the foot of the window
+  has Undo too.
+
 **Not yet**, in the rounds to come:
-- the to-do opening into its card, new to-dos, moving, deleting and the rest of
-  the keyboard;
-- Quick Find;
+- headings, new projects and areas, repeating to-dos, the project and area
+  views' own menus, and Quick Find;
 - drag and drop;
 - several windows;
 - and everything this app does beyond the window: Quick Entry on ⌃Space, the
@@ -113,6 +145,9 @@ never touches my vault or my server. Then it runs the real app against it:
 - the copy filling;
 - every list against the server's own answer;
 - a tick and ⌘Z, both in the Markdown and on the server, then ⇧⌘Z;
+- a new to-do typed into its card, and then When, This Evening, a deadline, a
+  tag, a checklist, canceling, moving, the Trash, duplicating and ⌘↓, each
+  undone, with a picture of each picker;
 - a line written into the folder by someone else;
 - the storage contract's checks;
 - Remote mode;
