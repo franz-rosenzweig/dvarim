@@ -108,12 +108,12 @@ async def main() -> int:
             const rows = [...document.querySelectorAll('#pane-body .row')];
             const f = n => { const r = rows.find(r => r.querySelector('.lbl').textContent.trim() === n);
                              return r && r.querySelector('.combo').textContent.trim(); };
-            return { heading: f('New heading (in a project)'), project: f('New project'),
+            return { heading: f('New heading (in a project or Today)'), project: f('New project'),
                      cancel: f('Cancel selected') };
         """)
-        check("modifiers print in Apple's order: ⇧⌘N", order["heading"] == "⇧⌘N", str(order))
-        check("…and ⌥⌘N", order["project"] == "⌥⌘N", str(order))
-        check("…and ⌥⌘K", order["cancel"] == "⌥⌘K", str(order))
+        check("modifiers print in Apple's order: ⇧⌘N", order.get("heading") == "⇧⌘N", str(order))
+        check("…and ⌥⌘N", order.get("project") == "⌥⌘N", str(order))
+        check("…and ⌥⌘K", order.get("cancel") == "⌥⌘K", str(order))
 
         print("\nRecording a new shortcut")
         await b.js("""
