@@ -20,8 +20,8 @@
     "path": "/Users/home/Documents/Claude/Projects/dvarim/android/android.keystore",
     "alias": "dvarim"
   },
-  "appVersionName": "17",
-  "appVersionCode": 17,
+  "appVersionName": "18",
+  "appVersionCode": 18,
   "shortcuts": [
     {
       "name": "New To-Do",
@@ -72,5 +72,5 @@
   "fileHandlers": [],
   "launchHandlerClientMode": "",
   "displayOverride": [],
-  "appVersion": "17"
+  "appVersion": "18"
 }
