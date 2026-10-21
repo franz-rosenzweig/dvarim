@@ -44,7 +44,8 @@ enum SelfTest {
             await run()
             await cleanUp()
             log(failures == 0 ? "SELFTEST passed" : "SELFTEST \(failures) failed")
-            NSApp.terminate(nil)
+            // out at once: terminate() can wait on a window SwiftUI is still closing
+            exit(failures == 0 ? 0 : 1)
         }
     }
 
@@ -116,6 +117,9 @@ enum SelfTest {
 
         // 5c. round 3: projects, areas, headings, repeat, Quick Find
         await roundThree(m, folder)
+
+        // 5d. round 4: several windows, ⌘A, and dropping to-dos everywhere
+        await roundFour(m, folder)
 
         // 6. the folder keeps the storage contract (engine/src/storage-conformance.js)
         if let local = m.backend as? LocalBackend, let answer = try? await local.engine.conformance() {
@@ -363,6 +367,109 @@ enum SelfTest {
             check(await until(5) { !file("Projects/Selftest Garden.md").contains("status: done") }, "and ⌘Z opens it again")
         }
     }
+
+    // MARK: round 4: windows, choosing all, drag and drop
+
+    private static func roundFour(_ m: AppModel, _ folder: URL) async {
+        // a second window, by the menu, on a list of its own
+        m.place = .today
+        _ = await until(5) { !m.loading }
+        let before = m.session.open.count
+        clickMenu("New Window")
+        check(await until(5) { m.session.open.count > before && appWindows.count >= 2 }, "New Window opens a second window", "\(appWindows.count) windows")
+        if let other = m.session.open.first(where: { $0 !== m }) {
+            other.place = .inbox
+            _ = await until(5) { !other.loading && other.content.todoCount > 0 }
+            check(m.place == .today && other.place == .inbox, "each window shows a list of its own")
+            if let t = other.content.allTodos.first(where: \.isOpen) {
+                await other.setWhen(.today, for: [t])
+                check(await until(5) { m.content.allTodos.contains { $0.id == t.id } }, "a change in one window shows in the other at once")
+                m.history.undo()
+                check(await until(5) { !m.content.allTodos.contains { $0.id == t.id } }, "and its ⌘Z too")
+            }
+            await snap("two-windows")
+            // the second window goes; the first stays
+            for w in appWindows.dropFirst() { w.close() }
+            check(await until(5) { appWindows.count == 1 }, "and closes again", "\(appWindows.count)")
+        }
+
+        // ⌘A
+        m.place = .inbox
+        _ = await until(5) { !m.loading }
+        await pause(0.3)
+        m.selectAll()
+        check(m.selected.count == m.content.todoCount && m.content.todoCount > 1, "⌘A chooses every to-do in the list", "\(m.selected.count)")
+
+        // dropping in the Inbox: the last one first, and back (the list's own order:
+        // Inbox.md also holds to-dos the Inbox does not show, such as ones with a start)
+        let order = m.content.allTodos.map(\.id)
+        if order.count >= 2, let last = order.last, let first = order.first {
+            m.dragging = [last]
+            await m.drop(beside: "t:" + first, after: false)
+            check(await until(6) { m.content.allTodos.first?.id == last && inboxOrder(folder).first == last }, "dropping a to-do above the first puts it first")
+            m.history.undo()
+            check(await until(6) { m.content.allTodos.map(\.id) == order }, "and ⌘Z puts the order back")
+        }
+
+        // into This Evening, on a day of Upcoming, onto a project, onto Someday
+        m.place = .today
+        _ = await until(5) { !m.loading }
+        await pause(0.3)
+        if let t = m.content.sections.first?.rows.compactMap({ if case .todo(let x) = $0 { x } else { nil } }).first(where: \.isOpen),
+           m.content.sections.contains(where: { $0.id == "evening" }) {
+            m.dragging = [t.id]
+            await m.drop(onSection: "evening")
+            check(await until(6) { line(folder, t.id)?.text.contains("🌙") == true }, "dropping into This Evening makes it this evening's")
+            m.history.undo()
+            check(await until(6) { line(folder, t.id)?.text.contains("🌙") == false }, "and ⌘Z takes it out")
+        }
+        m.place = .upcoming
+        _ = await until(5) { !m.loading }
+        await pause(0.3)
+        if m.content.sections.count >= 2, let t = m.content.sections[0].rows.compactMap({ if case .todo(let x) = $0 { x } else { nil } }).first {
+            let day = m.content.sections[1].id
+            m.dragging = [t.id]
+            await m.drop(onSection: day)
+            check(await until(6) { line(folder, t.id)?.text.contains("⏳ \(day)") == true }, "dropping on a day in Upcoming starts it that day", day)
+            m.history.undo()
+            check(await until(6) { line(folder, t.id)?.text.contains("⏳ \(day)") == false }, "and ⌘Z takes it back")
+        }
+        m.place = .inbox
+        _ = await until(5) { !m.loading }
+        await pause(0.3)
+        if let t = m.content.allTodos.first(where: \.isOpen), let p = m.state.areas.first?.projects.first {
+            m.dragging = [t.id]
+            await m.drop(onPlace: .project(p.id))
+            check(await until(6) { line(folder, t.id)?.file.hasSuffix("\(p.name).md") == true }, "dropping on a project in the sidebar moves it there", p.name)
+            m.history.undo()
+            check(await until(6) { line(folder, t.id)?.file == "Inbox.md" }, "and ⌘Z brings it back")
+            m.dragging = [t.id]
+            await m.drop(onPlace: .someday)
+            check(await until(6) { await someday(m, t.id) == true }, "dropping on Someday puts it there")
+            m.history.undo()
+            check(await until(6) { await someday(m, t.id) == false }, "and ⌘Z takes it out")
+        }
+    }
+
+    /// Whether the engine has the to-do in Someday.
+    private static func someday(_ m: AppModel, _ id: String) async -> Bool? {
+        (try? await m.backend?.request("GET", "/api/todos/\(id)", body: nil))?["someday"].bool
+    }
+
+    /// A menu item, chosen as a person would choose it.
+    static func clickMenu(_ title: String) {
+        func find(_ menu: NSMenu?) -> NSMenuItem? {
+            for item in menu?.items ?? [] {
+                if item.title == title { return item }
+                if let hit = find(item.submenu) { return hit }
+            }
+            return nil
+        }
+        guard let item = find(NSApp.mainMenu), let menu = item.menu, let i = menu.items.firstIndex(of: item) else { return }
+        menu.performActionForItem(at: i)
+    }
+
+    static var appWindows: [NSWindow] { NSApp.windows.filter { $0.isVisible && $0.canBecomeMain && !$0.className.contains("Popover") } }
 
     struct Found {
         let file: String

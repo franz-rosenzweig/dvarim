@@ -51,6 +51,12 @@ extension AppModel {
         if openId != nil { close() }
     }
 
+    /// ⌘A: every to-do in the list.
+    func selectAll() {
+        selected = Set(content.allTodos.map { "t:" + $0.id })
+        anchor = rowIds.first
+    }
+
     func selectOnly(_ todoId: String) {
         selected = ["t:" + todoId]
         anchor = "t:" + todoId
@@ -217,10 +223,21 @@ extension AppModel {
         await patch([t], name: "Checklist", notice: nil) { _ in ["checklist": plain(items)] } back: { t in ["checklist": plain(t.checklist)] }
     }
 
+    /// The to-do as the engine has it now, not as the list last drew it: what
+    /// an undo puts back must be what was there, however quickly changes come.
+    func current(_ t: Todo) async -> Todo {
+        guard let j = try? await backend?.request("GET", "/api/todos/\(t.id)", body: nil), j["id"].string == t.id else { return t }
+        return Todo(j)
+    }
+
     /// PATCH each to-do; ⌘Z patches back what each had.
     func patch(_ todos: [Todo], name: String, notice: String?,
                to: @escaping (Todo) -> [String: Any], back: @escaping (Todo) -> [String: Any]) async {
-        let pairs = todos.map { ($0.id, UncheckedBox(to($0)), UncheckedBox(back($0))) }
+        var pairs: [(String, UncheckedBox<[String: Any]>, UncheckedBox<[String: Any]>)] = []
+        for t in todos {
+            let now = await current(t)
+            pairs.append((t.id, UncheckedBox(to(now)), UncheckedBox(back(now))))
+        }
         await act(name, notice: notice,
                   do: { m in for (id, f, _) in pairs { _ = try await m.ask("PATCH", "/api/todos/\(id)", f.value) } },
                   undo: { m in for (id, _, b) in pairs { _ = try await m.ask("PATCH", "/api/todos/\(id)", b.value) } })
@@ -252,7 +269,8 @@ extension AppModel {
         let todos = todos ?? chosen
         guard !todos.isEmpty else { return }
         popover = nil
-        let pairs = todos.map { ($0.id, UncheckedBox(container($0))) }
+        var pairs: [(String, UncheckedBox<[String: Any]>)] = []
+        for t in todos { pairs.append((t.id, UncheckedBox(container(await current(t))))) }
         let body = UncheckedBox(dest.body)
         await act("Move", notice: "Moved to \(name)",
                   do: { m in for (id, _) in pairs { _ = try await m.ask("POST", "/api/todos/\(id)/move", body.value) } },

@@ -154,12 +154,40 @@ to the Trash.
   the next came, and ⇧⌘Z does it again. While a field has the keyboard, ⌘Z
   undoes the typing.
 
+**Round 4:**
+- **Several windows.**
+  - ⌃⌘N opens one on the list in front, and "Open in New Window" on a project
+    or an area in the sidebar opens one there.
+  - Each window has its own list, choice and card. They share the one copy,
+    the one sync and the one undo history, so a change made in one shows in
+    all of them at once.
+  - The menus act on the window in front.
+- **Drag and drop.**
+  - Drag a to-do to put it somewhere else in its list. If it's one of the
+    chosen ones, all of them go, and a line shows where they'll land.
+  - Drop on a section's heading for its top: This Evening makes them this
+    evening's, a day in Upcoming starts them that day, and a heading in a
+    project puts them under it.
+  - Drop on the sidebar:
+    - Inbox moves them there;
+    - Today, Anytime and Someday set their When;
+    - Upcoming starts them tomorrow;
+    - the Logbook completes them;
+    - the Trash deletes them;
+    - a project or an area moves them into it.
+
+  Every drop is one ⌘Z.
+- **Choosing several.** ⌘A chooses every to-do in the list; ⌘-click,
+  ⇧-click and ⇧↑/⇧↓ add to the choice. Everything in the Items menu, and a
+  drag, acts on all of them.
+- **What an undo puts back is what was there.** Before a change, the app asks
+  the engine for the to-do as it is now, rather than as the list last drew it,
+  however quickly the changes come.
+
 **Not yet**, in the rounds to come:
-- drag and drop;
-- several windows;
-- and everything this app does beyond the window: Quick Entry on ⌃Space, the
-  menu bar, the Dock badge, reminders, Shortcuts and Siri, the Services menu,
-  the outbox and opening at login.
+- everything this app does beyond the window: Quick Entry on ⌃Space, the menu
+  bar, the Dock badge, reminders, Shortcuts and Siri, the Services menu, the
+  outbox and opening at login.
 
 Until then this app is still the one for those.
 
@@ -184,6 +212,9 @@ never touches my vault or my server. Then it runs the real app against it:
 - a project made, renamed and completed, a heading made, renamed, archived
   and deleted, and an area made, renamed and deleted, each undone;
 - a repeat, and a to-do turned into a project;
+- a second window, and a change in one showing in the other;
+- ⌘A, and dropping in a list, into This Evening, on a day in Upcoming, on a
+  project and on Someday, each undone;
 - a line written into the folder by someone else;
 - the storage contract's checks;
 - Remote mode;

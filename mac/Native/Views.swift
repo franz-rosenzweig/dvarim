@@ -86,7 +86,12 @@ struct Sidebar: View {
                         Image(systemName: "shippingbox").foregroundStyle(Color(nsColor: .secondaryLabelColor))
                     }
                     .tag(Place.area(a.id))
-                    .contextMenu { AreaMenu(model: model, area: a) }
+                    .dropHere(model, .area(a.id))
+                    .contextMenu {
+                        AreaMenu(model: model, area: a)
+                        Divider()
+                        OpenInWindow(place: .area(a.id))
+                    }
                     ForEach(a.projects) { p in projectRow(p) }
                 }
             }
@@ -108,6 +113,11 @@ struct Sidebar: View {
     }
 
     private func row(_ place: Place, count: Int = 0, urgent: Int = 0) -> some View {
+        rowBody(place, count: count, urgent: urgent)
+            .dropHere(model, place)
+    }
+
+    private func rowBody(_ place: Place, count: Int, urgent: Int) -> some View {
         HStack(spacing: 6) {
             Label { Text(place.title) } icon: { ListIcon(place: place) }
             Spacer(minLength: 4)
@@ -128,7 +138,12 @@ struct Sidebar: View {
         Label { Text(p.name.isEmpty ? "New Project" : p.name) } icon: { ProgressPie(progress: p.progress) }
             .badge(p.openCount > 0 ? Text("\(p.openCount)") : nil)
             .tag(Place.project(p.id))
-            .contextMenu { ProjectMenu(model: model, project: p) }
+            .dropHere(model, .project(p.id))
+            .contextMenu {
+                ProjectMenu(model: model, project: p)
+                Divider()
+                OpenInWindow(place: .project(p.id))
+            }
     }
 }
 
@@ -315,3 +330,22 @@ struct SettingsView: View {
         Task { await model.start() }
     }
 }
+
+extension View {
+    /// A sidebar row the chosen to-dos can be dropped on, lit while one is over it.
+    func dropHere(_ model: AppModel, _ place: Place) -> some View {
+        onDrop(of: [AppModel.dragType], delegate: PlainDrop(model: model, target: .place(place)) { await model.drop(onPlace: place) })
+            .listRowBackground(model.dropTarget == .place(place)
+                ? RoundedRectangle(cornerRadius: 6).fill(Palette.accent.opacity(0.22)).padding(.horizontal, 8) : nil)
+    }
+}
+
+/// "Open in New Window", on a list, a project or an area.
+struct OpenInWindow: View {
+    let place: Place
+    @Environment(\.openWindow) private var openWindow
+    var body: some View {
+        Button("Open in New Window") { openWindow(id: "main", value: place) }
+    }
+}
+
