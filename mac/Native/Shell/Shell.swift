@@ -29,12 +29,15 @@ final class Shell {
 
     // ---- settings ---------------------------------------------------------------------
 
+    // Kept only when it changes: SwiftUI hands a binding's value back at
+    // launch, and a default written down would no longer follow the web-view app.
     var menuBar: Bool = Shell.flag(menuBarKey) {
-        didSet { Prefs.store.set(menuBar, forKey: Self.menuBarKey) }
+        didSet { if menuBar != oldValue { Prefs.store.set(menuBar, forKey: Self.menuBarKey) } }
     }
 
     var reminders: Bool = Shell.flag(remindersKey) {
         didSet {
+            guard reminders != oldValue else { return }
             Prefs.store.set(reminders, forKey: Self.remindersKey)
             Task { await Reminders.shared.turned(reminders) }
         }

@@ -32,7 +32,7 @@ struct DvarimNativeApp: App {
         // Today beside the clock (Settings → This Mac). Read here, not only
         // through the binding, so that turning it off takes it away again.
         let inMenuBar = shell.menuBar
-        MenuBarExtra(isInserted: Binding(get: { inMenuBar }, set: { shell.menuBar = $0 })) {
+        MenuBarExtra(isInserted: Binding(get: { inMenuBar }, set: { if shell.menuBar != $0 { shell.menuBar = $0 } })) {
             MenuBarContent(menu: TodayMenu.shared, shell: shell)
         } label: {
             MenuBarLabel(session: Session.shared)
