@@ -37,7 +37,7 @@ If you've told the server where your Obsidian vault is, there's an **Open in Obs
 
 A heading groups the to-dos under it, and its own ••• menu, at the right of the heading's line, has **New To-Do** (which adds one under that heading), **Rename**, **Archive Heading** and **Delete Heading**. Archiving is for a stage that's finished: it completes the open to-dos under the heading and files the heading away with them, and **Unarchive Heading** brings it back. Deleting a heading keeps its to-dos in the project.
 
-On a phone, you can make a heading with the blue plus: hold it, carry it to the left margin of the project where you want the heading, and let go when the line says NEW HEADING.
+On a phone, you can make a heading with the green plus: hold it, carry it to the left margin of the project where you want the heading, and let go when the line says NEW HEADING.
 
 ## An area
 

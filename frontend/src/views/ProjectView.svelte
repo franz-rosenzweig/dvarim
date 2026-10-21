@@ -119,7 +119,7 @@
       {#if p.someday}
         <button class="mi some" onclick={(e) => openPopover('when', target(), e.currentTarget)}><Icon name="zz" /> Someday</button>
       {:else if p.when && p.when <= T}
-        <button class="mi {p.evening ? 'moon' : 'star'}" onclick={(e) => openPopover('when', target(), e.currentTarget)}><Icon name={p.evening ? 'moon' : 'starS'} /> {p.evening ? 'This Evening' : 'Today'}</button>
+        <button class="mi {p.evening ? 'moon' : 'star'}" onclick={(e) => openPopover('when', target(), e.currentTarget)}><Icon name={p.evening ? 'moon' : 'sunS'} /> {p.evening ? 'This Evening' : 'Today'}</button>
       {:else if p.when}
         <button class="mi date" onclick={(e) => openPopover('when', target(), e.currentTarget)}><Icon name="cal" /> {whenLabel(p.when, T)}</button>
       {/if}

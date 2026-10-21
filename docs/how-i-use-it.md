@@ -16,7 +16,7 @@ Most of what goes in arrives by the shortest way I could make. At my desk I pres
 
 Away from the desk, I send a message to my Signal bot, something like "remind me to call the bank tomorrow at 11", and it turns that into one quick-entry line and posts it to Dvarim's quick-add, which means the to-do lands with the date and the reminder already set. If Dvarim can't be reached, the bot keeps the text in that day's daily note so nothing is lost, and tells me so.
 
-On the phone there's the Today widget on the home screen, and when I come across something worth doing in another app, I share it into Dvarim and get a small sheet where I can fix the wording and add a date before it lands. The blue plus at the bottom of every list does the rest.
+On the phone there's the Today widget on the home screen, and when I come across something worth doing in another app, I share it into Dvarim and get a small sheet where I can fix the wording and add a date before it lands. The green plus at the bottom of every list does the rest.
 
 ## My day
 

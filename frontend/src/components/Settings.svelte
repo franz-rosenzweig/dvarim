@@ -991,7 +991,7 @@
   .mwhen { color: var(--text3); margin-left: 6px; }
   .folder { font-weight: 600; }
   .path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; word-break: break-all; }
-  .checkok { color: var(--log); }
+  .checkok { color: var(--accent); }
   .checkbad { color: var(--dead); }
   .checkfails { margin: 4px 0 0 18px; padding: 0; font-size: 12px; color: var(--text2); }
   .linkish:disabled { opacity: .5; cursor: default; }

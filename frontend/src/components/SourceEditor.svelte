@@ -145,7 +145,7 @@
   footer { padding: 8px 14px; border-top: 1px solid var(--hair);
            font-size: 11.5px; color: var(--text3); }
   .err { margin: 8px 14px 0; font-size: 12.5px; color: var(--dead); }
-  .warn { margin: 8px 14px 0; font-size: 12.5px; color: var(--some); }
+  .warn { margin: 8px 14px 0; font-size: 12.5px; color: var(--star); }
   .loading { padding: 24px 14px; color: var(--text2); font-size: 13px; }
   @media (max-width: 720px) { .sheet { inset: 8px; width: auto; } }
 </style>

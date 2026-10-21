@@ -12,7 +12,7 @@ Made by Nathan on 2026-09-23. Change them here, not in passing.
 | Question | Decision |
 | --- | --- |
 | Licence | GPL-3.0-or-later. Public on GitHub since 2026-10-20. |
-| Own look | Yes: its own visual identity, from the app icon to the sidebar's list icons and colours and the chrome. Gated before any store (below); still to do. |
+| Own look | Yes, and it has one since 2026-10-20: the app icon is three paper slips, the first ticked; each list has its own earthy colour and a cut-paper icon; the accent is the tick's sage. |
 | Platforms | **macOS, Android, and the Linux server's web app.** iOS, Windows and Linux desktop are blocked until Nathan says otherwise. Nothing may be built for them; nothing may be built that rules them out. |
 | Sync | Options, not one answer. Nathan's own setup — the vault in Obsidian, Syncthing, the server on morten — is one of them and must keep working at every step. A hosted sync service is wanted someday. |
 
@@ -22,7 +22,7 @@ Made by Nathan on 2026-09-23. Change them here, not in passing.
 negotiable piecemeal:
 
 - its own visual identity: app icon, the sidebar's list icons and colours, the
-  chrome. Still to do;
+  chrome. Done 2026-10-20;
 - plain names in the interface for every feature (the + button, the When
   popover, just start typing). Done 2026-10-20;
 - the Android package id `xyz.tiresia.dvarim`. Done 2026-10-20. It is a new app

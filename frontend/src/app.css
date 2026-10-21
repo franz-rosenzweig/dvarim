@@ -1,39 +1,42 @@
-/* Dvarim global stylesheet. Tokens and shared list/card/popover classes are copied
-   from mockup/dvarim.html so the app renders identically to the approved design. */
+/* Dvarim global stylesheet: the colour tokens, and the list, card and popover
+   classes every view shares. Each list has its own colour, earthy and muted, and
+   its icon (lib/icons.js) draws in it; the accent is the sage of the app icon's tick. */
 :root{
   /* Settings -> Text size. 1 = default; the type below is expressed against it
      so the whole interface scales together. */
   --text-scale:1;
   --page:#E9EAEE; --sidebar:#F5F5F7; --main:#FFFFFF; --card:#FFFFFF;
   --text:#1C1C1E; --text2:#6E6E73; --text3:#A1A1A6; --hair:#E5E5EA; --hair2:#EFEFF2;
-  --sel:#E4E4E9; --rowsel:#CFE1FA; --hover:#F2F2F5; --pill:#EDEDF0; --pillon:#8E8E93; --pillon-text:#fff;
-  --accent:#2B7DE9; --plus:#5499FA; --star:#F5C33B; --upc:#EE4D67; --any:#3FB4A6; --some:#C5A166; --log:#4CB35B; --trash:#9A9AA0; --dead:#E23F3F; --moon:#4C7BD9; --event:#5A9CF2; --event2:#4CB35B;
+  --sel:#E4E4E9; --rowsel:#E4EADB; --hover:#F2F2F5; --pill:#EDEDF0; --pillon:#8E8E93; --pillon-text:#fff;
+  --accent:#668250; --plus:#7A9564; --inbox:#6B4A2B; --star:#D08E2C; --upc:#587089; --any:#7D6893; --some:#7C8A45; --log:#A5553F; --trash:#A0978B; --dead:#BE3B33; --moon:#4F5A8E; --event:#5A9CF2; --event2:#4CB35B;
   --shadow:0 20px 60px rgba(20,20,40,.18), 0 2px 8px rgba(20,20,40,.08);
   --cardshadow:0 6px 24px rgba(20,20,40,.14), 0 1px 3px rgba(20,20,40,.08);
-  --pop:#1E232C; --poptext:#F2F2F7; --popsel:#3B82F6; --popmuted:#98989D;
-  --check:#C7C7CC; --checkon:#2B7DE9;
+  --pop:#1E232C; --poptext:#F2F2F7; --popsel:#6E8C58; --popmuted:#98989D; --popaccent:#A9C08F;
+  --check:#C7C7CC; --checkon:#668250;
   --mdmark:rgba(255,214,10,.42);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --page:#121214; --sidebar:#1E1E21; --main:#2A2A2D; --card:#333336;
   --text:#F2F2F7; --text2:#A1A1A6; --text3:#6E6E73; --hair:#3A3A3E; --hair2:#333337;
-  --sel:#3A3A40; --rowsel:#2A3F5C; --hover:#323236; --pill:#3A3A3E; --pillon:#8E8E93;
-  --accent:#4C9AFF; --plus:#4C9AFF; --dead:#FF5C5C; --moon:#7AA2F7; --event:#7EB3FF; --event2:#6BCB77;
+  --sel:#3A3A40; --rowsel:#2F3828; --hover:#323236; --pill:#3A3A3E; --pillon:#8E8E93;
+  --accent:#7E9A66; --plus:#8FAA76; --dead:#EA5F57; --moon:#8E98D2;
+  --inbox:#C9A57B; --star:#E8A944; --upc:#8FA4BC; --any:#A996C4; --some:#AAB66B; --log:#D2826C; --trash:#8C857B; --event:#7EB3FF; --event2:#6BCB77;
   --shadow:0 20px 60px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
   --cardshadow:0 6px 24px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.4);
-  --pop:#1E232C; --check:#5A5A60; --checkon:#4C9AFF;
+  --pop:#1E232C; --check:#5A5A60; --checkon:#76925F;
   --mdmark:rgba(255,204,0,.30);
   color-scheme: dark;
 }}
 :root[data-theme="dark"]{
   --page:#121214; --sidebar:#1E1E21; --main:#2A2A2D; --card:#333336;
   --text:#F2F2F7; --text2:#A1A1A6; --text3:#6E6E73; --hair:#3A3A3E; --hair2:#333337;
-  --sel:#3A3A40; --rowsel:#2A3F5C; --hover:#323236; --pill:#3A3A3E; --pillon:#8E8E93;
-  --accent:#4C9AFF; --plus:#4C9AFF; --dead:#FF5C5C; --moon:#7AA2F7; --event:#7EB3FF; --event2:#6BCB77;
+  --sel:#3A3A40; --rowsel:#2F3828; --hover:#323236; --pill:#3A3A3E; --pillon:#8E8E93;
+  --accent:#7E9A66; --plus:#8FAA76; --dead:#EA5F57; --moon:#8E98D2;
+  --inbox:#C9A57B; --star:#E8A944; --upc:#8FA4BC; --any:#A996C4; --some:#AAB66B; --log:#D2826C; --trash:#8C857B; --event:#7EB3FF; --event2:#6BCB77;
   --shadow:0 20px 60px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
   --cardshadow:0 6px 24px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.4);
-  --pop:#1E232C; --check:#5A5A60; --checkon:#4C9AFF;
+  --pop:#1E232C; --check:#5A5A60; --checkon:#76925F;
   --mdmark:rgba(255,204,0,.30);
   color-scheme: dark;
 }
@@ -64,7 +67,7 @@ textarea{resize:none}
 .item.on{background:var(--sel)}
 /* ---- Dragging ----------------------------------------------------------- */
 .item.drop{background:var(--accent);color:#fff}
-.item.drop svg{color:#fff}
+.item.drop svg{color:#fff!important}
 .item.drop .cnt,.item.drop .badge{color:#fff}
 .row.ghosted{opacity:.35}
 /* the anchor of a multi-selection: where the keyboard moves from */
@@ -121,7 +124,7 @@ body.dragging *{cursor:grabbing!important}
 .item .ic{width:17px;height:17px;flex:none;display:grid;place-items:center}
 .item .lbl{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item .cnt{font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums}
-.item .badge{font-size:11px;font-weight:600;color:#fff;background:var(--upc);border-radius:9px;padding:1px 6px;line-height:15px}
+.item .badge{font-size:11px;font-weight:600;color:#fff;background:var(--dead);border-radius:9px;padding:1px 6px;line-height:15px}
 .item.area{font-weight:600;margin-top:2px}
 .item.area .ic svg{color:var(--text2)}
 .item.proj{padding-left:8px}
@@ -335,10 +338,12 @@ h1.t .more:hover{color:var(--text2)}
    second. The phone's grows out of the row it is about instead (popgrow,
    in the 720px block), because there it covers most of the screen. */
 .pop{position:absolute;z-index:6;background:var(--pop);color:var(--poptext);border-radius:11px;box-shadow:var(--cardshadow);width:250px;padding:8px;font-size:13px;animation:popfade .08s linear;color-scheme:dark}
+/* A popover is dark in either theme, so the lists' colours in it are their dark ones. */
+.pop{--star:#E8A944;--upc:#8FA4BC;--some:#AAB66B;--moon:#8E98D2;--dead:#EA5F57}
 @keyframes popfade{from{opacity:0}}
 .pop.wide{width:290px}
 .pop .in{display:flex;align-items:center;gap:6px;background:#424850;border-radius:6px;padding:5px 8px;margin-bottom:6px}
-.pop .in input{flex:1;background:none;border:0;color:var(--poptext);font:inherit;font-weight:600;outline:none;min-width:0;caret-color:#4C9AFF}
+.pop .in input{flex:1;background:none;border:0;color:var(--poptext);font:inherit;font-weight:600;outline:none;min-width:0;caret-color:var(--popaccent)}
 .pop .in .clr{color:var(--popmuted);width:15px;height:15px;display:grid;place-items:center;flex:none;border-radius:50%}
 .pop .in .clr:hover{color:var(--poptext);background:rgba(255,255,255,.14)}
 .pop .in input::placeholder{color:var(--popmuted)}
@@ -385,7 +390,7 @@ h1.t .more:hover{color:var(--text2)}
 /* toast */
 .toast{position:absolute;left:50%;bottom:56px;transform:translateX(-50%);z-index:8;background:var(--pop);color:var(--poptext);border-radius:10px;box-shadow:var(--cardshadow);padding:9px 14px;font-size:13px;display:flex;gap:14px;align-items:center;max-width:min(420px,90%);animation:pop .15s ease-out}
 .toast.err{color:#FFB4B4}
-.toast button{color:#8FB4FF;font-weight:600}
+.toast button{color:var(--popaccent);font-weight:600}
 .toast button:hover{color:#fff}
 /* project rows */
 .prow .txt{font-weight:500}

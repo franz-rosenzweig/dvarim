@@ -6,7 +6,7 @@ This page is the reference for getting things into Dvarim quickly, from inside t
 
 ## From inside the app
 
-Press ⌘N, or the **+** at the bottom of the window, and type. On a phone, tap the blue plus, or hold it and carry it to where the to-do should go. [To-dos](todos.md) has the details.
+Press ⌘N, or the **+** at the bottom of the window, and type. On a phone, tap the green plus, or hold it and carry it to where the to-do should go. [To-dos](todos.md) has the details.
 
 ## The quick-entry line
 

@@ -43,18 +43,17 @@ else
     echo "no web build: folder mode will be unavailable (cd ../frontend && npm ci && npm run build)" >&2
 fi
 
-# The web app's icon, with the margin the macOS icon grid leaves round the shape.
-SRC=../frontend/public/icons/icon-512.png
+# The app icon, drawn on the macOS icon grid already: margin, shape and shadow.
+SRC=AppIcon-1024.png
 if [[ -f $SRC ]]; then
     SET=$OUT/AppIcon.iconset && rm -rf $SET && mkdir -p $SET
-    sips -p 640 640 $SRC --out $OUT/icon-640.png >/dev/null
     for s in 16 32 128 256 512; do
-        sips -z $s $s $OUT/icon-640.png --out $SET/icon_${s}x${s}.png >/dev/null
-        sips -z $((s * 2)) $((s * 2)) $OUT/icon-640.png --out $SET/icon_${s}x${s}@2x.png >/dev/null
+        sips -z $s $s $SRC --out $SET/icon_${s}x${s}.png >/dev/null
+        sips -z $((s * 2)) $((s * 2)) $SRC --out $SET/icon_${s}x${s}@2x.png >/dev/null
     done
     iconutil -c icns $SET -o $APP/Contents/Resources/AppIcon.icns
     plutil -replace CFBundleIconFile -string AppIcon $APP/Contents/Info.plist
-    rm -rf $SET $OUT/icon-640.png
+    rm -rf $SET
 fi
 
 # Shortcuts, Spotlight and Siri read a metadata bundle beside the binary, and only

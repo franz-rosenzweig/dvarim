@@ -321,7 +321,7 @@
   }
   function whenIcon() {
     if (todo.someday) return 'zz';
-    if (inToday) return todo.evening ? 'moon' : 'starS';
+    if (inToday) return todo.evening ? 'moon' : 'sunS';
     return 'cal';
   }
   const target = () => ({ type: 'todo', id: todo.id });

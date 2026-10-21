@@ -8,7 +8,7 @@ A to-do in Dvarim is one line in a Markdown file, and in the app it's a row you 
 
 Press ⌘N, or the **+** at the bottom of the window, and a new to-do opens in the list you're looking at, below whatever you'd selected, with its title ready to type. In a project it goes under the heading you're in. Type the title and press Return, and the card closes.
 
-On a phone, the blue plus at the bottom right does the same with a tap. You can also hold it and carry it: let go between two to-dos and the new one goes exactly there, or carry it to the Inbox target at the bottom left to drop a to-do in the Inbox without leaving the list you're reading.
+On a phone, the green plus at the bottom right does the same with a tap. You can also hold it and carry it: let go between two to-dos and the new one goes exactly there, or carry it to the Inbox target at the bottom left to drop a to-do in the Inbox without leaving the list you're reading.
 
 For getting things in from outside the app (the Mac's ⌃Space, sharing on Android, a bot), see [Quick entry and keyboard shortcuts](quick-entry.md).
 

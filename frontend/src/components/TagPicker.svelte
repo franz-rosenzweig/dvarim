@@ -103,7 +103,7 @@
 <style>
   .list { max-height: 300px; overflow: auto; }
   .ic { width: 14px; }
-  .chk { color: #8FB4FF; }
+  .chk { color: var(--popaccent); }
   /* on some of the selection, not all */
   .some { display: inline-block; width: 9px; height: 2px; border-radius: 1px; background: currentColor; vertical-align: middle; }
   .parent { color: var(--popmuted); }

@@ -133,7 +133,7 @@
   <div class="body">
     <div class="title">
       {#if showStar && inToday}
-        {#if todo.evening}<span class="moonic"><Icon name="moon" /></span>{:else}<span class="star"><Icon name="starS" /></span>{/if}
+        {#if todo.evening}<span class="moonic"><Icon name="moon" /></span>{:else}<span class="star"><Icon name="sunS" /></span>{/if}
       {/if}
       {#if later}
         <!-- The day it is meant for, in front of the title, in the same grey
