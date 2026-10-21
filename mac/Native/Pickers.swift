@@ -24,7 +24,7 @@ struct PickerRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Image(systemName: icon).foregroundStyle(colour).frame(width: 16)
+                glyph.frame(width: 15, height: 15)
                 Text(title).foregroundStyle(Palette.text)
                 Spacer()
             }
@@ -32,6 +32,19 @@ struct PickerRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// The web app's marks for the lists; a system symbol for the rest.
+    @ViewBuilder private var glyph: some View {
+        switch icon {
+        case "star.fill": Icons.sun.drawn(colour)
+        case "moon.fill": Icons.moon.drawn(colour)
+        case "archivebox.fill": Icons.someday.drawn(colour)
+        case "tray.fill": Icons.inbox.drawn(colour)
+        case "shippingbox": Icons.area.drawn(colour)
+        case "circle": ProgressPie(progress: 0, size: 13, colour: colour)
+        default: Image(systemName: icon).foregroundStyle(colour)
+        }
     }
 }
 

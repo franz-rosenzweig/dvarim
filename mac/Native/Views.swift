@@ -88,9 +88,20 @@ struct Sidebar: View {
     }
 
     private func row(_ place: Place, count: Int = 0, urgent: Int = 0) -> some View {
-        Label { Text(place.title) } icon: { ListIcon(place: place) }
-            .badge(urgent > 0 ? Text("\(urgent)").foregroundStyle(Color.red) : count > 0 ? Text("\(count)") : nil)
-            .tag(place)
+        HStack(spacing: 6) {
+            Label { Text(place.title) } icon: { ListIcon(place: place) }
+            Spacer(minLength: 4)
+            // the web app's sidebar: a red pill for what is due, then the count
+            if urgent > 0 {
+                Text("\(urgent)").font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.white)
+                    .padding(.horizontal, 6).frame(height: 15)
+                    .background(Palette.deadline, in: Capsule())
+            }
+            if count > 0 {
+                Text("\(count)").font(.system(size: 12)).monospacedDigit().foregroundStyle(Palette.text3)
+            }
+        }
+        .tag(place)
     }
 
     private func projectRow(_ p: Project) -> some View {
@@ -100,24 +111,23 @@ struct Sidebar: View {
     }
 }
 
-/// The lists' icons, each in its own colour.
+/// The lists' icons: the web app's own hand-drawn marks (Icons.swift), each in its list's colour.
 struct ListIcon: View {
     let place: Place
-    var size: CGFloat = 14
+    var size: CGFloat = 17
 
     var body: some View {
-        let (name, colour): (String, Color) = switch place {
-        case .inbox: ("tray.fill", Palette.inbox)
-        case .today: ("star.fill", Palette.star)
-        case .upcoming: ("calendar", Palette.upcoming)
-        case .anytime: ("square.stack.3d.up.fill", Palette.anytime)
-        case .someday: ("archivebox.fill", Palette.someday)
-        case .logbook: ("checkmark.square.fill", Palette.logbook)
-        case .trash: ("trash", Palette.trash)
-        case .area: ("shippingbox", Palette.text2)
-        case .project: ("circle", Palette.accent)
+        switch place {
+        case .inbox: Icons.inbox.drawn(Palette.inbox).frame(width: size, height: size)
+        case .today: Icons.sun.drawn(Palette.star).frame(width: size, height: size)
+        case .upcoming: Icons.upcoming.drawn(Palette.upcoming).frame(width: size, height: size)
+        case .anytime: Icons.anytime.drawn(Palette.anytime).frame(width: size, height: size)
+        case .someday: Icons.someday.drawn(Palette.someday).frame(width: size, height: size)
+        case .logbook: Icons.logbook.drawn(Palette.logbook).frame(width: size, height: size)
+        case .trash: Icons.trash.drawn(Palette.trash).frame(width: size, height: size)
+        case .area: Icons.area.drawn(Palette.text2).frame(width: size, height: size)
+        case .project: ProgressPie(progress: 0, size: size * 0.85)
         }
-        Image(systemName: name).font(.system(size: size, weight: .semibold)).foregroundStyle(colour)
     }
 }
 

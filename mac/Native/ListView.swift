@@ -148,7 +148,7 @@ struct SectionHeader: View {
         case .today where section.id == "evening":
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
-                    Image(systemName: "moon.fill").foregroundStyle(Palette.moon)
+                    Icons.moon.drawn(Palette.moon).frame(width: 14, height: 14)
                     Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.text)
                 }
                 Rectangle().fill(Palette.hair).frame(maxWidth: .infinity).frame(height: 1)
@@ -189,7 +189,7 @@ struct TodoRow: View {
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 6) {
                     if todo.evening && model.place != .today && todo.isOpen {
-                        Image(systemName: "moon.fill").font(.system(size: 11)).foregroundStyle(Palette.moon)
+                        Icons.moon.drawn(Palette.moon).frame(width: 12, height: 12)
                     }
                     Text(todo.title.isEmpty ? "New To-Do" : todo.title)
                         .font(.system(size: Metrics.rowFont))
@@ -275,7 +275,14 @@ struct Marks: View {
         }
     }
     private func mark(_ name: String) -> some View {
-        Image(systemName: name).font(.system(size: 10.5)).foregroundStyle(Palette.text3)
+        Group {
+            switch name {
+            case "doc.text": Icons.notes.drawn(Palette.text3)
+            case "list.bullet": Icons.clist.drawn(Palette.text3)
+            default: Icons.repeating.drawn(Palette.text3)
+            }
+        }
+        .frame(width: 11, height: 11)
     }
 }
 
@@ -330,9 +337,9 @@ struct CheckBox: View {
         Button(action: action) {
             ZStack {
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(done ? (canceled ? Palette.text3 : Palette.accent) : Color.clear)
+                    .fill(done ? (canceled ? Palette.text3 : Palette.checkOn) : Color.clear)
                 RoundedRectangle(cornerRadius: 4)
-                    .strokeBorder(done ? (canceled ? Palette.text3 : Palette.accent) : Palette.check, lineWidth: 1.5)
+                    .strokeBorder(done ? (canceled ? Palette.text3 : Palette.checkOn) : Palette.check, lineWidth: 1.5)
                 if done {
                     Image(systemName: canceled ? "xmark" : "checkmark").font(.system(size: 9.5, weight: .bold)).foregroundStyle(Color.white)
                 }
@@ -483,11 +490,11 @@ struct TodoCard: View {
         Button { model.popover = .when(todo.id) } label: {
             HStack(spacing: 5) {
                 switch whenKind {
-                case .today: Image(systemName: "star.fill").foregroundStyle(Palette.star); Text("Today")
-                case .evening: Image(systemName: "moon.fill").foregroundStyle(Palette.moon); Text("This Evening")
-                case .someday: Image(systemName: "archivebox.fill").foregroundStyle(Palette.someday); Text("Someday")
-                case .date(let d): Image(systemName: "calendar").foregroundStyle(Palette.upcoming); Text(Dates.short(d, today: model.state.today))
-                case .none: Image(systemName: "calendar").foregroundStyle(Palette.text3); Text("When").foregroundStyle(Palette.text3)
+                case .today: Icons.sun.drawn(Palette.star).frame(width: 13, height: 13); Text("Today")
+                case .evening: Icons.moon.drawn(Palette.moon).frame(width: 13, height: 13); Text("This Evening")
+                case .someday: Icons.someday.drawn(Palette.someday).frame(width: 13, height: 13); Text("Someday")
+                case .date(let d): Icons.upcoming.drawn(Palette.upcoming).frame(width: 13, height: 13); Text(Dates.short(d, today: model.state.today))
+                case .none: Icons.upcoming.drawn(Palette.text3).frame(width: 13, height: 13); Text("When").foregroundStyle(Palette.text3)
                 }
             }
             .font(.system(size: 12.5, weight: .semibold))
