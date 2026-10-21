@@ -6,11 +6,17 @@ struct Pickers: View {
     let todo: Todo
 
     var body: some View {
+        // Dvarim's sage, not the Mac's accent, in its pickers as everywhere
+        picker.tint(Palette.accent)
+    }
+
+    @ViewBuilder private var picker: some View {
         switch model.popover {
         case .when: WhenPicker(model: model, todo: todo)
         case .deadline: DeadlinePicker(model: model, todo: todo)
         case .tags: TagsPicker(model: model, todo: todo)
         case .move: MovePicker(model: model, todo: todo)
+        case .repeating: RepeatPicker(model: model, todo: todo)
         case .none: EmptyView()
         }
     }
@@ -217,6 +223,8 @@ struct ItemsMenu: View {
             Button("Deadline…") { pick { .deadline($0) } }
             Button("Tags…") { pick { .tags($0) } }
             Button("Move…") { pick { .move($0) } }
+            Button("Repeat…") { pick { .repeating($0) } }
+            Button("Convert to Project") { run { await $0.convertChosen() } }
             Divider()
             Button("Duplicate") { run { await $0.duplicateChosen() } }
             Button("Move to Trash") { run { await $0.trashChosen() } }

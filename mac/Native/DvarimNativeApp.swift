@@ -32,8 +32,15 @@ struct DvarimNativeApp: App {
                 go("Logbook", .logbook, "6")
                 go("Trash", .trash, "7")
             }
+            CommandGroup(replacing: .undoRedo) {
+                Button(undoTitle) { undo(redo: false) }.keyboardShortcut("z")
+                Button(redoTitle) { undo(redo: true) }.keyboardShortcut("z", modifiers: [.shift, .command])
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New To-Do") { Task { await model.newTodo() } }.keyboardShortcut("n")
+                Button("New Heading") { Task { await model.newHeading() } }.keyboardShortcut("n", modifiers: [.shift, .command])
+                Button("New Project") { Task { await model.newProject() } }.keyboardShortcut("n", modifiers: [.option, .command])
+                Button("New Area") { Task { await model.newArea() } }
                 Button("New Window") { openWindow(id: "main") }.keyboardShortcut("n", modifiers: [.control, .command])
             }
             CommandMenu("Items") {
@@ -50,11 +57,16 @@ struct DvarimNativeApp: App {
                 Button("Tags…") { pick { .tags($0) } }.keyboardShortcut("t", modifiers: [.shift, .command])
                 Button("Move…") { pick { .move($0) } }.keyboardShortcut("m", modifiers: [.shift, .command])
                 Button("Checklist") { if let t = model.chosen.first { model.open(t.id, focusTitle: false) } }.keyboardShortcut("c", modifiers: [.shift, .command])
+                Button("Repeat…") { pick { .repeating($0) } }.keyboardShortcut("r", modifiers: [.shift, .command])
+                Button("Convert to Project") { Task { await model.convertChosen() } }.keyboardShortcut("p", modifiers: [.shift, .command])
                 Divider()
                 Button("Duplicate") { Task { await model.duplicateChosen() } }.keyboardShortcut("d")
                 Button("Move to Trash") { Task { await model.trashChosen() } }.keyboardShortcut(.delete, modifiers: [.command])
                 Divider()
                 Button("Log Completed") { Task { await model.logNow() } }.keyboardShortcut("y", modifiers: [.shift, .command])
+            }
+            CommandGroup(after: .textEditing) {
+                Button("Quick Find") { model.finding = true }.keyboardShortcut("f")
             }
             CommandGroup(after: .toolbar) {
                 Button("Reload") { Task { await model.refresh() } }.keyboardShortcut("r")
@@ -65,6 +77,20 @@ struct DvarimNativeApp: App {
             SettingsView(model: model)
         }
     }
+
+    /// ⌘Z: typing's undo while a field has the keyboard, else the app's own history.
+    private func undo(redo: Bool) {
+        if let field = NSApp.keyWindow?.firstResponder as? NSTextView, let u = field.undoManager,
+           redo ? u.canRedo : u.canUndo {
+            NSApp.sendAction(Selector(redo ? "redo:" : "undo:"), to: nil, from: nil)
+            return
+        }
+        if redo { model.history.redo() } else { model.history.undo() }
+        model.notice = nil
+    }
+
+    private var undoTitle: String { model.history.canUndo ? "Undo " + model.history.undoActionName : "Undo" }
+    private var redoTitle: String { model.history.canRedo ? "Redo " + model.history.redoActionName : "Redo" }
 
     private func pick(_ p: (String) -> AppModel.Popover) {
         guard let t = model.chosen.first else { return }

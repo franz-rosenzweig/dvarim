@@ -4,7 +4,6 @@ import SwiftUI
 
 struct MainView: View {
     @Bindable var model: AppModel
-    @Environment(\.undoManager) private var undoManager
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -22,12 +21,19 @@ struct MainView: View {
                         .navigationSplitViewColumnWidth(min: 200, ideal: 236, max: 320)
                 } detail: {
                     ListScreen(model: model)
+                        .overlay(alignment: .top) {
+                            if model.finding {
+                                ZStack(alignment: .top) {
+                                    Color.black.opacity(0.001).onTapGesture { model.finding = false }
+                                    QuickFind(model: model)
+                                }
+                            }
+                        }
                 }
             }
         }
         .frame(minWidth: 720, minHeight: 460)
-        .onAppear { model.undoManager = undoManager }
-        .onChange(of: undoManager) { _, u in model.undoManager = u }
+        .tint(Palette.accent)
         .onChange(of: scenePhase) { _, p in if p == .active { model.catchUp() } }
     }
 }
@@ -80,11 +86,25 @@ struct Sidebar: View {
                         Image(systemName: "shippingbox").foregroundStyle(Color(nsColor: .secondaryLabelColor))
                     }
                     .tag(Place.area(a.id))
+                    .contextMenu { AreaMenu(model: model, area: a) }
                     ForEach(a.projects) { p in projectRow(p) }
                 }
             }
         }
         .listStyle(.sidebar)
+        .safeAreaInset(edge: .bottom) {
+            HStack {
+                Menu {
+                    Button("New Project") { Task { await model.newProject() } }
+                    Button("New Area") { Task { await model.newArea() } }
+                } label: {
+                    Label("New List", systemImage: "plus").font(.system(size: 13)).foregroundStyle(Palette.text2)
+                }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                Spacer()
+            }
+            .padding(.horizontal, 14).padding(.vertical, 9)
+        }
     }
 
     private func row(_ place: Place, count: Int = 0, urgent: Int = 0) -> some View {
@@ -108,6 +128,7 @@ struct Sidebar: View {
         Label { Text(p.name.isEmpty ? "New Project" : p.name) } icon: { ProgressPie(progress: p.progress) }
             .badge(p.openCount > 0 ? Text("\(p.openCount)") : nil)
             .tag(Place.project(p.id))
+            .contextMenu { ProjectMenu(model: model, project: p) }
     }
 }
 
@@ -127,6 +148,10 @@ struct ListIcon: View {
         case .trash: Icons.trash.drawn(Palette.trash).frame(width: size, height: size)
         case .area: Icons.area.drawn(Palette.text2).frame(width: size, height: size)
         case .project: ProgressPie(progress: 0, size: size * 0.85)
+        case .extra("tomorrow"): Icons.sun.drawn(Palette.star).frame(width: size, height: size)
+        case .extra("deadlines"): Icons.flag.drawn(Palette.deadline).frame(width: size, height: size)
+        case .extra("repeating"): Icons.repeating.drawn(Palette.text2).frame(width: size, height: size)
+        case .extra: ProgressPie(progress: 0.5, size: size * 0.85)
         }
     }
 }

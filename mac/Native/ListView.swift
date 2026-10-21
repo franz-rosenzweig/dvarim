@@ -16,16 +16,22 @@ struct ListScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     ListTitle(model: model)
-                    if !model.content.notes.isEmpty {
-                        Text(model.content.notes)
-                            .font(.system(size: 13.5)).lineSpacing(3)
-                            .foregroundStyle(Palette.text2)
-                            .padding(.top, 2).padding(.bottom, 14)
-                            .frame(maxWidth: 520, alignment: .leading)
+                    switch model.place {
+                    case .project(let id):
+                        if let p = model.state.project(id) { EditableNotes(text: p.notes) { await model.setProjectNotes(p, $0) }.id("notes-" + id) }
+                    case .area(let id):
+                        if let a = model.state.area(id) { EditableNotes(text: a.notes) { await model.setAreaNotes(a, $0) }.id("notes-" + id) }
+                    default:
+                        EmptyView()
                     }
                     ForEach(Array(model.content.sections.enumerated()), id: \.element.id) { index, section in
                         if let title = section.title {
-                            SectionHeader(place: model.place, section: section, title: title, first: index == 0 || model.content.sections[..<index].allSatisfy { $0.rows.isEmpty && $0.title == nil })
+                            let first = index == 0 || model.content.sections[..<index].allSatisfy { $0.rows.isEmpty && $0.title == nil }
+                            if case .project = model.place {
+                                HeadingHeader(model: model, id: section.id, name: title, first: first)
+                            } else {
+                                SectionHeader(place: model.place, section: section, title: title, first: first)
+                            }
                         }
                         ForEach(Array(section.rows.enumerated()), id: \.element.id) { i, row in
                             switch row {
@@ -41,7 +47,7 @@ struct ListScreen: View {
                             }
                         }
                     }
-                    if model.content.sections.allSatisfy({ $0.rows.isEmpty }) && !model.loading {
+                    if model.content.sections.allSatisfy({ $0.rows.isEmpty && $0.title == nil }) && !model.loading {
                         Text(model.place == .today ? "Nothing for today." : "Nothing here.")
                             .foregroundStyle(Palette.text3)
                             .frame(maxWidth: .infinity)
@@ -108,11 +114,23 @@ struct ListTitle: View {
         HStack(spacing: 10) {
             switch model.place {
             case .project(let id):
-                ProgressPie(progress: model.state.project(id)?.progress ?? 0, size: 24)
-                Text(model.state.project(id)?.name ?? "")
+                if let p = model.state.project(id) {
+                    ProgressPie(progress: p.progress, size: 24)
+                    EditableTitle(model: model, name: p.name) { await model.renameProject(p, $0) }
+                    Menu { ProjectMenu(model: model, project: p) } label: {
+                        Image(systemName: "ellipsis").font(.system(size: 14, weight: .semibold)).foregroundStyle(Palette.text3)
+                    }
+                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                }
             case .area(let id):
-                ListIcon(place: model.place, size: 24)
-                Text(model.state.area(id)?.name ?? "")
+                if let a = model.state.area(id) {
+                    ListIcon(place: model.place, size: 24)
+                    EditableTitle(model: model, name: a.name) { await model.renameArea(a, $0) }
+                    Menu { AreaMenu(model: model, area: a) } label: {
+                        Image(systemName: "ellipsis").font(.system(size: 14, weight: .semibold)).foregroundStyle(Palette.text3)
+                    }
+                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                }
             default:
                 ListIcon(place: model.place, size: 24)
                 Text(model.place.title)

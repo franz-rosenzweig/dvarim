@@ -41,18 +41,17 @@ sed -e "s/\$(DEVELOPMENT_LANGUAGE)/en/" -e "s/\$(EXECUTABLE_NAME)/$NAME/" \
     -e "s/\$(CURRENT_PROJECT_VERSION)/$BUILD/" -e "s/\$(PRODUCT_NAME)/$NAME/" Native/Info.plist > "$APP/Contents/Info.plist"
 plutil -lint -s "$APP/Contents/Info.plist"
 
-# the web app's icon for now, as build.sh makes it
-SRC=../frontend/public/icons/icon-512.png
+# the app's icon, the same paper slips as build.sh's, already on Apple's grid
+SRC=AppIcon-1024.png
 if [[ -f $SRC ]]; then
     SET=$OUT/AppIcon.iconset && rm -rf $SET && mkdir -p $SET
-    sips -p 640 640 $SRC --out $OUT/icon-640.png >/dev/null
     for s in 16 32 128 256 512; do
-        sips -z $s $s $OUT/icon-640.png --out $SET/icon_${s}x${s}.png >/dev/null
-        sips -z $((s * 2)) $((s * 2)) $OUT/icon-640.png --out $SET/icon_${s}x${s}@2x.png >/dev/null
+        sips -z $s $s $SRC --out $SET/icon_${s}x${s}.png >/dev/null
+        sips -z $((s * 2)) $((s * 2)) $SRC --out $SET/icon_${s}x${s}@2x.png >/dev/null
     done
     iconutil -c icns $SET -o "$APP/Contents/Resources/AppIcon.icns"
     plutil -replace CFBundleIconFile -string AppIcon "$APP/Contents/Info.plist"
-    rm -rf $SET $OUT/icon-640.png
+    rm -rf $SET
 fi
 
 IDENTITY=${DVARIM_SIGN:-$(security find-identity -v -p codesigning | sed -n 's/^ *[0-9]*) \([0-9A-F]*\) "Apple Development.*/\1/p' | head -1)}

@@ -89,7 +89,7 @@ extension AppModel {
         var body: [String: Any] = ["title": "New To-Do"]
         let sel = anchor.flatMap { $0.hasPrefix("t:") ? todo(String($0.dropFirst(2))) : nil }
         switch place {
-        case .inbox, .logbook, .trash: body["inbox"] = true
+        case .inbox, .logbook, .trash, .extra: body["inbox"] = true
         case .today: body["when"] = state.today
         case .upcoming: body["when"] = Dates.iso.string(from: Calendar.current.date(byAdding: .day, value: 1, to: Dates.date(state.today) ?? Date())!)
         case .someday: body["someday"] = true
