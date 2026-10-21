@@ -163,7 +163,7 @@ struct AppState: Sendable {
 }
 
 /// Where the sidebar points.
-enum Place: Hashable, Sendable {
+enum Place: Hashable, Sendable, Codable {
     case inbox, today, upcoming, anytime, someday, logbook, trash
     case project(String)
     case area(String)

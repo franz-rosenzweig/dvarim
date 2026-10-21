@@ -27,10 +27,18 @@ struct ListScreen: View {
                     ForEach(Array(model.content.sections.enumerated()), id: \.element.id) { index, section in
                         if let title = section.title {
                             let first = index == 0 || model.content.sections[..<index].allSatisfy { $0.rows.isEmpty && $0.title == nil }
-                            if case .project = model.place {
-                                HeadingHeader(model: model, id: section.id, name: title, first: first)
-                            } else {
-                                SectionHeader(place: model.place, section: section, title: title, first: first)
+                            Group {
+                                if case .project = model.place {
+                                    HeadingHeader(model: model, id: section.id, name: title, first: first)
+                                } else {
+                                    SectionHeader(place: model.place, section: section, title: title, first: first)
+                                }
+                            }
+                            .onDrop(of: [AppModel.dragType], delegate: PlainDrop(model: model, target: .section(section.id)) {
+                                await model.drop(onSection: section.id)
+                            })
+                            .overlay(alignment: .bottom) {
+                                if model.dropTarget == .section(section.id) { InsertLine().offset(y: 3) }
                             }
                         }
                         ForEach(Array(section.rows.enumerated()), id: \.element.id) { i, row in
@@ -198,6 +206,7 @@ struct SectionHeader: View {
 struct TodoRow: View {
     let model: AppModel
     let todo: Todo
+    @State private var height: CGFloat = 30
     private var row: String { "t:" + todo.id }
 
     var body: some View {
@@ -238,7 +247,12 @@ struct TodoRow: View {
         .background(model.selected.contains(row) ? Palette.rowSelected : Color.clear, in: RoundedRectangle(cornerRadius: 8))
         .padding(.horizontal, -8)
         .contentShape(Rectangle())
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
         .onTapGesture { Clicks.click(row, model: model) { model.open(todo.id) } }
+        .onDrag { model.beginDrag(todo) }
+        .onDrop(of: [AppModel.dragType], delegate: RowDrop(model: model, row: row, height: height))
+        .dropLine(model, row: row)
+        .opacity(model.dragging.contains(todo.id) && model.dropTarget != nil ? 0.45 : 1)
         .contextMenu { ItemsMenu(model: model, forRow: row) }
         .popover(isPresented: model.popoverBinding(for: todo.id, card: false), arrowEdge: .bottom) {
             Pickers(model: model, todo: todo)

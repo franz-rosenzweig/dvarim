@@ -2,76 +2,42 @@ import AppKit
 import Observation
 import SwiftUI
 
-/// The app's one model: where the to-dos are, what the sidebar holds, and the
-/// list in front. Every change is a request to the backend, whichever it is,
-/// followed by asking again; the engine (or the server) decides everything.
+/// What every window shares: where the to-dos are and the backend that
+/// answers for them, the sidebar's state, the sync, who is signed in, and the
+/// one undo history. Each window has its own AppModel, for its own list.
 @MainActor
 @Observable
-final class AppModel {
-    static let shared = AppModel()
+final class Session {
+    static let shared = Session()
 
-    enum Phase: Equatable {
-        case starting
-        case signIn(String?)            // a message, after a refusal
-        case ready
-        case failed(String)
-    }
-
-    private(set) var phase: Phase = .starting
+    private(set) var phase: AppModel.Phase = .starting
     private(set) var backend: Backend?
     private(set) var state = AppState.empty
-    private(set) var content = ListContent()
-    private(set) var loading = false
     private(set) var sync = SyncState()
     private(set) var person: Account.Person?
-    var place: Place = .today {
-        didSet {
-            guard place != oldValue else { return }
-            selected = []
-            anchor = nil
-            openId = nil
-            popover = nil
-            Task { await loadList() }
-        }
-    }
-    /// The rows chosen ("t:<id>", "p:<id>"), and the one the keyboard moves from.
-    var selected: Set<String> = []
-    var anchor: String?
-    /// The to-do open in place as its card, and whether its title takes the keyboard.
-    var openId: String?
-    var focusTitle = false
-    /// Made a moment ago: its card shows an empty title rather than "New To-Do".
-    var newId: String?
-    /// The picker showing, and for which to-do.
-    var popover: Popover?
-    /// Quick Find, while it is open.
-    var finding = false
-    /// The heading being renamed, by its id ("<project>:<name>"), and whether the list's title is.
-    var renamingHeading: String?
-    var renamingTitle = false
-
-    enum Popover: Equatable {
-        case when(String), deadline(String), tags(String), move(String), repeating(String)
-        var todoId: String {
-            switch self { case .when(let id), .deadline(let id), .tags(let id), .move(let id), .repeating(let id): id }
-        }
-    }
-    /// What the last thing done says, with its Undo (a toast at the foot of the list).
-    var notice: String?
 
     /// The app's own undo history, a step per change, for ⌘Z and ⇧⌘Z (the Edit
-    /// menu sends typing's undo to the text field instead). Not the window's:
+    /// menu sends typing's undo to the text field instead). Not a window's:
     /// that one groups by event, and a change made after an await, outside any
     /// event, could land in a group another change had left open, so that one
-    /// ⌘Z undid two things.
+    /// ⌘Z undid two things. One for all the windows, as a change in one shows
+    /// in every one.
     let history: UndoManager = {
         let u = UndoManager()
         u.groupsByEvent = false
         return u
     }()
-    var undoManager: UndoManager? { history }
 
+    private struct Window { weak var model: AppModel? }
+    private var windows: [Window] = []
     private var refreshTask: Task<Void, Never>?
+
+    func attach(_ m: AppModel) {
+        windows.removeAll { $0.model == nil }
+        windows.append(Window(model: m))
+    }
+
+    var open: [AppModel] { windows.compactMap(\.model) }
 
     // ---- starting, and which backend --------------------------------------------------
 
@@ -155,7 +121,7 @@ final class AppModel {
         await Account.signOut()
         person = nil
         state = .empty
-        content = ListContent()
+        for w in open { w.clear() }
         phase = .signIn(nil)
         return nil
     }
@@ -168,8 +134,8 @@ final class AppModel {
 
     // ---- reading ----------------------------------------------------------------------
 
-    /// Something changed somewhere: ask again, once, a moment later.
-    private func changed() {
+    /// Something changed somewhere: every window asks again, once, a moment later.
+    func changed() {
         refreshTask?.cancel()
         refreshTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 150_000_000)
@@ -178,10 +144,131 @@ final class AppModel {
         }
     }
 
+    /// The sidebar's state, then each window's list.
     func refresh() async {
         guard let backend else { return }
         if let j = try? await backend.request("GET", "/api/state", body: nil) { state = AppState(j) }
-        // a project or area that has gone (deleted, or elsewhere) is not a place any more
+        for w in open { await w.reconcile() }
+    }
+
+    func ask(_ method: String, _ path: String, _ body: [String: Any]? = nil) async throws -> J {
+        guard let backend else { throw APIError(status: 0, message: "Not ready yet.") }
+        let j = try await backend.request(method, path, body: body)
+        changed()
+        return j
+    }
+
+    func catchUp() { backend?.catchUp() }
+}
+
+/// One window's model: which list it shows, what is chosen in it, the card
+/// open in it and the picker showing. Everything shared (the backend, the
+/// sidebar's state, the undo history) is the Session's, and read through here.
+/// Every change is a request to the backend, followed by asking again; the
+/// engine (or the server) decides everything.
+@MainActor
+@Observable
+final class AppModel {
+    /// The first window's, and the one the self-test drives.
+    static let shared = AppModel(session: .shared)
+    private static var handedOut = false
+
+    /// A window's model: the first window gets the shared one, each other its own.
+    static func forWindow() -> AppModel {
+        if !handedOut { handedOut = true; return shared }
+        return AppModel(session: .shared)
+    }
+
+    enum Phase: Equatable {
+        case starting
+        case signIn(String?)            // a message, after a refusal
+        case ready
+        case failed(String)
+    }
+
+    let session: Session
+
+    init(session: Session) {
+        self.session = session
+        session.attach(self)
+    }
+
+    var phase: Phase { session.phase }
+    var backend: Backend? { session.backend }
+    var state: AppState { session.state }
+    var sync: SyncState { session.sync }
+    var person: Account.Person? { session.person }
+    var history: UndoManager { session.history }
+    var undoManager: UndoManager? { session.history }
+
+    private(set) var content = ListContent()
+    private(set) var loading = false
+    var place: Place = .today {
+        didSet {
+            guard place != oldValue else { return }
+            selected = []
+            anchor = nil
+            openId = nil
+            popover = nil
+            Task { await loadList() }
+        }
+    }
+    /// The rows chosen ("t:<id>", "p:<id>"), and the one the keyboard moves from.
+    var selected: Set<String> = []
+    var anchor: String?
+    /// The to-do open in place as its card, and whether its title takes the keyboard.
+    var openId: String?
+    var focusTitle = false
+    /// Made a moment ago: its card shows an empty title rather than "New To-Do".
+    var newId: String?
+    /// The picker showing, and for which to-do.
+    var popover: Popover?
+    /// Quick Find, while it is open.
+    var finding = false
+    /// The heading being renamed, by its id ("<project>:<name>"), and whether the list's title is.
+    var renamingHeading: String?
+    var renamingTitle = false
+    /// What is being dragged, and where it would land (DragDrop.swift).
+    var dragging: [String] = []
+    var dropTarget: DropTarget?
+
+    enum Popover: Equatable {
+        case when(String), deadline(String), tags(String), move(String), repeating(String)
+        var todoId: String {
+            switch self { case .when(let id), .deadline(let id), .tags(let id), .move(let id), .repeating(let id): id }
+        }
+    }
+    /// What the last thing done says, with its Undo (a toast at the foot of the list).
+    var notice: String?
+
+    // ---- the shared parts, asked of the Session ------------------------------------
+
+    func start() async { await session.start() }
+    func signIn(password: String, name: String?) async { await session.signIn(password: password, name: name) }
+    @discardableResult func signOut() async -> String? { await session.signOut() }
+    func switchMode(_ m: Mode) async { await session.switchMode(m) }
+    func catchUp() { session.catchUp() }
+    /// Everything asked again: the sidebar's state and every window's list.
+    func refresh() async { await session.refresh() }
+
+    func ask(_ method: String, _ path: String, _ body: [String: Any]? = nil) async throws -> J {
+        try await session.ask(method, path, body)
+    }
+
+    /// Signed out: nothing of the last person's stays on screen.
+    func clear() {
+        content = ListContent()
+        selected = []
+        anchor = nil
+        openId = nil
+        popover = nil
+    }
+
+    // ---- reading ----------------------------------------------------------------------
+
+    /// After the state is asked again: a project or area that has gone (deleted,
+    /// or elsewhere) is not a place any more; then the list.
+    func reconcile() async {
         switch place {
         case .project(let id) where state.project(id) == nil: place = .today
         case .area(let id) where state.area(id) == nil: place = .today
@@ -197,13 +284,6 @@ final class AppModel {
         defer { loading = false }
         guard let j = try? await backend.request("GET", asked.path, body: nil), asked == place else { return }
         content = Lists.content(asked, j, state: state)
-    }
-
-    func ask(_ method: String, _ path: String, _ body: [String: Any]? = nil) async throws -> J {
-        guard let backend else { throw APIError(status: 0, message: "Not ready yet.") }
-        let j = try await backend.request(method, path, body: body)
-        changed()
-        return j
     }
 
     // ---- ticking off, with ⌘Z --------------------------------------------------------
@@ -239,9 +319,7 @@ final class AppModel {
 
     /// The opposite registers its own opposite at once, while the undo manager
     /// is still undoing, so it lands on the redo stack; the request itself
-    /// follows. Registered inside a group of its own: from outside a key
-    /// event an undo manager would otherwise open one and leave it open until
-    /// the run loop next turns over, and an Undo in between undoes nothing.
+    /// follows. Each change is a group of its own.
     func register(_ name: String, undo: @escaping Step, redo: @escaping Step) {
         let u = history
         u.beginUndoGrouping()
@@ -254,8 +332,6 @@ final class AppModel {
         u.setActionName(name)
         u.endUndoGrouping()
     }
-
-    func catchUp() { backend?.catchUp() }
 }
 
 /// An answer of the API as sections of rows, list by list.
