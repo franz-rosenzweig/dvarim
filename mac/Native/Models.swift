@@ -153,7 +153,7 @@ struct AppState: Sendable {
         looseProjects = j["looseProjects"].array.map(Project.init)
         tags = j["tags"].array.compactMap { $0["name"].string ?? $0.string }
         weekStartsOn = j["settings"]["weekStartsOn"].int ?? 0
-        badgeCount = j["settings"]["badge"].string ?? "today"
+        badgeCount = j["settings"]["badgeCount"].string ?? "today"
     }
 
     func project(_ id: String) -> Project? {

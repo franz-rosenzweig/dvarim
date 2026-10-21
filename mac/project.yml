@@ -101,6 +101,13 @@ targets:
         # a server on the tailnet or the local network; 127.0.0.1 needs no asking
         NSLocalNetworkUsageDescription: Dvarim talks to your Dvarim server when it is on your local network or tailnet.
         NSUserNotificationsUsageDescription: Dvarim shows your to-do reminders.
+        # "New To-Do in Dvarim Native" in every app's Services menu (ServiceProvider)
+        NSServices:
+          - NSMenuItem:
+              default: New To-Do in Dvarim Native
+            NSMessage: newToDo
+            NSPortName: Dvarim Native
+            NSSendTypes: [public.utf8-plain-text]
     entitlements:
       path: Native/DvarimNative.entitlements
       properties:

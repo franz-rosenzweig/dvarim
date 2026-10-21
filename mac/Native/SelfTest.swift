@@ -15,7 +15,7 @@ enum SelfTest {
     static let suite = "moe.ptr.dvarim.native.selftest"
     private static var failures = 0
     private static var lines: [String] = []
-    private static var step = 0
+    static var step = 0
 
     static var out: URL {
         URL(fileURLWithPath: UserDefaults.standard.string(forKey: "SelfTestOut") ?? NSTemporaryDirectory(), isDirectory: true)
@@ -28,6 +28,9 @@ enum SelfTest {
         Prefs.store = UserDefaults(suiteName: suite)!
         Prefs.store.set(server.absoluteString, forKey: Prefs.serverKey)
         Prefs.store.set(Mode.copy.rawValue, forKey: Prefs.modeKey)
+        // the Mac's parts off to begin with; the test turns on what it tries
+        Prefs.store.set(false, forKey: Shell.menuBarKey)
+        Prefs.store.set(false, forKey: Shell.remindersKey)
         Account.appFolder = "Dvarim Native self-test"
         Account.forgetCookies(for: server)
         try? FileManager.default.removeItem(at: appFolder)
@@ -121,6 +124,9 @@ enum SelfTest {
         // 5d. round 4: several windows, ⌘A, and dropping to-dos everywhere
         await roundFour(m, folder)
 
+        // 5e. round 5: the Mac's parts (SelfTestShell.swift)
+        await roundFive(m, folder)
+
         // 6. the folder keeps the storage contract (engine/src/storage-conformance.js)
         if let local = m.backend as? LocalBackend, let answer = try? await local.engine.conformance() {
             let j = J(data: answer.body)
@@ -151,6 +157,9 @@ enum SelfTest {
             check(await until(5) { await status(t.id, remote) == "open" }, "and ⌘Z once more reopens it")
         }
         await snap("remote")
+
+        // 7b. with no server, what Quick Entry saves is kept, and goes in after
+        await outbox(m)
 
         // 8. signing out, from the copy: the token, the copy and the sign-in go
         await m.switchMode(.copy)
@@ -603,7 +612,7 @@ enum SelfTest {
     /// unavailable in favour of ScreenCaptureKit, which would ask for the
     /// Screen Recording permission, but the function is still there and still
     /// pictures an app's own windows without asking.
-    private static func windowImage(_ id: CGWindowID) -> CGImage? {
+    static func windowImage(_ id: CGWindowID) -> CGImage? {
         typealias Create = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
         guard let sym = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CGWindowListCreateImage") else { return nil }
         let create = unsafeBitCast(sym, to: Create.self)

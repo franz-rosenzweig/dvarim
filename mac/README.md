@@ -184,12 +184,51 @@ to the Trash.
   the engine for the to-do as it is now, rather than as the list last drew it,
   however quickly the changes come.
 
-**Not yet**, in the rounds to come:
-- everything this app does beyond the window: Quick Entry on ⌃Space, the menu
-  bar, the Dock badge, reminders, Shortcuts and Siri, the Services menu, the
-  outbox and opening at login.
+**Round 5:**
+- **Quick Entry**, from anywhere, on a chord: ⌃Space, or ⌃⌥Space while the
+  web-view Dvarim is in Applications, since that one has ⌃Space. Settings →
+  This Mac records another.
+  - It has a title and notes. Return saves, Escape goes, and the app I was in
+    keeps the keyboard and stays in front.
+  - The engine reads the line as it does everywhere: "tomorrow 3pm",
+    "!friday" for a deadline, "@9am" for a reminder, "#tag".
+- **Today in the menu bar:** the count beside the clock and the list behind it.
+  Click a box to complete a to-do. Quick Entry, Open and Quit are at its foot.
+- **The Dock badge** counts Today, the Inbox, or nothing. It follows the same
+  setting the web app's Settings has, and Settings → This Mac sets it too.
+- **Reminders on this Mac.**
+  - Each one has a Complete button, and a click on it opens the to-do in its
+    list.
+  - macOS only allows them for an app in Applications.
+  - The server can send them over Signal as well. I keep one of the two on,
+    or I'm told twice.
+- **Shortcuts, Spotlight and Siri:**
+  - Create To-Do, into the Inbox or Today, read like Quick Entry;
+  - Show Quick Entry;
+  - Open List.
+- **The Services menu.** "New To-Do in Dvarim Native" works on whatever text is
+  chosen in any app. It opens Quick Entry with that text: the first line is the
+  title and the rest are the notes, and I can change them before saving.
+  System Settings → Keyboard → Keyboard Shortcuts → Services can give it a key.
+- **Kept until it can be sent.** In Remote mode the server may not be
+  reachable. Then whatever Quick Entry, Shortcuts, the menu bar or a reminder
+  saves is kept on this Mac, and it goes in once the server is back. Quick
+  Entry and the menu bar say how many are waiting. The copy never needs this:
+  it's on this Mac.
+- **Open at login**, in Settings → This Mac.
+- **Nothing twice.** While the web-view Dvarim is in Applications, its menu bar
+  and reminders are the ones on, and this app's start off. Settings says so,
+  and they are switches.
 
-Until then this app is still the one for those.
+**Not yet**, in the round to come:
+- the calendars' events in Today and Upcoming;
+- Dvarim's own settings beyond the badge (the week's first day, when completed
+  to-dos go to the Logbook, the calendars); the web app's Settings sets them
+  meanwhile;
+- polish, and then taking over as Dvarim: the name, ⌃Space, and the menu bar
+  and reminders on to begin with.
+
+Until then the web-view app is still the one for those.
 
 **Building and testing it:**
 
@@ -216,13 +255,20 @@ never touches my vault or my server. Then it runs the real app against it:
 - ⌘A, and dropping in a list, into This Evening, on a day in Upcoming, on a
   project and on Someday, each undone;
 - a line written into the folder by someone else;
+- Quick Entry typed into and saved, the Services menu's text in it, the Dock
+  badge both ways, Today in the menu bar and a tick there, which reminders
+  are asked for, a reminder's Complete and its click, the three Shortcuts, and
+  the chord;
 - the storage contract's checks;
-- Remote mode;
+- Remote mode, and a Quick Entry line kept with no server and sent once it's back;
 - signing out.
 
 It writes PASS and FAIL lines and a picture of each step to
 `build-native/selftest/`. It keeps its settings, folder, token and cookies to
-itself, and removes them afterwards.
+itself, and removes them afterwards. It also has the keyboard while it runs,
+so I don't type meanwhile: a key pressed then goes into its Quick Entry. It
+doesn't turn on reminders or open at login, and it doesn't keep the menu bar
+item.
 
 What I learned building it:
 - **Foundation's JSON parser drops a byte-order mark, even inside a string.**
@@ -239,6 +285,15 @@ What I learned building it:
 - **Undo registers its own reverse straight away, inside a group of its own.**
   That way redo works, and an undo from outside a key event doesn't leave a
   group open.
+- **Two apps can register the same global chord.** Carbon refuses a chord only
+  when this app holds it already, so nothing says the web-view Dvarim has
+  ⌃Space. Dvarim Native takes ⌃⌥Space while that app is in Applications.
+- **A menu bar item on macOS 26 is a scene's.** There is one item with a
+  button, plus a copy without one for each display. A click on it is answered
+  outside the app, so a test can't click it; the self-test draws its list in a
+  panel of its own instead.
+- **A Mac that sleeps stops a build.** It isn't stuck: it waits, at no CPU,
+  until the lid opens.
 
 ## What you need
 
