@@ -16,6 +16,7 @@ targets:
       configVariants: []
     sources:
       - path: Dvarim
+      - path: Shared
     settings:
       base:
         PRODUCT_NAME: Dvarim
@@ -61,3 +62,47 @@ targets:
         com.apple.security.app-sandbox: false
         # the hardened runtime's door to EventKit, for the device's calendars in folder mode
         com.apple.security.personal-information.calendars: true
+
+  # Dvarim as a native Mac app: SwiftUI and AppKit for every screen, and the
+  # engine (engine/src) inside it in JavaScriptCore. Beside the web-view app
+  # until it does everything that one does; built by build-native.sh.
+  DvarimNative:
+    type: application
+    platform: macOS
+    deploymentTarget: "26.0"
+    scheme:
+      configVariants: []
+    sources:
+      - path: Native
+        excludes: ["Engine/**"]
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_NAME: Dvarim Native
+        PRODUCT_BUNDLE_IDENTIFIER: moe.ptr.dvarim.native
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_STYLE: Automatic
+        COMBINE_HIDPI_IMAGES: YES
+    info:
+      path: Native/Info.plist
+      properties:
+        CFBundleName: Dvarim Native
+        CFBundleDisplayName: Dvarim Native
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSMinimumSystemVersion: "26.0"
+        LSApplicationCategoryType: public.app-category.productivity
+        NSHumanReadableCopyright: ""
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        # a server on the tailnet or the local network; 127.0.0.1 needs no asking
+        NSLocalNetworkUsageDescription: Dvarim talks to your Dvarim server when it is on your local network or tailnet.
+        NSUserNotificationsUsageDescription: Dvarim shows your to-do reminders.
+    entitlements:
+      path: Native/DvarimNative.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+
