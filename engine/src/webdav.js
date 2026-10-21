@@ -213,7 +213,10 @@ export class WebDavSync {
     // A device's first round with a vault that already has notes: the only
     // thing it brings of its own is the tutorial it started with (Store.open),
     // and left untouched that stays out of the vault, and goes from here too.
-    if (!Object.keys(agreed).length && !remote.has(TUTORIAL_PATH) && [...remote.keys()].some((p) => syncable(p))
+    // If the vault has a tour of its own, that one comes down as it is: merged
+    // with no common ancestor, two wordings of one note would be kept side by
+    // side, line after line.
+    if (!Object.keys(agreed).length && [...remote.keys()].some((p) => syncable(p))
         && local.has(TUTORIAL_PATH) && isUntouchedTutorial(local.get(TUTORIAL_PATH))) {
       store.receive(TUTORIAL_PATH, null);
       local.delete(TUTORIAL_PATH);
