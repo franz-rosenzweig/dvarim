@@ -107,15 +107,15 @@ struct ListIcon: View {
 
     var body: some View {
         let (name, colour): (String, Color) = switch place {
-        case .inbox: ("tray.fill", Color(red: 0.24, green: 0.53, blue: 0.96))
-        case .today: ("star.fill", Color(red: 0.98, green: 0.78, blue: 0.13))
-        case .upcoming: ("calendar", Color(red: 0.93, green: 0.25, blue: 0.40))
-        case .anytime: ("square.stack.3d.up.fill", Color(red: 0.20, green: 0.68, blue: 0.62))
-        case .someday: ("archivebox.fill", Color(red: 0.80, green: 0.66, blue: 0.40))
-        case .logbook: ("checkmark.square.fill", Color(red: 0.30, green: 0.70, blue: 0.40))
-        case .trash: ("trash", Color(nsColor: .secondaryLabelColor))
-        case .area: ("shippingbox", Color(nsColor: .secondaryLabelColor))
-        case .project: ("circle", Color(red: 0.24, green: 0.53, blue: 0.96))
+        case .inbox: ("tray.fill", Palette.inbox)
+        case .today: ("star.fill", Palette.star)
+        case .upcoming: ("calendar", Palette.upcoming)
+        case .anytime: ("square.stack.3d.up.fill", Palette.anytime)
+        case .someday: ("archivebox.fill", Palette.someday)
+        case .logbook: ("checkmark.square.fill", Palette.logbook)
+        case .trash: ("trash", Palette.trash)
+        case .area: ("shippingbox", Palette.text2)
+        case .project: ("circle", Palette.accent)
         }
         Image(systemName: name).font(.system(size: size, weight: .semibold)).foregroundStyle(colour)
     }
@@ -125,7 +125,7 @@ struct ListIcon: View {
 struct ProgressPie: View {
     let progress: Double
     var size: CGFloat = 14
-    var colour = Color(red: 0.24, green: 0.53, blue: 0.96)
+    var colour = Palette.accent
 
     var body: some View {
         ZStack {
@@ -146,236 +146,6 @@ struct PieSlice: Shape {
         p.addArc(center: c, radius: r.width / 2, startAngle: .degrees(-90), endAngle: .degrees(-90 + 360 * min(progress, 1)), clockwise: false)
         p.closeSubpath()
         return p
-    }
-}
-
-// MARK: - a list
-
-struct ListScreen: View {
-    @Bindable var model: AppModel
-
-    var body: some View {
-        List(selection: $model.selection) {
-            ListTitle(model: model)
-                .listRowSeparator(.hidden)
-                .selectionDisabled()
-            if !model.content.notes.isEmpty {
-                Text(model.content.notes).foregroundStyle(Color(nsColor: .secondaryLabelColor))
-                    .listRowSeparator(.hidden).selectionDisabled()
-            }
-            ForEach(model.content.sections) { section in
-                if let title = section.title {
-                    SectionTitle(title: title, subtitle: section.subtitle)
-                        .listRowSeparator(.hidden).selectionDisabled()
-                }
-                ForEach(section.rows) { row in
-                    switch row {
-                    case .todo(let t):
-                        TodoRow(model: model, todo: t).tag(row.id)
-                    case .project(let p):
-                        ProjectRow(project: p).tag(row.id)
-                            .onTapGesture(count: 2) { model.place = .project(p.id) }
-                    }
-                }
-                .listRowSeparator(.hidden)
-            }
-            if model.content.todoCount == 0 && model.content.sections.allSatisfy({ $0.rows.isEmpty }) && !model.loading {
-                EmptyList(place: model.place).listRowSeparator(.hidden).selectionDisabled()
-            }
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(Color(nsColor: .textBackgroundColor))
-        .contextMenu(forSelectionType: String.self) { ids in
-            let todos = model.content.allTodos.filter { ids.contains("t:" + $0.id) }
-            if !todos.isEmpty {
-                Button(todos.allSatisfy(\.isOpen) ? "Complete" : "Reopen") {
-                    Task { for t in todos { await model.toggle(t) } }
-                }
-            }
-        } primaryAction: { ids in
-            if let id = ids.first, id.hasPrefix("p:") { model.place = .project(String(id.dropFirst(2))) }
-        }
-        .overlay(alignment: .bottom) { Notice(model: model) }
-        .toolbar { ToolbarItem(placement: .automatic) { SyncBadge(sync: model.sync) } }
-        .navigationTitle("")
-    }
-}
-
-struct ListTitle: View {
-    let model: AppModel
-    var body: some View {
-        HStack(spacing: 10) {
-            switch model.place {
-            case .project(let id):
-                ProgressPie(progress: model.state.project(id)?.progress ?? 0, size: 24)
-                Text(model.state.project(id)?.name ?? "")
-            case .area(let id):
-                ListIcon(place: model.place, size: 24)
-                Text(model.state.area(id)?.name ?? "")
-            default:
-                ListIcon(place: model.place, size: 24)
-                Text(model.place.title)
-            }
-        }
-        .font(.system(size: 26, weight: .bold))
-        .padding(.top, 18)
-        .padding(.bottom, 8)
-    }
-}
-
-struct SectionTitle: View {
-    let title: String
-    let subtitle: String?
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(title).font(.system(size: 14, weight: .bold))
-                if let subtitle { Text(subtitle).font(.system(size: 12)).foregroundStyle(Color(nsColor: .secondaryLabelColor)) }
-            }
-            Rectangle().fill(Color(nsColor: .separatorColor)).frame(height: 1)
-        }
-        .padding(.top, 14)
-    }
-}
-
-struct EmptyList: View {
-    let place: Place
-    var body: some View {
-        Text(place == .today ? "Nothing for today." : "Nothing here.")
-            .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
-            .frame(maxWidth: .infinity)
-            .padding(.top, 60)
-    }
-}
-
-/// A to-do's row: its box, its title, and what it carries beside it.
-struct TodoRow: View {
-    let model: AppModel
-    let todo: Todo
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 9) {
-            CheckBox(done: !todo.isOpen, canceled: todo.status == "canceled") { Task { await model.toggle(todo) } }
-                .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 3 }
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(todo.title.isEmpty ? "New To-Do" : todo.title)
-                        .foregroundStyle(todo.isOpen ? Color(nsColor: .labelColor) : Color(nsColor: .secondaryLabelColor))
-                        .strikethrough(todo.status == "canceled")
-                    if !todo.notes.isEmpty { Image(systemName: "doc.text").font(.system(size: 10)).foregroundStyle(Color(nsColor: .tertiaryLabelColor)) }
-                    if !todo.checklist.isEmpty { Image(systemName: "list.bullet").font(.system(size: 10)).foregroundStyle(Color(nsColor: .tertiaryLabelColor)) }
-                    if todo.repeatRule != nil { Image(systemName: "repeat").font(.system(size: 10)).foregroundStyle(Color(nsColor: .tertiaryLabelColor)) }
-                    ForEach(todo.tags, id: \.self) { TagChip(name: $0) }
-                }
-                if let context = contextLine {
-                    Text(context).font(.system(size: 11)).foregroundStyle(Color(nsColor: .secondaryLabelColor))
-                }
-            }
-            Spacer(minLength: 8)
-            if let when = whenLabel {
-                Text(when).font(.system(size: 11, weight: .medium)).foregroundStyle(Color(nsColor: .secondaryLabelColor))
-            }
-            if let d = todo.deadline, todo.isOpen {
-                Label(Dates.deadline(d, today: model.state.today), systemImage: "flag.fill")
-                    .labelStyle(.titleAndIcon)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(d <= model.state.today ? Color.red : Color(nsColor: .secondaryLabelColor))
-            }
-        }
-        .padding(.vertical, 3)
-    }
-
-    /// The project (or area) it belongs to, where the list mixes them.
-    private var contextLine: String? {
-        switch model.place {
-        case .today, .upcoming, .anytime, .someday, .logbook, .trash, .inbox:
-            return todo.projectName ?? todo.areaName
-        default:
-            return nil
-        }
-    }
-
-    /// Its start date, where the list does not already say it.
-    private var whenLabel: String? {
-        guard let w = todo.when, todo.isOpen else { return nil }
-        switch model.place {
-        case .today, .upcoming: return nil
-        default: return Dates.short(w, today: model.state.today)
-        }
-    }
-}
-
-struct ProjectRow: View {
-    let project: Project
-    var body: some View {
-        HStack(spacing: 9) {
-            ProgressPie(progress: project.progress)
-            Text(project.name.isEmpty ? "New Project" : project.name).fontWeight(.semibold)
-            Spacer()
-        }
-        .padding(.vertical, 3)
-    }
-}
-
-struct CheckBox: View {
-    let done: Bool
-    var canceled = false
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 3.5)
-                    .strokeBorder(done ? Color.clear : Color(nsColor: .tertiaryLabelColor), lineWidth: 1.2)
-                    .background(RoundedRectangle(cornerRadius: 3.5).fill(done ? Color(red: 0.24, green: 0.53, blue: 0.96) : Color.clear))
-                if done {
-                    Image(systemName: canceled ? "xmark" : "checkmark").font(.system(size: 9, weight: .bold)).foregroundStyle(Color.white)
-                }
-            }
-            .frame(width: 14, height: 14)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(done ? "Reopen" : "Complete")
-    }
-}
-
-struct TagChip: View {
-    let name: String
-    var body: some View {
-        Text(name)
-            .font(.system(size: 10.5))
-            .padding(.horizontal, 6).padding(.vertical, 1)
-            .foregroundStyle(Color(nsColor: .secondaryLabelColor))
-            .overlay(Capsule().strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1))
-    }
-}
-
-/// What was just done, with Undo, at the foot of the window.
-struct Notice: View {
-    @Bindable var model: AppModel
-    @State private var hide: Task<Void, Never>?
-
-    var body: some View {
-        if let text = model.notice {
-            HStack(spacing: 12) {
-                Text(text).lineLimit(1)
-                if model.undoManager?.canUndo == true {
-                    Button("Undo") { model.undoManager?.undo(); model.notice = nil }.buttonStyle(.borderless)
-                }
-            }
-            .padding(.horizontal, 14).padding(.vertical, 8)
-            .glassEffect(.regular, in: Capsule())
-            .padding(.bottom, 14)
-            .onAppear { schedule() }
-            .onChange(of: text) { _, _ in schedule() }
-        }
-    }
-
-    private func schedule() {
-        hide?.cancel()
-        hide = Task { try? await Task.sleep(nanoseconds: 4_000_000_000); if !Task.isCancelled { model.notice = nil } }
     }
 }
 

@@ -9,6 +9,7 @@ import SwiftUI
 struct DvarimNativeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var model = AppModel.shared
+    @Environment(\.openWindow) private var openWindow
 
     init() {
         // the self-test's settings, folder and sign-in are its own, from the first read
@@ -31,6 +32,30 @@ struct DvarimNativeApp: App {
                 go("Logbook", .logbook, "6")
                 go("Trash", .trash, "7")
             }
+            CommandGroup(replacing: .newItem) {
+                Button("New To-Do") { Task { await model.newTodo() } }.keyboardShortcut("n")
+                Button("New Window") { openWindow(id: "main") }.keyboardShortcut("n", modifiers: [.control, .command])
+            }
+            CommandMenu("Items") {
+                Button("Complete") { Task { await model.completeChosen() } }.keyboardShortcut("k")
+                Button("Cancel") { Task { await model.cancelChosen() } }.keyboardShortcut("k", modifiers: [.option, .command])
+                Divider()
+                Button("When…") { pick { .when($0) } }.keyboardShortcut("s")
+                Button("Today") { Task { await model.setWhen(.today) } }.keyboardShortcut("t")
+                Button("This Evening") { Task { await model.setWhen(.evening) } }.keyboardShortcut("e")
+                Button("Anytime") { Task { await model.setWhen(.anytime) } }.keyboardShortcut("r")
+                Button("Someday") { Task { await model.setWhen(.someday) } }.keyboardShortcut("o")
+                Divider()
+                Button("Deadline…") { pick { .deadline($0) } }.keyboardShortcut("d", modifiers: [.shift, .command])
+                Button("Tags…") { pick { .tags($0) } }.keyboardShortcut("t", modifiers: [.shift, .command])
+                Button("Move…") { pick { .move($0) } }.keyboardShortcut("m", modifiers: [.shift, .command])
+                Button("Checklist") { if let t = model.chosen.first { model.open(t.id, focusTitle: false) } }.keyboardShortcut("c", modifiers: [.shift, .command])
+                Divider()
+                Button("Duplicate") { Task { await model.duplicateChosen() } }.keyboardShortcut("d")
+                Button("Move to Trash") { Task { await model.trashChosen() } }.keyboardShortcut(.delete, modifiers: [.command])
+                Divider()
+                Button("Log Completed") { Task { await model.logNow() } }.keyboardShortcut("y", modifiers: [.shift, .command])
+            }
             CommandGroup(after: .toolbar) {
                 Button("Reload") { Task { await model.refresh() } }.keyboardShortcut("r")
             }
@@ -39,6 +64,11 @@ struct DvarimNativeApp: App {
         Settings {
             SettingsView(model: model)
         }
+    }
+
+    private func pick(_ p: (String) -> AppModel.Popover) {
+        guard let t = model.chosen.first else { return }
+        model.popover = p(t.id)
     }
 
     private func go(_ title: String, _ place: Place, _ key: KeyEquivalent) -> some View {
