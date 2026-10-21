@@ -106,7 +106,11 @@ struct Project: Identifiable, Hashable, Sendable {
         areaName = j["areaName"].string
         progress = j["progress"].double ?? 0
         openCount = j["openCount"].int ?? 0
-        headings = j["headings"].array.map { Heading(id: $0["id"].string ?? "", name: $0["name"].string ?? "", archived: $0["archived"].bool) }
+        // archived is the day it was archived, or nothing
+        headings = j["headings"].array.map { h in
+            Heading(id: h["id"].string ?? "", name: h["name"].string ?? "",
+                    archived: h["archived"].exists && (h["archived"].raw as? Bool) != false)
+        }
     }
 }
 
@@ -163,8 +167,25 @@ enum Place: Hashable, Sendable {
     case inbox, today, upcoming, anytime, someday, logbook, trash
     case project(String)
     case area(String)
+    /// Quick Find's own lists: tomorrow, deadlines, repeating, projects, logged-projects.
+    case extra(String)
 
     static let lists: [Place] = [.inbox, .today, .upcoming, .anytime, .someday, .logbook, .trash]
+
+    /// A list id as the API names it (Quick Find's answers).
+    init?(list id: String) {
+        switch id {
+        case "inbox": self = .inbox
+        case "today": self = .today
+        case "upcoming": self = .upcoming
+        case "anytime": self = .anytime
+        case "someday": self = .someday
+        case "logbook": self = .logbook
+        case "trash": self = .trash
+        case "tomorrow", "deadlines", "repeating", "projects", "logged-projects": self = .extra(id)
+        default: return nil
+        }
+    }
 
     /// The API path that answers it.
     var path: String {
@@ -178,6 +199,7 @@ enum Place: Hashable, Sendable {
         case .trash: "/api/lists/trash"
         case .project(let id): "/api/projects/\(id)"
         case .area(let id): "/api/areas/\(id)"
+        case .extra(let id): "/api/lists/\(id)"
         }
     }
 
@@ -190,7 +212,12 @@ enum Place: Hashable, Sendable {
         case .someday: "Someday"
         case .logbook: "Logbook"
         case .trash: "Trash"
-        case .project, .area: ""
+        case .extra("tomorrow"): "Tomorrow"
+        case .extra("deadlines"): "Deadlines"
+        case .extra("repeating"): "Repeating"
+        case .extra("projects"): "All Projects"
+        case .extra("logged-projects"): "Logged Projects"
+        case .project, .area, .extra: ""
         }
     }
 }

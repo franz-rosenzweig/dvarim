@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// The colours of the web app's stylesheet (frontend/src/app.css), light and
-/// dark, so the two read as the same app. Explicit colours, not hierarchical
+/// dark, so the two read as the same app: its earthy lists and sage accent. Explicit colours, not hierarchical
 /// ones: .tertiary and friends can vanish inside rows.
 enum Palette {
     static let main = dynamic(0xFFFFFF, 0x2A2A2D)
@@ -12,19 +12,22 @@ enum Palette {
     static let text3 = dynamic(0xA1A1A6, 0x6E6E73)
     static let hair = dynamic(0xE5E5EA, 0x3A3A3E)
     static let hair2 = dynamic(0xEFEFF2, 0x333337)
-    static let rowSelected = dynamic(0xCFE1FA, 0x2A3F5C)
+    static let rowSelected = dynamic(0xE4EADB, 0x2F3828)
     static let pill = dynamic(0xEDEDF0, 0x3A3A3E)
     static let check = dynamic(0xC7C7CC, 0x5A5A60)
-    static let accent = dynamic(0x2B7DE9, 0x4C9AFF)
-    static let deadline = dynamic(0xE23F3F, 0xFF5C5C)
-    static let moon = dynamic(0x4C7BD9, 0x7AA2F7)
-    static let star = Color(hex: 0xF5C33B)
-    static let upcoming = Color(hex: 0xEE4D67)
-    static let anytime = Color(hex: 0x3FB4A6)
-    static let someday = Color(hex: 0xC5A166)
-    static let logbook = Color(hex: 0x4CB35B)
-    static let trash = Color(hex: 0x9A9AA0)
-    static let inbox = Color(hex: 0x3D87F5)
+    static let checkOn = dynamic(0x668250, 0x76925F)
+    // the sage of the app icon's tick
+    static let accent = dynamic(0x668250, 0x7E9A66)
+    static let deadline = dynamic(0xBE3B33, 0xEA5F57)
+    static let moon = dynamic(0x4F5A8E, 0x8E98D2)
+    // each list its own colour, earthy and muted, as its icon draws in it
+    static let inbox = dynamic(0x6B4A2B, 0xC9A57B)
+    static let star = dynamic(0xD08E2C, 0xE8A944)
+    static let upcoming = dynamic(0x587089, 0x8FA4BC)
+    static let anytime = dynamic(0x7D6893, 0xA996C4)
+    static let someday = dynamic(0x7C8A45, 0xAAB66B)
+    static let logbook = dynamic(0xA5553F, 0xD2826C)
+    static let trash = dynamic(0xA0978B, 0x8C857B)
 
     private static func dynamic(_ light: UInt32, _ dark: UInt32) -> Color {
         Color(nsColor: NSColor(name: nil) { appearance in

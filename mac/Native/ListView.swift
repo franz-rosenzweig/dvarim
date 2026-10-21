@@ -16,16 +16,22 @@ struct ListScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     ListTitle(model: model)
-                    if !model.content.notes.isEmpty {
-                        Text(model.content.notes)
-                            .font(.system(size: 13.5)).lineSpacing(3)
-                            .foregroundStyle(Palette.text2)
-                            .padding(.top, 2).padding(.bottom, 14)
-                            .frame(maxWidth: 520, alignment: .leading)
+                    switch model.place {
+                    case .project(let id):
+                        if let p = model.state.project(id) { EditableNotes(text: p.notes) { await model.setProjectNotes(p, $0) }.id("notes-" + id) }
+                    case .area(let id):
+                        if let a = model.state.area(id) { EditableNotes(text: a.notes) { await model.setAreaNotes(a, $0) }.id("notes-" + id) }
+                    default:
+                        EmptyView()
                     }
                     ForEach(Array(model.content.sections.enumerated()), id: \.element.id) { index, section in
                         if let title = section.title {
-                            SectionHeader(place: model.place, section: section, title: title, first: index == 0 || model.content.sections[..<index].allSatisfy { $0.rows.isEmpty && $0.title == nil })
+                            let first = index == 0 || model.content.sections[..<index].allSatisfy { $0.rows.isEmpty && $0.title == nil }
+                            if case .project = model.place {
+                                HeadingHeader(model: model, id: section.id, name: title, first: first)
+                            } else {
+                                SectionHeader(place: model.place, section: section, title: title, first: first)
+                            }
                         }
                         ForEach(Array(section.rows.enumerated()), id: \.element.id) { i, row in
                             switch row {
@@ -41,7 +47,7 @@ struct ListScreen: View {
                             }
                         }
                     }
-                    if model.content.sections.allSatisfy({ $0.rows.isEmpty }) && !model.loading {
+                    if model.content.sections.allSatisfy({ $0.rows.isEmpty && $0.title == nil }) && !model.loading {
                         Text(model.place == .today ? "Nothing for today." : "Nothing here.")
                             .foregroundStyle(Palette.text3)
                             .frame(maxWidth: .infinity)
@@ -108,11 +114,23 @@ struct ListTitle: View {
         HStack(spacing: 10) {
             switch model.place {
             case .project(let id):
-                ProgressPie(progress: model.state.project(id)?.progress ?? 0, size: 24)
-                Text(model.state.project(id)?.name ?? "")
+                if let p = model.state.project(id) {
+                    ProgressPie(progress: p.progress, size: 24)
+                    EditableTitle(model: model, name: p.name) { await model.renameProject(p, $0) }
+                    Menu { ProjectMenu(model: model, project: p) } label: {
+                        Image(systemName: "ellipsis").font(.system(size: 14, weight: .semibold)).foregroundStyle(Palette.text3)
+                    }
+                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                }
             case .area(let id):
-                ListIcon(place: model.place, size: 24)
-                Text(model.state.area(id)?.name ?? "")
+                if let a = model.state.area(id) {
+                    ListIcon(place: model.place, size: 24)
+                    EditableTitle(model: model, name: a.name) { await model.renameArea(a, $0) }
+                    Menu { AreaMenu(model: model, area: a) } label: {
+                        Image(systemName: "ellipsis").font(.system(size: 14, weight: .semibold)).foregroundStyle(Palette.text3)
+                    }
+                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                }
             default:
                 ListIcon(place: model.place, size: 24)
                 Text(model.place.title)
@@ -148,7 +166,7 @@ struct SectionHeader: View {
         case .today where section.id == "evening":
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
-                    Image(systemName: "moon.fill").foregroundStyle(Palette.moon)
+                    Icons.moon.drawn(Palette.moon).frame(width: 14, height: 14)
                     Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.text)
                 }
                 Rectangle().fill(Palette.hair).frame(maxWidth: .infinity).frame(height: 1)
@@ -189,7 +207,7 @@ struct TodoRow: View {
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 6) {
                     if todo.evening && model.place != .today && todo.isOpen {
-                        Image(systemName: "moon.fill").font(.system(size: 11)).foregroundStyle(Palette.moon)
+                        Icons.moon.drawn(Palette.moon).frame(width: 12, height: 12)
                     }
                     Text(todo.title.isEmpty ? "New To-Do" : todo.title)
                         .font(.system(size: Metrics.rowFont))
@@ -275,7 +293,14 @@ struct Marks: View {
         }
     }
     private func mark(_ name: String) -> some View {
-        Image(systemName: name).font(.system(size: 10.5)).foregroundStyle(Palette.text3)
+        Group {
+            switch name {
+            case "doc.text": Icons.notes.drawn(Palette.text3)
+            case "list.bullet": Icons.clist.drawn(Palette.text3)
+            default: Icons.repeating.drawn(Palette.text3)
+            }
+        }
+        .frame(width: 11, height: 11)
     }
 }
 
@@ -330,9 +355,9 @@ struct CheckBox: View {
         Button(action: action) {
             ZStack {
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(done ? (canceled ? Palette.text3 : Palette.accent) : Color.clear)
+                    .fill(done ? (canceled ? Palette.text3 : Palette.checkOn) : Color.clear)
                 RoundedRectangle(cornerRadius: 4)
-                    .strokeBorder(done ? (canceled ? Palette.text3 : Palette.accent) : Palette.check, lineWidth: 1.5)
+                    .strokeBorder(done ? (canceled ? Palette.text3 : Palette.checkOn) : Palette.check, lineWidth: 1.5)
                 if done {
                     Image(systemName: canceled ? "xmark" : "checkmark").font(.system(size: 9.5, weight: .bold)).foregroundStyle(Color.white)
                 }
@@ -483,11 +508,11 @@ struct TodoCard: View {
         Button { model.popover = .when(todo.id) } label: {
             HStack(spacing: 5) {
                 switch whenKind {
-                case .today: Image(systemName: "star.fill").foregroundStyle(Palette.star); Text("Today")
-                case .evening: Image(systemName: "moon.fill").foregroundStyle(Palette.moon); Text("This Evening")
-                case .someday: Image(systemName: "archivebox.fill").foregroundStyle(Palette.someday); Text("Someday")
-                case .date(let d): Image(systemName: "calendar").foregroundStyle(Palette.upcoming); Text(Dates.short(d, today: model.state.today))
-                case .none: Image(systemName: "calendar").foregroundStyle(Palette.text3); Text("When").foregroundStyle(Palette.text3)
+                case .today: Icons.sun.drawn(Palette.star).frame(width: 13, height: 13); Text("Today")
+                case .evening: Icons.moon.drawn(Palette.moon).frame(width: 13, height: 13); Text("This Evening")
+                case .someday: Icons.someday.drawn(Palette.someday).frame(width: 13, height: 13); Text("Someday")
+                case .date(let d): Icons.upcoming.drawn(Palette.upcoming).frame(width: 13, height: 13); Text(Dates.short(d, today: model.state.today))
+                case .none: Icons.upcoming.drawn(Palette.text3).frame(width: 13, height: 13); Text("When").foregroundStyle(Palette.text3)
                 }
             }
             .font(.system(size: 12.5, weight: .semibold))

@@ -4,7 +4,6 @@ import SwiftUI
 
 struct MainView: View {
     @Bindable var model: AppModel
-    @Environment(\.undoManager) private var undoManager
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -22,12 +21,19 @@ struct MainView: View {
                         .navigationSplitViewColumnWidth(min: 200, ideal: 236, max: 320)
                 } detail: {
                     ListScreen(model: model)
+                        .overlay(alignment: .top) {
+                            if model.finding {
+                                ZStack(alignment: .top) {
+                                    Color.black.opacity(0.001).onTapGesture { model.finding = false }
+                                    QuickFind(model: model)
+                                }
+                            }
+                        }
                 }
             }
         }
         .frame(minWidth: 720, minHeight: 460)
-        .onAppear { model.undoManager = undoManager }
-        .onChange(of: undoManager) { _, u in model.undoManager = u }
+        .tint(Palette.accent)
         .onChange(of: scenePhase) { _, p in if p == .active { model.catchUp() } }
     }
 }
@@ -80,44 +86,73 @@ struct Sidebar: View {
                         Image(systemName: "shippingbox").foregroundStyle(Color(nsColor: .secondaryLabelColor))
                     }
                     .tag(Place.area(a.id))
+                    .contextMenu { AreaMenu(model: model, area: a) }
                     ForEach(a.projects) { p in projectRow(p) }
                 }
             }
         }
         .listStyle(.sidebar)
+        .safeAreaInset(edge: .bottom) {
+            HStack {
+                Menu {
+                    Button("New Project") { Task { await model.newProject() } }
+                    Button("New Area") { Task { await model.newArea() } }
+                } label: {
+                    Label("New List", systemImage: "plus").font(.system(size: 13)).foregroundStyle(Palette.text2)
+                }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                Spacer()
+            }
+            .padding(.horizontal, 14).padding(.vertical, 9)
+        }
     }
 
     private func row(_ place: Place, count: Int = 0, urgent: Int = 0) -> some View {
-        Label { Text(place.title) } icon: { ListIcon(place: place) }
-            .badge(urgent > 0 ? Text("\(urgent)").foregroundStyle(Color.red) : count > 0 ? Text("\(count)") : nil)
-            .tag(place)
+        HStack(spacing: 6) {
+            Label { Text(place.title) } icon: { ListIcon(place: place) }
+            Spacer(minLength: 4)
+            // the web app's sidebar: a red pill for what is due, then the count
+            if urgent > 0 {
+                Text("\(urgent)").font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.white)
+                    .padding(.horizontal, 6).frame(height: 15)
+                    .background(Palette.deadline, in: Capsule())
+            }
+            if count > 0 {
+                Text("\(count)").font(.system(size: 12)).monospacedDigit().foregroundStyle(Palette.text3)
+            }
+        }
+        .tag(place)
     }
 
     private func projectRow(_ p: Project) -> some View {
         Label { Text(p.name.isEmpty ? "New Project" : p.name) } icon: { ProgressPie(progress: p.progress) }
             .badge(p.openCount > 0 ? Text("\(p.openCount)") : nil)
             .tag(Place.project(p.id))
+            .contextMenu { ProjectMenu(model: model, project: p) }
     }
 }
 
-/// The lists' icons, each in its own colour.
+/// The lists' icons: the web app's own hand-drawn marks (Icons.swift), each in its list's colour.
 struct ListIcon: View {
     let place: Place
-    var size: CGFloat = 14
+    var size: CGFloat = 17
 
     var body: some View {
-        let (name, colour): (String, Color) = switch place {
-        case .inbox: ("tray.fill", Palette.inbox)
-        case .today: ("star.fill", Palette.star)
-        case .upcoming: ("calendar", Palette.upcoming)
-        case .anytime: ("square.stack.3d.up.fill", Palette.anytime)
-        case .someday: ("archivebox.fill", Palette.someday)
-        case .logbook: ("checkmark.square.fill", Palette.logbook)
-        case .trash: ("trash", Palette.trash)
-        case .area: ("shippingbox", Palette.text2)
-        case .project: ("circle", Palette.accent)
+        switch place {
+        case .inbox: Icons.inbox.drawn(Palette.inbox).frame(width: size, height: size)
+        case .today: Icons.sun.drawn(Palette.star).frame(width: size, height: size)
+        case .upcoming: Icons.upcoming.drawn(Palette.upcoming).frame(width: size, height: size)
+        case .anytime: Icons.anytime.drawn(Palette.anytime).frame(width: size, height: size)
+        case .someday: Icons.someday.drawn(Palette.someday).frame(width: size, height: size)
+        case .logbook: Icons.logbook.drawn(Palette.logbook).frame(width: size, height: size)
+        case .trash: Icons.trash.drawn(Palette.trash).frame(width: size, height: size)
+        case .area: Icons.area.drawn(Palette.text2).frame(width: size, height: size)
+        case .project: ProgressPie(progress: 0, size: size * 0.85)
+        case .extra("tomorrow"): Icons.sun.drawn(Palette.star).frame(width: size, height: size)
+        case .extra("deadlines"): Icons.flag.drawn(Palette.deadline).frame(width: size, height: size)
+        case .extra("repeating"): Icons.repeating.drawn(Palette.text2).frame(width: size, height: size)
+        case .extra: ProgressPie(progress: 0.5, size: size * 0.85)
         }
-        Image(systemName: name).font(.system(size: size, weight: .semibold)).foregroundStyle(colour)
     }
 }
 

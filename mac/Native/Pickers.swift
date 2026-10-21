@@ -6,11 +6,17 @@ struct Pickers: View {
     let todo: Todo
 
     var body: some View {
+        // Dvarim's sage, not the Mac's accent, in its pickers as everywhere
+        picker.tint(Palette.accent)
+    }
+
+    @ViewBuilder private var picker: some View {
         switch model.popover {
         case .when: WhenPicker(model: model, todo: todo)
         case .deadline: DeadlinePicker(model: model, todo: todo)
         case .tags: TagsPicker(model: model, todo: todo)
         case .move: MovePicker(model: model, todo: todo)
+        case .repeating: RepeatPicker(model: model, todo: todo)
         case .none: EmptyView()
         }
     }
@@ -24,7 +30,7 @@ struct PickerRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Image(systemName: icon).foregroundStyle(colour).frame(width: 16)
+                glyph.frame(width: 15, height: 15)
                 Text(title).foregroundStyle(Palette.text)
                 Spacer()
             }
@@ -32,6 +38,19 @@ struct PickerRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// The web app's marks for the lists; a system symbol for the rest.
+    @ViewBuilder private var glyph: some View {
+        switch icon {
+        case "star.fill": Icons.sun.drawn(colour)
+        case "moon.fill": Icons.moon.drawn(colour)
+        case "archivebox.fill": Icons.someday.drawn(colour)
+        case "tray.fill": Icons.inbox.drawn(colour)
+        case "shippingbox": Icons.area.drawn(colour)
+        case "circle": ProgressPie(progress: 0, size: 13, colour: colour)
+        default: Image(systemName: icon).foregroundStyle(colour)
+        }
     }
 }
 
@@ -204,6 +223,8 @@ struct ItemsMenu: View {
             Button("Deadline…") { pick { .deadline($0) } }
             Button("Tags…") { pick { .tags($0) } }
             Button("Move…") { pick { .move($0) } }
+            Button("Repeat…") { pick { .repeating($0) } }
+            Button("Convert to Project") { run { await $0.convertChosen() } }
             Divider()
             Button("Duplicate") { run { await $0.duplicateChosen() } }
             Button("Move to Trash") { run { await $0.trashChosen() } }

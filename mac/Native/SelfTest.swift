@@ -114,6 +114,9 @@ enum SelfTest {
         // 5b. round 2: a to-do made, typed into, and changed every way, each undone
         await editing(m, folder)
 
+        // 5c. round 3: projects, areas, headings, repeat, Quick Find
+        await roundThree(m, folder)
+
         // 6. the folder keeps the storage contract (engine/src/storage-conformance.js)
         if let local = m.backend as? LocalBackend, let answer = try? await local.engine.conformance() {
             let j = J(data: answer.body)
@@ -249,6 +252,115 @@ enum SelfTest {
             await snap("card")
             check(m.openId == String(a.dropFirst(2)), "and Return opens it")
             m.close()
+        }
+    }
+
+    // MARK: round 3: projects, areas, headings, repeat, Quick Find
+
+    private static func roundThree(_ m: AppModel, _ folder: URL) async {
+        func file(_ rel: String) -> String { (try? String(contentsOf: folder.appendingPathComponent(rel), encoding: .utf8)) ?? "" }
+        func exists(_ rel: String) -> Bool { FileManager.default.fileExists(atPath: folder.appendingPathComponent(rel).path) }
+
+        // Quick Find: a word, and the to-do it finds opens where it lives
+        m.place = .today
+        _ = await until(5) { !m.loading }
+        m.finding = true
+        await pause(0.6)
+        await snap("quick-find")
+        let found = await m.find("plumber")
+        check(found.contains { if case .todo(let t) = $0.kind { t.title.contains("plumber") } else { false } }, "Quick Find finds a to-do by a word of its title")
+        if let f = found.first(where: { if case .todo = $0.kind { true } else { false } }) {
+            await m.go(f)
+            check(m.place == .inbox && m.openId != nil && !m.finding, "and opens it in its list", "\(m.place)")
+            await snap("found")
+            m.close()
+        }
+        let lists = await m.find("dead")
+        check(lists.contains { $0.kind == .list(.extra("deadlines")) }, "Quick Find has Deadlines, a list of its own")
+        m.place = .extra("deadlines")
+        _ = await until(5) { !m.loading }
+        await pause(0.3)
+        check(m.content.todoCount > 0, "and Deadlines shows the to-dos with one", "\(m.content.todoCount)")
+
+        // a new project, renamed; ⌘Z takes each back
+        await m.newProject()
+        guard case .project(let pid) = m.place, let p0 = m.state.project(pid) else { return check(false, "⌥⌘N makes a project and opens it") }
+        check(m.renamingTitle, "⌥⌘N makes a project and opens it, its name ready to type")
+        m.renamingTitle = false
+        check(await until(5) { exists("Projects/New Project.md") }, "it is a Markdown file in Projects")
+        await m.renameProject(p0, "Selftest Garden")
+        check(await until(5) { exists("Projects/Selftest Garden.md") && !exists("Projects/New Project.md") }, "renaming it renames its file")
+        m.undoManager?.undo()
+        check(await until(5) { exists("Projects/New Project.md") }, "and ⌘Z names it back")
+        m.undoManager?.redo()
+        _ = await until(5) { exists("Projects/Selftest Garden.md") }
+        await m.refresh()
+
+        // a heading in it: renamed, archived, deleted, each undone
+        await m.newHeading()
+        check(await until(5) { file("Projects/Selftest Garden.md").contains("## New Heading") }, "⇧⌘N makes a heading in the project")
+        check(m.renamingHeading != nil, "its name ready to type")
+        if let hid = m.renamingHeading {
+            await m.renameHeading(hid, "Beds")
+            check(await until(5) { file("Projects/Selftest Garden.md").contains("## Beds") }, "renaming the heading renames it in the file")
+            await m.refresh()
+            await snap("project-heading")
+            let bed = "\(pid):Beds"
+            await m.archiveHeading(bed)
+            check(await until(5) { file("Projects/Selftest Garden.md").range(of: "## Beds") != nil && m.state.project(pid)?.headings.first { $0.name == "Beds" }?.archived == true }, "archiving it is kept")
+            m.undoManager?.undo()
+            check(await until(5) { m.state.project(pid)?.headings.first { $0.name == "Beds" }?.archived == false }, "and ⌘Z brings it back")
+            await m.deleteHeading(bed)
+            check(await until(5) { !file("Projects/Selftest Garden.md").contains("## Beds") }, "deleting the heading takes it from the file")
+            m.undoManager?.undo()
+            check(await until(5) { file("Projects/Selftest Garden.md").contains("## Beds") }, "and ⌘Z puts it back")
+        }
+
+        // a new area, renamed and deleted
+        await m.newArea()
+        guard case .area(let aid) = m.place, let a0 = m.state.area(aid) else { return check(false, "New Area makes an area") }
+        m.renamingTitle = false
+        check(await until(5) { exists("Areas/New Area") }, "New Area makes a folder in Areas")
+        await m.renameArea(a0, "Selftest Allotment")
+        check(await until(5) { exists("Areas/Selftest Allotment") }, "renaming the area renames its folder")
+        await m.refresh()
+        if let a1 = m.state.area(aid) {
+            await m.deleteArea(a1)
+            check(await until(5) { !exists("Areas/Selftest Allotment") }, "an empty area can be deleted")
+            m.undoManager?.undo()
+            check(await until(5) { exists("Areas/Selftest Allotment") || m.state.areas.contains { $0.name == "Selftest Allotment" } }, "and ⌘Z makes it again")
+        }
+
+        // a repeat, and a to-do turned into a project
+        m.place = .inbox
+        _ = await until(5) { !m.loading }
+        await pause(0.4)
+        if let t = m.content.allTodos.first(where: \.isOpen) {
+            let preview = await m.parseRepeat("every week on Monday", from: m.state.today)
+            check(preview.ok && preview.next.count >= 3, "a repeat rule is checked by the engine, with its next dates", preview.next.joined(separator: ", "))
+            m.selectOnly(t.id)
+            m.popover = .repeating(t.id)
+            await pause(0.8)
+            await snap("picker-repeat")
+            m.popover = nil
+            await m.setRepeat("every week on Monday", for: t)
+            check(await until(5) { line(folder, t.id)?.text.contains("🔁 every week on Monday") == true }, "⇧⌘R sets it in the file", line(folder, t.id)?.text ?? "")
+            m.undoManager?.undo()
+            check(await until(5) { line(folder, t.id)?.text.contains("🔁") == false }, "and ⌘Z takes it away")
+            m.selectOnly(t.id)
+            let title = t.title
+            await m.convertChosen()
+            check(await until(6) { exists("Projects/\(title).md") }, "⇧⌘P turns the to-do into a project of that name", title)
+            if case .project = m.place { check(true, "and opens it") } else { check(false, "and opens it", "\(m.place)") }
+        }
+
+        // the project's own menu
+        await m.refresh()
+        if let p = m.state.project(pid) {
+            await m.completeProject(p)
+            check(await until(5) { file("Projects/Selftest Garden.md").contains("status: done") }, "Complete Project marks its file done")
+            m.undoManager?.undo()
+            check(await until(5) { !file("Projects/Selftest Garden.md").contains("status: done") }, "and ⌘Z opens it again")
         }
     }
 

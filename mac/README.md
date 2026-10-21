@@ -120,9 +120,41 @@ to the Trash.
   with ⇧⌘Z, as does typing in the card. The notice at the foot of the window
   has Undo too.
 
+**Round 3:**
+- **The new look.** The lists' icons are the web app's own hand-drawn marks:
+  the tray, the sun, the calendar, the stack, the sprout, the book and the bin.
+  The app draws them from the same SVG paths (`Icons.swift` is generated from
+  `frontend/src/lib/icons.js`). Each one is in its list's earthy colour, with
+  the sage accent and its tint for what's chosen. Today in the sidebar shows its
+  count, with a red pill for what's due. The app icon is the paper slips.
+- **Quick Find (⌘F)** matches lists, areas, projects and to-dos as I type. ↑ and
+  ↓ choose, Return goes there, and a to-do opens in the list it lives in. Typing
+  "dead", "tomo", "rep" or "proj" also finds its own lists: Deadlines,
+  Tomorrow, Repeating, and All Projects and Logged Projects.
+- **Projects and areas.**
+  - ⌥⌘N makes a project, in the area I'm in, with its name ready to type.
+    "New Area" is in the File menu, and both are under "+ New List" at the foot
+    of the sidebar.
+  - Double-click a project's or an area's title to rename it.
+  - Notes go under the title.
+  - The … beside a project's title, or a right-click on it in the sidebar,
+    holds Complete, Cancel, When, Move to an area, Rename, New Heading and
+    Delete. An area's holds Rename, New Project and Delete.
+- **Headings.** ⇧⌘N makes one in the project in front. Double-click one to
+  rename it, and right-click for Archive and Delete. Deleting a heading keeps
+  its to-dos, and ⌘Z puts it back with them under it.
+- **Repeating to-dos (⇧⌘R).** It repeats on a schedule or after completion:
+  every so many days, weeks, months or years. A week can be on some weekdays,
+  a month on the 15th or the 2nd Tuesday, and a year on a date. It can end on a
+  date or after a number of times. The engine checks each rule and shows the
+  next dates before anything is kept.
+- **Convert to Project (⇧⌘P).** A to-do becomes a project of its name, its
+  checklist becoming the project's to-dos.
+- **Undo has a history of its own.** Every change is one ⌘Z, however quickly
+  the next came, and ⇧⌘Z does it again. While a field has the keyboard, ⌘Z
+  undoes the typing.
+
 **Not yet**, in the rounds to come:
-- headings, new projects and areas, repeating to-dos, the project and area
-  views' own menus, and Quick Find;
 - drag and drop;
 - several windows;
 - and everything this app does beyond the window: Quick Entry on ⌃Space, the
@@ -148,6 +180,10 @@ never touches my vault or my server. Then it runs the real app against it:
 - a new to-do typed into its card, and then When, This Evening, a deadline, a
   tag, a checklist, canceling, moving, the Trash, duplicating and ⌘↓, each
   undone, with a picture of each picker;
+- Quick Find, and the lists only it has;
+- a project made, renamed and completed, a heading made, renamed, archived
+  and deleted, and an area made, renamed and deleted, each undone;
+- a repeat, and a to-do turned into a project;
 - a line written into the folder by someone else;
 - the storage contract's checks;
 - Remote mode;

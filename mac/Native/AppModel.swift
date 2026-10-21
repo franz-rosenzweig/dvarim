@@ -44,18 +44,32 @@ final class AppModel {
     var newId: String?
     /// The picker showing, and for which to-do.
     var popover: Popover?
+    /// Quick Find, while it is open.
+    var finding = false
+    /// The heading being renamed, by its id ("<project>:<name>"), and whether the list's title is.
+    var renamingHeading: String?
+    var renamingTitle = false
 
     enum Popover: Equatable {
-        case when(String), deadline(String), tags(String), move(String)
+        case when(String), deadline(String), tags(String), move(String), repeating(String)
         var todoId: String {
-            switch self { case .when(let id), .deadline(let id), .tags(let id), .move(let id): id }
+            switch self { case .when(let id), .deadline(let id), .tags(let id), .move(let id), .repeating(let id): id }
         }
     }
     /// What the last thing done says, with its Undo (a toast at the foot of the list).
     var notice: String?
 
-    /// The window's, for ⌘Z (set by the main view).
-    weak var undoManager: UndoManager?
+    /// The app's own undo history, a step per change, for ⌘Z and ⇧⌘Z (the Edit
+    /// menu sends typing's undo to the text field instead). Not the window's:
+    /// that one groups by event, and a change made after an await, outside any
+    /// event, could land in a group another change had left open, so that one
+    /// ⌘Z undid two things.
+    let history: UndoManager = {
+        let u = UndoManager()
+        u.groupsByEvent = false
+        return u
+    }()
+    var undoManager: UndoManager? { history }
 
     private var refreshTask: Task<Void, Never>?
 
@@ -229,9 +243,8 @@ final class AppModel {
     /// event an undo manager would otherwise open one and leave it open until
     /// the run loop next turns over, and an Undo in between undoes nothing.
     func register(_ name: String, undo: @escaping Step, redo: @escaping Step) {
-        guard let u = undoManager else { return }
-        let own = u.groupingLevel == 0
-        if own { u.beginUndoGrouping() }
+        let u = history
+        u.beginUndoGrouping()
         u.registerUndo(withTarget: self) { m in
             m.register(name, undo: redo, redo: undo)
             Task { @MainActor in
@@ -239,7 +252,7 @@ final class AppModel {
             }
         }
         u.setActionName(name)
-        if own { u.endUndoGrouping() }
+        u.endUndoGrouping()
     }
 
     func catchUp() { backend?.catchUp() }
@@ -291,6 +304,8 @@ enum Lists {
             for h in Project(j["project"]).headings where !h.archived {
                 out.sections.append(.init(id: h.id, title: h.name, rows: (byHeading[h.id] ?? []).map(ListContent.Row.todo)))
             }
+        case .extra:
+            out.sections = [.init(id: "extra", rows: projects(j["projects"]) + todos(j["items"]))]
         case .area(let id):
             out.notes = j["area"]["notes"].string ?? ""
             let area = state.area(id)
