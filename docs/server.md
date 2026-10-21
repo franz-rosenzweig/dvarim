@@ -88,7 +88,7 @@ Everything is set with environment variables:
 | `DVARIM_TASKSYNC`, `_EVERY`, `_SOMEDAY` | the to-do mirror for Tasks.org and other CalDAV apps |
 | `DVARIM_SIGNAL_URL` or `_CLI`, with `_FROM` and `_TO` | reminders as Signal messages |
 | `DVARIM_OBSIDIAN_VAULT`, `_PREFIX` | the "Open in Obsidian" links (see [Using it with Obsidian](obsidian.md)) |
-| `DVARIM_ANDROID_PACKAGE`, `_FINGERPRINT` | the Android app's proof that it belongs to this server |
+| `DVARIM_ANDROID_PACKAGE`, `_FINGERPRINT` | the Android app's proof that it belongs to this server. Either can list several, comma-separated, say while an app moves to a new package name |
 | `DVARIM_MERGE_ARRIVALS` | `1` only if the folder is synced by something that keeps the newer of two files and leaves no conflict copy (see [Sync](syncing.md)) |
 | `DVARIM_WATCH` | `0` stops the server watching the folder (for tests) |
 
