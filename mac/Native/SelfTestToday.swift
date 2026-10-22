@@ -12,7 +12,7 @@ extension SelfTest {
         let later = Dates.add(today, days: 3)
         return [
             ["date": today, "allDay": false, "time": "09:30", "end": "10:00", "title": "Standup", "calendar": "Work", "color": "#5A9CF2", "uid": "e1"],
-            ["date": today, "allDay": true, "time": NSNull(), "end": NSNull(), "title": "Lena's birthday", "calendar": "Family", "color": "#4CB35B", "uid": "e2"],
+            ["date": today, "allDay": true, "time": NSNull(), "end": NSNull(), "title": "Robin's birthday", "calendar": "Family", "color": "#4CB35B", "uid": "e2"],
             ["date": later, "allDay": false, "time": "15:00", "end": "16:00", "title": "Dentist", "calendar": "Family", "color": "#4CB35B", "uid": "e3"],
         ]
     }
@@ -25,7 +25,7 @@ extension SelfTest {
         m.place = .today
         _ = await until(5) { !m.loading }
         await m.loadList()
-        check(m.content.events.map(\.title) == ["Lena's birthday", "Standup"], "Today shows the calendars' events, all-day first",
+        check(m.content.events.map(\.title) == ["Robin's birthday", "Standup"], "Today shows the calendars' events, all-day first",
               m.content.events.map(\.title).joined(separator: ", "))
         await snap("today-events")
         m.place = .upcoming
