@@ -46,7 +46,7 @@ test('WebDAV takes a token, as a bearer or as Basic auth\'s password; never the 
   assert.equal(none.status, 401);
   assert.match(none.headers.get('www-authenticate'), /^Basic /u);
   const basic = (user, pass) => ({ Authorization: `Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`, Depth: '1' });
-  assert.equal((await s.call('PROPFIND', '/dav/', { headers: basic('sam', PW) })).status, 401, 'the password is not a token');
+  assert.equal((await s.call('PROPFIND', '/dav/', { headers: basic('robin', PW) })).status, 401, 'the password is not a token');
   assert.equal((await s.call('PROPFIND', '/dav/', { headers: basic('anyone', s.token) })).status, 207);
   assert.equal((await s.dav('PROPFIND', '', { headers: { Depth: '1' } })).status, 207);
 
