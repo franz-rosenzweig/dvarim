@@ -41,7 +41,25 @@ final class Session {
 
     // ---- starting, and which backend --------------------------------------------------
 
+    private var begun = false
+
+    /// Once, from whichever asks first: the app at launch (Shortcuts and
+    /// Quick Entry need no window) or the first window.
+    func startIfNeeded() async {
+        guard !begun else { return }
+        begun = true
+        await start()
+    }
+
+    /// Until the backend is up, at most this long: a Shortcut or Quick Entry
+    /// at launch comes before it.
+    func ready(within seconds: Double) async {
+        let end = Date().addingTimeInterval(seconds)
+        while phase == .starting && Date() < end { try? await Task.sleep(nanoseconds: 100_000_000) }
+    }
+
     func start() async {
+        begun = true
         phase = .starting
         backend?.stop()
         backend = nil
@@ -87,6 +105,8 @@ final class Session {
         sync = b.syncState
         phase = .ready
         await refresh()
+        // what was kept while there was nowhere to send it
+        await Outbox.shared.drain()
     }
 
     /// The password, from the sign-in form; then the mode starts again.
@@ -122,6 +142,9 @@ final class Session {
         person = nil
         state = .empty
         for w in open { w.clear() }
+        Dock.clear()
+        Reminders.shared.clear()
+        Shell.shared.stateChanged(nil)
         phase = .signIn(nil)
         return nil
     }
@@ -144,11 +167,24 @@ final class Session {
         }
     }
 
-    /// The sidebar's state, then each window's list.
+    /// The sidebar's state, then each window's list, then the Mac's parts
+    /// (the badge, the menu bar, the reminders).
     func refresh() async {
         guard let backend else { return }
-        if let j = try? await backend.request("GET", "/api/state", body: nil) { state = AppState(j) }
+        let fresh = (try? await backend.request("GET", "/api/state", body: nil)).map(AppState.init)
+        if let fresh { state = fresh }
         for w in open { await w.reconcile() }
+        Shell.shared.stateChanged(fresh)
+    }
+
+    /// Each minute (Shell): the state again, and on a new day every list too.
+    func heartbeat() async {
+        guard phase == .ready, let backend else { return }
+        guard let j = try? await backend.request("GET", "/api/state", body: nil) else { return Dock.show(nil) }
+        let fresh = AppState(j)
+        if fresh.today != state.today { return await refresh() }
+        state = fresh
+        Shell.shared.stateChanged(fresh)
     }
 
     func ask(_ method: String, _ path: String, _ body: [String: Any]? = nil) async throws -> J {
@@ -228,6 +264,8 @@ final class AppModel {
     /// The heading being renamed, by its id ("<project>:<name>"), and whether the list's title is.
     var renamingHeading: String?
     var renamingTitle = false
+    /// The window this model is the list of (Windows.swift).
+    @ObservationIgnored weak var window: NSWindow?
     /// What is being dragged, and where it would land (DragDrop.swift).
     var dragging: [String] = []
     var dropTarget: DropTarget?

@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UserNotifications
 
 /// Dvarim as a native Mac app: every screen SwiftUI and AppKit, and the
 /// one engine the server and every other device run, inside the app
@@ -8,6 +9,7 @@ import SwiftUI
 @main
 struct DvarimNativeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+    @State private var shell = Shell.shared
 
     init() {
         // the self-test's settings, folder and sign-in are its own, from the first read
@@ -26,6 +28,16 @@ struct DvarimNativeApp: App {
         Settings {
             SettingsView(model: AppModel.shared)
         }
+
+        // Today beside the clock (Settings → This Mac). Read here, not only
+        // through the binding, so that turning it off takes it away again.
+        let inMenuBar = shell.menuBar
+        MenuBarExtra(isInserted: Binding(get: { inMenuBar }, set: { if shell.menuBar != $0 { shell.menuBar = $0 } })) {
+            MenuBarContent(menu: TodayMenu.shared, shell: shell)
+        } label: {
+            MenuBarLabel(session: Session.shared)
+        }
+        .menuBarExtraStyle(.window)
     }
 }
 
@@ -33,14 +45,17 @@ struct DvarimNativeApp: App {
 struct WindowRoot: View {
     let start: Place?
     @State private var model = AppModel.forWindow()
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         MainView(model: model)
             .focusedSceneValue(\.windowModel, model)
+            .background(WindowReader(model: model))
             .task {
+                Windows.openNew = { openWindow(id: "main", value: $0) }
                 if let start { model.place = start }
-                if model.session.phase == .starting && model.session.backend == nil { await model.start() }
-                else if model.phase == .ready { await model.loadList() }
+                if model.session.phase == .starting && model.session.backend == nil { await model.session.startIfNeeded() }
+                if model.phase == .ready { await model.loadList() }
             }
     }
 }
@@ -94,6 +109,7 @@ struct DvarimCommands: Commands {
             Button("New Area") { Task { await model.newArea() } }
             Divider()
             Button("New Window") { openWindow(id: "main", value: model.place) }.keyboardShortcut("n", modifiers: [.control, .command])
+            Button("Quick Entry") { QuickEntry.shared.show() }
         }
         CommandMenu("Items") {
             Button("Complete") { Task { await model.completeChosen() } }.keyboardShortcut("k")
@@ -149,10 +165,33 @@ struct DvarimCommands: Commands {
     }
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = false
-        if SelfTest.asked { SelfTest.start() }
+        MainActor.assumeIsolated {
+            // the Mac's parts: Quick Entry's chord, the heartbeat, reminders, Services
+            UNUserNotificationCenter.current().delegate = self
+            Shell.shared.start()
+            Reminders.shared.start()
+            NSApp.servicesProvider = ServiceProvider()
+            NSUpdateDynamicServices()
+            if SelfTest.asked { SelfTest.start() }
+            // started here, not by a window: Shortcuts and Quick Entry need none
+            Task { await Session.shared.startIfNeeded() }
+        }
+    }
+
+    // a reminder shows while the app is in front too
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
+        [.banner, .sound]
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        let info = response.notification.request.content.userInfo
+        guard let id = info["id"] as? String else { return }
+        let title = info["title"] as? String ?? ""
+        let action = response.actionIdentifier
+        await Reminders.shared.answer(action, id: id, title: title)
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }

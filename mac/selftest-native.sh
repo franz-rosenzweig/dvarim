@@ -39,5 +39,8 @@ watchdog=$!
 open -W -n "$APP" --args -SelfTest YES -SelfTestServer http://127.0.0.1:$PORT -SelfTestPassword $PASSWORD \
     -SelfTestOut $OUT -ApplePersistenceIgnoreState YES
 kill $watchdog 2>/dev/null || true
+# its settings, which the app removed; cfprefsd writes back an empty file after it quits
+defaults delete moe.ptr.dvarim.native.selftest 2>/dev/null || true
+rm -f ~/Library/Preferences/moe.ptr.dvarim.native.selftest.plist
 grep -E "^(SELFTEST|PASS|FAIL)" $OUT/log.txt
 grep -q "SELFTEST passed" $OUT/log.txt

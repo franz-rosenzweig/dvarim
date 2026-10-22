@@ -33,8 +33,15 @@ $ESBUILD Native/Engine/host.js --bundle --format=iife --target=es2022 --log-leve
     --outfile="$APP/Contents/Resources/engine.js"
 cp Native/Engine/prelude.js "$APP/Contents/Resources/prelude.js"
 
+# the const values are what the App Intents processor reads, further down
+cat > $OUT/appintents-protocols.json <<'PROTOCOLS'
+["AppEntity","AppEnum","AppIntent","AppShortcutsProvider","DynamicOptionsProvider","EntityQuery","Resolver"]
+PROTOCOLS
+SOURCES=(Native/*.swift Native/Shell/*.swift Shared/*.swift)
 swiftc -O -wmo -sdk "$(xcrun --show-sdk-path)" -target "$(uname -m)-apple-macos$MACOS" -swift-version 5 \
-    -parse-as-library -module-name DvarimNative Native/*.swift Shared/*.swift \
+    -parse-as-library -module-name DvarimNative $SOURCES \
+    -emit-const-values-path $OUT/DvarimNative.swiftconstvalues \
+    -Xfrontend -const-gather-protocols-file -Xfrontend $OUT/appintents-protocols.json \
     -o "$APP/Contents/MacOS/$NAME"
 sed -e "s/\$(DEVELOPMENT_LANGUAGE)/en/" -e "s/\$(EXECUTABLE_NAME)/$NAME/" \
     -e "s/\$(PRODUCT_BUNDLE_IDENTIFIER)/$BUNDLE_ID/" -e "s/\$(MARKETING_VERSION)/$VERSION/" \
@@ -52,6 +59,25 @@ if [[ -f $SRC ]]; then
     iconutil -c icns $SET -o "$APP/Contents/Resources/AppIcon.icns"
     plutil -replace CFBundleIconFile -string AppIcon "$APP/Contents/Info.plist"
     rm -rf $SET
+fi
+
+# Shortcuts, Spotlight and Siri read a metadata bundle beside the binary, which
+# only Xcode's processor writes. Without Xcode the app still builds and runs; it
+# just isn't in Shortcuts.
+PROCESSOR=$(xcrun -f appintentsmetadataprocessor 2>/dev/null || true)
+if [[ -n $PROCESSOR ]]; then
+    printf '%s\n' ${SOURCES:A} > $OUT/appintents-sources.txt
+    echo "${OUT:A}/DvarimNative.swiftconstvalues" > $OUT/appintents-constvals.txt
+    $PROCESSOR --toolchain-dir "$(dirname "$(dirname "$(xcrun -f swiftc)")")" --module-name DvarimNative \
+        --sdk-root "$(xcrun --show-sdk-path)" --xcode-version "$(xcodebuild -version | tail -1 | awk '{print $3}')" \
+        --platform-family macOS --deployment-target $MACOS --bundle-identifier $BUNDLE_ID \
+        --output "$APP/Contents/Resources" --target-triple "$(uname -m)-apple-macos$MACOS" \
+        --binary-file "$APP/Contents/MacOS/$NAME" --source-file-list $OUT/appintents-sources.txt \
+        --swift-const-vals-list $OUT/appintents-constvals.txt --compile-time-extraction \
+        --deployment-aware-processing --quiet-warnings >/dev/null 2>$OUT/appintents.log \
+        || { cat $OUT/appintents.log; exit 1; }
+else
+    echo "note: no Xcode, so no App Intents metadata; Shortcuts won't see Dvarim Native"
 fi
 
 IDENTITY=${DVARIM_SIGN:-$(security find-identity -v -p codesigning | sed -n 's/^ *[0-9]*) \([0-9A-F]*\) "Apple Development.*/\1/p' | head -1)}

@@ -273,6 +273,9 @@ struct SettingsView: View {
     @State private var server = Prefs.server.absoluteString
     @State private var folder = Prefs.store.string(forKey: Prefs.folderKey) ?? ""
     @State private var signOutMessage: String?
+    @State private var shell = Shell.shared
+    @State private var atLogin = Shell.shared.opensAtLogin
+    @State private var loginNote: String?
 
     var body: some View {
         Form {
@@ -311,10 +314,42 @@ struct SettingsView: View {
                     if let signOutMessage { Text(signOutMessage).font(.caption).foregroundStyle(Color.red) }
                 }
             }
+            Section("This Mac") {
+                LabeledContent("Quick Entry") { ShortcutRecorder(shell: shell) }
+                if let note = shell.chordNote { caption(note) }
+                Toggle("Show Today in the menu bar", isOn: $shell.menuBar)
+                Picker("Dock badge", selection: badge) {
+                    Text("Today").tag("today")
+                    Text("Inbox").tag("inbox")
+                    Text("None").tag("none")
+                }
+                Toggle("Remind me on this Mac", isOn: $shell.reminders)
+                if shell.reminders, let p = Reminders.shared.problem { caption(p) }
+                Toggle("Open at login", isOn: $atLogin)
+                    .onChange(of: atLogin) { _, on in
+                        loginNote = shell.openAtLogin(on)
+                        atLogin = shell.opensAtLogin
+                    }
+                if let loginNote { caption(loginNote) }
+                if Shell.besideOldApp {
+                    caption("The web-view Dvarim is in Applications too. While it is, its menu bar and reminders are the ones on to begin with, so nothing shows twice.")
+                }
+            }
         }
         .formStyle(.grouped)
         .frame(width: 480)
         .padding(.vertical, 8)
+    }
+
+    private func caption(_ s: String) -> some View {
+        Text(s).font(.caption).foregroundStyle(Color(nsColor: .secondaryLabelColor))
+    }
+
+    /// The engine's own setting, which the web app's Settings sets too.
+    private var badge: Binding<String> {
+        Binding(get: { model.state.badgeCount }, set: { v in
+            Task { _ = try? await model.ask("PUT", "/api/settings", ["badgeCount": v]) }
+        })
     }
 
     private func choose() {
