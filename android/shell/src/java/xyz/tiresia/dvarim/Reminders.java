@@ -30,7 +30,7 @@ import java.util.Set;
  *
  * Time is the subtle part. A reminder is "15:00" against the to-do's own When
  * date, and the person means three in the afternoon where they are standing,
- * not where the server is: the container runs on America/Phoenix and the phone
+ * not where the server is: the container runs on its own TZ and the phone
  * may be anywhere. So the two are combined in the device's timezone and never
  * in the server's.
  *
