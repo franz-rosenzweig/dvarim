@@ -203,6 +203,32 @@ extension AppModel {
         }
     }
 
+    /// When as the When picker has it: any of when, evening, someday and
+    /// reminder, said as the web app says it.
+    func setWhen(fields: [String: Any], for todos: [Todo], label: String? = nil) async {
+        guard !todos.isEmpty else { return }
+        let when = fields["when"] as? String, evening = fields["evening"] as? Bool ?? false, someday = fields["someday"] as? Bool ?? false
+        let said = label ?? (someday ? "Moved to Someday"
+            : when == state.today ? (evening ? "Moved to This Evening" : "Moved to Today")
+            : when.map { "Scheduled for \(Dates.short($0, today: state.today))" } ?? "Moved to Anytime")
+        let keys = Array(fields.keys)
+        let to = UncheckedBox(fields)
+        popover = nil
+        await patch(todos, name: "When", notice: todos.count > 1 ? "\(todos.count) " + said.prefix(1).lowercased() + said.dropFirst() : said) { _ in to.value } back: { t in
+            var b: [String: Any] = [:]
+            for k in keys {
+                switch k {
+                case "when": b[k] = t.when ?? NSNull()
+                case "evening": b[k] = t.evening
+                case "someday": b[k] = t.someday
+                case "reminder": b[k] = t.reminder ?? NSNull()
+                default: break
+                }
+            }
+            return b
+        }
+    }
+
     func setDeadline(_ date: String?, for todos: [Todo]? = nil) async {
         let todos = todos ?? chosen
         guard !todos.isEmpty else { return }

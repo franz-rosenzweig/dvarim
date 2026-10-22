@@ -84,6 +84,7 @@ extension AppModel {
 
     /// ⇧⌘N in a project: a heading at the foot, its name open to type.
     func newHeading() async {
+        if place == .today { return await newTodayHeading() }
         guard case .project(let pid) = place else { return }
         let taken = Set(state.project(pid)?.headings.map(\.name) ?? [])
         var name = "New Heading", n = 2

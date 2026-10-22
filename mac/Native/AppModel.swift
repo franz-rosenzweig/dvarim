@@ -82,13 +82,13 @@ final class Session {
                 }
                 // No tour of its own: the server's vault has one, and a device's
                 // untouched one merged into it on the first sync and doubled it.
-                try await use(LocalBackend(root: Account.folder(for: copy), sync: (copy.server, token), tutorial: false))
+                try await use(LocalBackend(root: Account.folder(for: copy), sync: (copy.server, token), tutorial: false, events: .server))
             case .folder:
                 guard let path = Prefs.store.string(forKey: Prefs.folderKey), !path.isEmpty else {
                     phase = .failed("Choose the folder your to-dos live in, in Settings.")
                     return
                 }
-                try await use(LocalBackend(root: URL(fileURLWithPath: path, isDirectory: true), sync: nil, tutorial: true))
+                try await use(LocalBackend(root: URL(fileURLWithPath: path, isDirectory: true), sync: nil, tutorial: true, events: .device))
             }
         } catch let e as APIError where e.unreachable && Mode.current == .remote {
             phase = .failed("Can't reach \(Prefs.server.host ?? "the server"). Remote mode needs it; a copy on this Mac doesn't.")
@@ -195,6 +195,11 @@ final class Session {
     }
 
     func catchUp() { backend?.catchUp() }
+
+    /// The calendars were turned on or chosen: the engine asks again, and every list with it.
+    func calendarsChanged() async {
+        if let local = backend as? LocalBackend { await local.engine.calendarsChanged() } else { await refresh() }
+    }
 }
 
 /// One window's model: which list it shows, what is chosen in it, the card
@@ -382,17 +387,13 @@ enum Lists {
         case .inbox:
             out.sections = [.init(id: "inbox", rows: todos(j["items"]))]
         case .today:
-            let items = j["items"].array.map(Todo.init)
-            let rows = projects(j["projects"]) + items.filter { !$0.evening }.map(ListContent.Row.todo)
-            out.sections = [.init(id: "today", rows: rows)]
-            let evening = items.filter(\.evening)
-            if !evening.isEmpty { out.sections.append(.init(id: "evening", title: "This Evening", rows: evening.map(ListContent.Row.todo))) }
+            out = today(j, state: state)
         case .upcoming:
             out.sections = j["days"].array.map { d in
                 let date = d["date"].string ?? ""
                 return .init(id: date, title: Dates.dayTitle(date, today: state.today), subtitle: Dates.daySubtitle(date, today: state.today),
-                             rows: projects(d["projects"]) + todos(d["items"]))
-            }.filter { !$0.rows.isEmpty }
+                             rows: projects(d["projects"]) + todos(d["items"]), events: CalEvent.list(d["events"]))
+            }.filter { !$0.rows.isEmpty || !$0.events.isEmpty }
         case .anytime:
             out.sections = [.init(id: "loose", rows: todos(j["items"]))]
             out.sections += j["groups"].array.map { g in
@@ -420,12 +421,71 @@ enum Lists {
             }
         case .extra:
             out.sections = [.init(id: "extra", rows: projects(j["projects"]) + todos(j["items"]))]
+            out.events = CalEvent.list(j["events"])       // Tomorrow has them
         case .area(let id):
             out.notes = j["area"]["notes"].string ?? ""
             let area = state.area(id)
             out.sections = [.init(id: "area", rows: (area?.projects ?? []).map(ListContent.Row.project) + todos(j["items"]))]
         }
         return out
+    }
+}
+
+extension Lists {
+    /// Today as the web app lays it out (TodayView.svelte): the events, the
+    /// projects, the day's to-dos (by list, under a heading each, when Settings
+    /// says so), Today's own headings with theirs, then This Evening.
+    static func today(_ j: J, state: AppState) -> ListContent {
+        var out = ListContent()
+        out.events = CalEvent.list(j["events"])
+        let items = j["items"].array.map(Todo.init)
+        let day = items.filter { !$0.evening }
+        let headings = j["headings"].array
+        let filed = Set(headings.flatMap { $0["todos"].strings })
+        let unfiled = day.filter { !filed.contains($0.id) }
+        let projects = j["projects"].array.map { ListContent.Row.project(Project($0)) }
+
+        if state.groupTodayByList {
+            // loose ones first, then a heading per list, in the sidebar's order
+            var order: [String] = []
+            for a in state.areas { order.append("area:" + a.id); order += a.projects.map { "project:" + $0.id } }
+            order += state.looseProjects.map { "project:" + $0.id }
+            let key = { (t: Todo) -> String? in t.projectId.map { "project:" + $0 } ?? t.areaId.map { "area:" + $0 } }
+            out.sections = [.init(id: "today", rows: projects + unfiled.filter { key($0) == nil }.map(ListContent.Row.todo))]
+            var buckets: [String: [Todo]] = [:]
+            for t in unfiled { if let k = key(t) { buckets[k, default: []].append(t) } }
+            let rank = { (k: String) in order.firstIndex(of: k) ?? Int.max }
+            for k in buckets.keys.sorted(by: { rank($0) < rank($1) }) {
+                let list = buckets[k]!
+                out.sections.append(.init(id: "group:" + k, title: list[0].projectName ?? list[0].areaName ?? "Elsewhere",
+                                          rows: list.map(ListContent.Row.todo)))
+            }
+        } else {
+            out.sections = [.init(id: "today", rows: projects + unfiled.map(ListContent.Row.todo))]
+        }
+        for h in headings {
+            let ids = Set(h["todos"].strings)
+            out.sections.append(.init(id: "th:" + (h["id"].string ?? ""), title: h["name"].string ?? "",
+                                      rows: day.filter { ids.contains($0.id) }.map(ListContent.Row.todo)))
+        }
+        let evening = items.filter(\.evening)
+        if !evening.isEmpty { out.sections.append(.init(id: "evening", title: "This Evening", rows: evening.map(ListContent.Row.todo))) }
+        out.crowded = crowded(items)
+        return out
+    }
+
+    /// More than one to-do from the same project (frontend lib/today.js): Today
+    /// works best with one next step from each. A catch-all of errands, a
+    /// project with "agenda" or "admin" in its name, may have any number.
+    static func crowded(_ items: [Todo]) -> [(id: String, name: String, count: Int)] {
+        var seen: [String: (String, Int)] = [:]
+        var order: [String] = []
+        for t in items where t.isOpen {
+            guard let p = t.projectId, (t.projectName ?? "").firstMatch(of: #/(?i)\b(agenda|admin)\b/#) == nil else { continue }
+            if seen[p] == nil { order.append(p) }
+            seen[p] = (t.projectName ?? "", (seen[p]?.1 ?? 0) + 1)
+        }
+        return order.compactMap { p in seen[p].flatMap { $0.1 > 1 ? (p, $0.0, $0.1) : nil } }
     }
 }
 
@@ -480,6 +540,34 @@ enum Dates {
         default: return d.formatted(.dateTime.day().month(.abbreviated))
         }
     }
+
+    static func add(_ s: String, days n: Int) -> String {
+        guard let d = date(s), let e = Calendar.current.date(byAdding: .day, value: n, to: d) else { return s }
+        return iso.string(from: e)
+    }
+
+    /// The first day of next week, never today (frontend dates.js nextWeekStart).
+    static func nextWeekStart(_ today: String, weekStartsOn: Int) -> String {
+        guard let d = date(today) else { return today }
+        let dow = Calendar.current.component(.weekday, from: d) - 1
+        let n = (weekStartsOn - dow + 7) % 7
+        return add(today, days: n == 0 ? 7 : n)
+    }
+
+    private static func english(_ format: String) -> DateFormatter {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = format
+        return f
+    }
+    private static let wd = english("EEE"), wdDay = english("EEE d"), wdDayMonth = english("EEE d MMM")
+
+    /// "Wed"
+    static func weekdayShort(_ s: String) -> String { date(s).map(wd.string) ?? s }
+    /// "Thu 22"
+    static func dayShort(_ s: String) -> String { date(s).map(wdDay.string) ?? s }
+    /// "Fri 24 Oct" (frontend dates.js labelDate)
+    static func label(_ s: String) -> String { date(s).map(wdDayMonth.string) ?? s }
 
     /// "2 days left", "today", "3 days ago": a deadline's flag.
     static func deadline(_ s: String, today: String) -> String {

@@ -24,12 +24,15 @@ struct ListScreen: View {
                     default:
                         EmptyView()
                     }
+                    if !model.content.events.isEmpty { EventsBlock(events: model.content.events).padding(.bottom, 10) }
                     ForEach(Array(model.content.sections.enumerated()), id: \.element.id) { index, section in
                         if let title = section.title {
                             let first = index == 0 || model.content.sections[..<index].allSatisfy { $0.rows.isEmpty && $0.title == nil }
                             Group {
                                 if case .project = model.place {
                                     HeadingHeader(model: model, id: section.id, name: title, first: first)
+                                } else if section.id.hasPrefix("th:") {
+                                    TodayHeadingHeader(model: model, id: String(section.id.dropFirst(3)), name: title, first: first)
                                 } else {
                                     SectionHeader(place: model.place, section: section, title: title, first: first)
                                 }
@@ -41,6 +44,7 @@ struct ListScreen: View {
                                 if model.dropTarget == .section(section.id) { InsertLine().offset(y: 3) }
                             }
                         }
+                        if !section.events.isEmpty { EventsBlock(events: section.events, bare: true) }
                         ForEach(Array(section.rows.enumerated()), id: \.element.id) { i, row in
                             switch row {
                             case .todo(let t):
@@ -55,7 +59,10 @@ struct ListScreen: View {
                             }
                         }
                     }
-                    if model.content.sections.allSatisfy({ $0.rows.isEmpty && $0.title == nil }) && !model.loading {
+                    if model.place == .today && !model.content.crowded.isEmpty {
+                        CrowdedNote(model: model, crowded: model.content.crowded)
+                    }
+                    if model.content.sections.allSatisfy({ $0.rows.isEmpty && $0.title == nil }) && model.content.events.isEmpty && !model.loading {
                         Text(model.place == .today ? "Nothing for today." : "Nothing here.")
                             .foregroundStyle(Palette.text3)
                             .frame(maxWidth: .infinity)
@@ -606,5 +613,46 @@ extension AppModel {
         }, set: { [weak self] shown in
             if !shown, self?.popover?.todoId == id { self?.popover = nil }
         })
+    }
+}
+
+/// A day's calendar events, as the web app draws them (EventsBlock.svelte):
+/// a timed one with its time in its calendar's colour, an all-day one after a
+/// small bar of it. In a grey card above Today's to-dos; bare under a day.
+struct EventsBlock: View {
+    let events: [CalEvent]
+    var bare = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            ForEach(Array(events.enumerated()), id: \.offset) { _, e in row(e) }
+        }
+        .font(.system(size: 12.5))
+        .padding(.horizontal, bare ? 0 : 12)
+        .padding(.vertical, bare ? 4 : 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(bare ? Color.clear : Palette.hair2, in: RoundedRectangle(cornerRadius: 9))
+        .padding(.leading, bare ? Metrics.box + 10 : 0)
+    }
+
+    private func row(_ e: CalEvent) -> some View {
+        let colour = e.color.flatMap(Color.init(css:)) ?? (e.allDay ? Color(hex: 0x4CB35B) : Color(hex: 0x5A9CF2))
+        return HStack(spacing: 7) {
+            if e.allDay {
+                RoundedRectangle(cornerRadius: 1.5).fill(colour).frame(width: 3, height: 11)
+            } else {
+                Text(e.time ?? "").monospacedDigit().foregroundStyle(colour)
+            }
+            Text(e.title).foregroundStyle(Palette.text2).lineLimit(1)
+        }
+    }
+}
+
+extension Color {
+    /// "#RRGGBB", as a calendar gives its colour.
+    init?(css: String) {
+        let h = css.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        guard h.count == 6, let v = UInt32(h, radix: 16) else { return nil }
+        self.init(hex: v)
     }
 }

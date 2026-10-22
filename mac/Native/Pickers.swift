@@ -6,14 +6,18 @@ struct Pickers: View {
     let todo: Todo
 
     var body: some View {
-        // Dvarim's sage, not the Mac's accent, in its pickers as everywhere
-        picker.tint(Palette.accent)
+        // The web app's dark panel, in light mode too, with Dvarim's sage
+        // rather than the Mac's accent; the colours resolve as dark ones in it.
+        picker
+            .tint(Palette.accent)
+            .presentationBackground(Pop.background)
+            .preferredColorScheme(.dark)
     }
 
     @ViewBuilder private var picker: some View {
         switch model.popover {
         case .when: WhenPicker(model: model, todo: todo)
-        case .deadline: DeadlinePicker(model: model, todo: todo)
+        case .deadline: WhenPicker(model: model, todo: todo, deadline: true)
         case .tags: TagsPicker(model: model, todo: todo)
         case .move: MovePicker(model: model, todo: todo)
         case .repeating: RepeatPicker(model: model, todo: todo)
@@ -27,17 +31,21 @@ struct PickerRow: View {
     let icon: String
     let colour: Color
     let action: () -> Void
+    @State private var over = false
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                glyph.frame(width: 15, height: 15)
-                Text(title).foregroundStyle(Palette.text)
+                glyph.frame(width: 14, height: 14)
+                Text(title).foregroundStyle(Pop.text).lineLimit(1)
                 Spacer()
             }
-            .padding(.vertical, 5).padding(.horizontal, 8)
+            .font(.system(size: 13))
+            .padding(.vertical, 6).padding(.horizontal, 8)
+            .background(over ? Pop.selected : .clear, in: RoundedRectangle(cornerRadius: 6))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .onHover { over = $0 }
     }
 
     /// The web app's marks for the lists; a system symbol for the rest.
@@ -52,60 +60,6 @@ struct PickerRow: View {
         default: Image(systemName: icon).foregroundStyle(colour)
         }
     }
-}
-
-struct WhenPicker: View {
-    let model: AppModel
-    let todo: Todo
-    @State private var date = Date()
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("When").font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.text2).padding(.horizontal, 8).padding(.bottom, 4)
-            PickerRow(title: "Today", icon: "star.fill", colour: Palette.star) { go(.today) }
-            PickerRow(title: "This Evening", icon: "moon.fill", colour: Palette.moon) { go(.evening) }
-            DatePicker("", selection: $date, displayedComponents: .date)
-                .datePickerStyle(.graphical)
-                .labelsHidden()
-                .onChange(of: date) { _, d in go(.date(Dates.iso.string(from: d))) }
-            PickerRow(title: "Someday", icon: "archivebox.fill", colour: Palette.someday) { go(.someday) }
-            if todo.when != nil || todo.someday {
-                Divider().padding(.vertical, 2)
-                PickerRow(title: "Clear", icon: "xmark.circle", colour: Palette.text3) { go(.clear) }
-            }
-        }
-        .padding(10)
-        .frame(width: 250)
-        .onAppear { if let w = todo.when, let d = Dates.date(w) { date = d } }
-    }
-
-    private func go(_ w: AppModel.When) { Task { await model.setWhen(w, for: targets) } }
-    private var targets: [Todo] { model.chosen.contains(todo) ? model.chosen : [todo] }
-}
-
-struct DeadlinePicker: View {
-    let model: AppModel
-    let todo: Todo
-    @State private var date = Date()
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Deadline").font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.text2).padding(.horizontal, 8)
-            DatePicker("", selection: $date, displayedComponents: .date)
-                .datePickerStyle(.graphical)
-                .labelsHidden()
-                .onChange(of: date) { _, d in Task { await model.setDeadline(Dates.iso.string(from: d), for: targets) } }
-            if todo.deadline != nil {
-                Divider()
-                PickerRow(title: "Clear", icon: "xmark.circle", colour: Palette.text3) { Task { await model.setDeadline(nil, for: targets) } }
-            }
-        }
-        .padding(10)
-        .frame(width: 250)
-        .onAppear { if let d = todo.deadline.flatMap(Dates.date) { date = d } }
-    }
-
-    private var targets: [Todo] { model.chosen.contains(todo) ? model.chosen : [todo] }
 }
 
 struct TagsPicker: View {

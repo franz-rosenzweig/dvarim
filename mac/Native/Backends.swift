@@ -49,10 +49,14 @@ final class LocalBackend: Backend {
     var onSyncState: ((SyncState) -> Void)?
     private(set) var syncState = SyncState()
 
-    init(root: URL, sync: (address: String, token: String)?, tutorial: Bool = true) {
+    /// Where its calendar events come from: the server's, for the copy; this Mac's, for a folder.
+    let events: Calendars.Source?
+
+    init(root: URL, sync: (address: String, token: String)?, tutorial: Bool = true, events: Calendars.Source? = nil) {
         self.root = root
         self.sync = sync
         self.tutorial = tutorial
+        self.events = events
         host = EngineHost(root: root)
     }
 
@@ -73,7 +77,10 @@ final class LocalBackend: Backend {
             self.syncState = s
             self.onSyncState?(s)
         }
-        try await host.open(tutorial: tutorial, sync: sync)
+        if let events {
+            host.onAsk = { op, args in await Calendars.answer(events, op: op, args: args) }
+        }
+        try await host.open(tutorial: tutorial, sync: sync, events: events?.rawValue)
         watch()
     }
 

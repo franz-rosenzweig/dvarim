@@ -31,6 +31,8 @@ enum SelfTest {
         // the Mac's parts off to begin with; the test turns on what it tries
         Prefs.store.set(false, forKey: Shell.menuBarKey)
         Prefs.store.set(false, forKey: Shell.remindersKey)
+        // a stand-in calendar's events, for whatever source the mode has: never this Mac's
+        Calendars.fixture = standInEvents()
         Account.appFolder = "Dvarim Native self-test"
         Account.forgetCookies(for: server)
         try? FileManager.default.removeItem(at: appFolder)
@@ -126,6 +128,9 @@ enum SelfTest {
 
         // 5e. round 5: the Mac's parts (SelfTestShell.swift)
         await roundFive(m, folder)
+
+        // 5f. round 6: calendar events, Today's own headings and grouping, Dvarim's settings (SelfTestToday.swift)
+        await roundSix(m, folder)
 
         // 6. the folder keeps the storage contract (engine/src/storage-conformance.js)
         if let local = m.backend as? LocalBackend, let answer = try? await local.engine.conformance() {
@@ -255,6 +260,31 @@ enum SelfTest {
             m.popover = nil
             await pause(0.2)
         }
+        // the When picker reads what is typed, as the web app's does
+        await pause(0.5)            // the last picker's popover gone first
+        m.popover = .when(id)
+        // the popover takes the keyboard as a click on it would, whatever else is in front
+        _ = await until(3) {
+            NSApp.windows.first { $0.isVisible && $0.className.contains("Popover") }?.makeKey()
+            return popoverEditor != nil
+        }
+        if let editor = popoverEditor {
+            let tomorrow = Dates.add(todayISO, days: 1)
+            editor.insertText("tom", replacementRange: NSRange(location: NSNotFound, length: 0))
+            await pause(0.8)
+            await snap("picker-when-typed")
+            editor.doCommand(by: #selector(NSResponder.insertNewline(_:)))
+            check(await until(6) { line(folder, id)?.text.contains("⏳ \(tomorrow)") == true },
+                  "typing “tom” into When, then Return, starts it tomorrow", line(folder, id)?.text ?? "gone")
+            m.undoManager?.undo()
+            check(await until(6) { line(folder, id)?.text.contains("⏳") == false }, "and ⌘Z undoes it", line(folder, id)?.text ?? "gone")
+        } else {
+            let pops = NSApp.windows.filter { $0.className.contains("Popover") }
+                .map { "\($0.isVisible ? "shown" : "hidden") key \($0.isKeyWindow) \($0.firstResponder.map { String(describing: Swift.type(of: $0)) } ?? "-")" }
+            check(false, "the When picker has a field to type in", "popover \(String(describing: m.popover)); " + pops.joined(separator: "; "))
+        }
+        m.popover = nil
+        await pause(0.2)
         // the card from the keyboard: ↓ to choose, Return to open
         m.selected = []
         m.anchor = nil
@@ -476,6 +506,11 @@ enum SelfTest {
         }
         guard let item = find(NSApp.mainMenu), let menu = item.menu, let i = menu.items.firstIndex(of: item) else { return }
         menu.performActionForItem(at: i)
+    }
+
+    /// The field in the picker showing, when it has the keyboard.
+    static var popoverEditor: NSTextView? {
+        NSApp.windows.filter { $0.isVisible && $0.className.contains("Popover") }.compactMap { $0.firstResponder as? NSTextView }.first
     }
 
     static var appWindows: [NSWindow] { NSApp.windows.filter { $0.isVisible && $0.canBecomeMain && !$0.className.contains("Popover") } }

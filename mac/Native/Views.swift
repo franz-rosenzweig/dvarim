@@ -277,68 +277,92 @@ struct SettingsView: View {
     @State private var atLogin = Shell.shared.opensAtLogin
     @State private var loginNote: String?
 
+    /// The Mac's way: a tab each for where the to-dos are, Dvarim's own
+    /// settings (the vault's, the same on every device), and this Mac's parts.
     var body: some View {
-        Form {
-            Section("Where your to-dos live") {
-                Picker("", selection: $mode) {
-                    ForEach(Mode.allCases) { Text($0.label).tag($0) }
-                }
-                .pickerStyle(.radioGroup)
-                .labelsHidden()
-                .onChange(of: mode) { _, m in Task { await model.switchMode(m) } }
-                if mode == .folder {
-                    HStack {
-                        Text(folder.isEmpty ? "No folder chosen" : (folder as NSString).abbreviatingWithTildeInPath)
-                            .lineLimit(1).truncationMode(.middle)
-                        Spacer()
-                        Button("Choose…") { choose() }
-                    }
-                }
-                if mode == .copy, let copy = Account.copy {
-                    Text("Kept here and synced as “\(copy.device)”. It opens and works with no network, and catches up when there is one.")
-                        .font(.caption).foregroundStyle(Color(nsColor: .secondaryLabelColor))
+        TabView {
+            Form { whereSections }
+                .formStyle(.grouped)
+                .tabItem { Label("Where", systemImage: "externaldrive") }
+            Form {
+                if model.phase == .ready {
+                    DvarimSettings(model: model)
+                    CalendarSettings(model: model, mode: mode)
+                } else {
+                    caption("Dvarim's own settings are here once it is open on your to-dos.")
                 }
             }
-            Section("Server") {
-                TextField("Address", text: $server)
-                    .onSubmit {
-                        Prefs.store.set(server.trimmingCharacters(in: .whitespaces), forKey: Prefs.serverKey)
-                        Task { await model.start() }
-                    }
-                if let p = model.person {
-                    HStack {
-                        Text("Signed in" + (p.owner ? "" : " as \(p.name ?? "")"))
-                        Spacer()
-                        Button("Sign out") { Task { signOutMessage = await model.signOut() } }
-                    }
-                    if let signOutMessage { Text(signOutMessage).font(.caption).foregroundStyle(Color.red) }
+            .formStyle(.grouped)
+            .tabItem { Label("Dvarim", systemImage: "checkmark.square") }
+            Form { macSection }
+                .formStyle(.grouped)
+                .tabItem { Label("This Mac", systemImage: "laptopcomputer") }
+        }
+        .frame(width: 520)
+        .frame(minHeight: 420)
+        .tint(Palette.accent)
+    }
+
+    @ViewBuilder private var whereSections: some View {
+        Section("Where your to-dos live") {
+            Picker("", selection: $mode) {
+                ForEach(Mode.allCases) { Text($0.label).tag($0) }
+            }
+            .pickerStyle(.radioGroup)
+            .labelsHidden()
+            .onChange(of: mode) { _, m in Task { await model.switchMode(m) } }
+            if mode == .folder {
+                HStack {
+                    Text(folder.isEmpty ? "No folder chosen" : (folder as NSString).abbreviatingWithTildeInPath)
+                        .lineLimit(1).truncationMode(.middle)
+                    Spacer()
+                    Button("Choose…") { choose() }
                 }
             }
-            Section("This Mac") {
-                LabeledContent("Quick Entry") { ShortcutRecorder(shell: shell) }
-                if let note = shell.chordNote { caption(note) }
-                Toggle("Show Today in the menu bar", isOn: $shell.menuBar)
-                Picker("Dock badge", selection: badge) {
-                    Text("Today").tag("today")
-                    Text("Inbox").tag("inbox")
-                    Text("None").tag("none")
-                }
-                Toggle("Remind me on this Mac", isOn: $shell.reminders)
-                if shell.reminders, let p = Reminders.shared.problem { caption(p) }
-                Toggle("Open at login", isOn: $atLogin)
-                    .onChange(of: atLogin) { _, on in
-                        loginNote = shell.openAtLogin(on)
-                        atLogin = shell.opensAtLogin
-                    }
-                if let loginNote { caption(loginNote) }
-                if Shell.besideOldApp {
-                    caption("The web-view Dvarim is in Applications too. While it is, its menu bar and reminders are the ones on to begin with, so nothing shows twice.")
-                }
+            if mode == .copy, let copy = Account.copy {
+                Text("Kept here and synced as “\(copy.device)”. It opens and works with no network, and catches up when there is one.")
+                    .font(.caption).foregroundStyle(Color(nsColor: .secondaryLabelColor))
             }
         }
-        .formStyle(.grouped)
-        .frame(width: 480)
-        .padding(.vertical, 8)
+        Section("Server") {
+            TextField("Address", text: $server)
+                .onSubmit {
+                    Prefs.store.set(server.trimmingCharacters(in: .whitespaces), forKey: Prefs.serverKey)
+                    Task { await model.start() }
+                }
+            if let p = model.person {
+                HStack {
+                    Text("Signed in" + (p.owner ? "" : " as \(p.name ?? "")"))
+                    Spacer()
+                    Button("Sign out") { Task { signOutMessage = await model.signOut() } }
+                }
+                if let signOutMessage { Text(signOutMessage).font(.caption).foregroundStyle(Color.red) }
+            }
+        }
+    }
+
+    @ViewBuilder private var macSection: some View {
+        Section("This Mac") {
+            LabeledContent("Quick Entry") { ShortcutRecorder(shell: shell) }
+            if let note = shell.chordNote { caption(note) }
+            Toggle("Show Today in the menu bar", isOn: $shell.menuBar)
+            Picker("Dock badge", selection: badge) {
+                Text("Today").tag("today")
+                Text("Inbox").tag("inbox")
+                Text("None").tag("none")
+            }
+            Toggle("Remind me on this Mac", isOn: $shell.reminders)
+            if shell.reminders, let p = Reminders.shared.problem { caption(p) }
+            Toggle("Open at login", isOn: $atLogin)
+                .onChange(of: atLogin) { _, on in
+                    loginNote = shell.openAtLogin(on)
+                    atLogin = shell.opensAtLogin
+                }
+            if let loginNote { caption(loginNote) }
+            if Shell.besideOldApp {
+                caption("The web-view Dvarim is in Applications too. While it is, its menu bar and reminders are the ones on to begin with, so nothing shows twice.")
+            }
+        }
     }
 
     private func caption(_ s: String) -> some View {
