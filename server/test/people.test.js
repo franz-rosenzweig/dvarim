@@ -97,7 +97,7 @@ test('signing in by name, or with none for the owner; a changed password signs o
   assert.equal((await signIn(s, { name: 'Robin', password: PW })).r.json.person.owner, true);
   // the owner's own name, once given, is nobody else's to take
   assert.deepEqual((await s.call('PUT', '/api/people/owner', as(owner, { body: { name: 'Robin' } }))).json, { name: 'Robin', owner: true });
-  assert.equal((await join_(s, (await invite(s, owner)).code, 'sam', 'long enough')).r.status, 409);
+  assert.equal((await join_(s, (await invite(s, owner)).code, 'robin', 'long enough')).r.status, 409);
 
   const changed = await s.call('POST', '/api/password', as(dana, { body: { currentPassword: 'dana password', newPassword: 'a new one for dana' } }));
   assert.equal(changed.status, 200);
