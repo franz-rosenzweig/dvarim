@@ -6,7 +6,7 @@ This page is about my own day with Dvarim: where the to-dos live, how they get i
 
 ## Why the files matter to me
 
-I know what I want from a to-do app: a Today list, This Evening, the difference between the day I'll start something and the day it's due, and never being asked a question when I'm only trying to get a thought out of my head. What bothered me about every one I tried was where the to-dos lived. Everything else I write lives in Obsidian, in my vault ("Synergathan"), as plain Markdown files that I own and that sync to every device I have, and my to-dos were the one thing locked inside somebody else's database.
+I know what I want from a to-do app: a Today list, This Evening, the difference between the day I'll start something and the day it's due, and never being asked a question when I'm only trying to get a thought out of my head. What bothered me about every one I tried was where the to-dos lived. Everything else I write lives in Obsidian, in my vault, as plain Markdown files that I own and that sync to every device I have, and my to-dos were the one thing locked inside somebody else's database.
 
 So Dvarim keeps them in a Tasks folder inside the vault. Each area is a folder, each project is a file and each to-do is a line, and Obsidian sees all of it like any other note. The app runs on my own server at home, in one Docker container, and Syncthing carries the vault to my Mac and my phone, which means the same files are everywhere and nothing sits in a cloud I don't control. Basically, instead of a to-do app with an export button, I have my to-dos as files, with a very good app on top of them.
 

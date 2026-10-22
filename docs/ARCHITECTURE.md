@@ -21,7 +21,7 @@ sync by whatever its owner trusts — is `ROADMAP.md`.
                                       │  notify.js reminders → Signal               │
                                       └─────────────────────────────────────────────┘
                                                  ▲                   ▲
-                                        Signal bot / Mazkir     Radicale (CalDAV)
+                                        Signal bot, scripts     Radicale (CalDAV)
                                         POST /api/quick-add     home, work, ... calendars
 ```
 
@@ -48,7 +48,7 @@ through the store and are on disk before the answer. `GET /api/stream` is a Serv
 emits `changed` whenever the index changes (own write or external edit) so
 every open window refreshes. `POST /api/quick-add` accepts one line of text in
 the quick-entry grammar ("Call the plumber tomorrow 3pm #home") for the
-Signal bot and Mazkir.
+Signal bot and other scripts.
 
 **Sync** (`server/src/dav.js`, `engine/src/webdav.js`). The server offers its
 folder over WebDAV at `/dav/`, answered from the store, to devices that keep a
@@ -90,7 +90,7 @@ device token (`docs/BRIDGE.md`, "Copy").
 - *Reminders*: `⏰` times fire a Signal message through the existing signal-api
   container (cheap, reliable, already on the phone) and, later, Web Push.
 - *Quick-add*: the Signal bot forwards any message prefixed with a marker to
-  `/api/quick-add`; Mazkir reads `/api/lists/today` for the morning brief.
+  `/api/quick-add`; a morning-brief script reads `/api/lists/today`.
 
 ## Deployment
 

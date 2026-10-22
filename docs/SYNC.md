@@ -254,7 +254,7 @@ can. It is the built-in sync above, set up without anyone setting it up:
 - **First time**: the first copy is made before the first screen shows, and if
   it cannot finish the page works the old way (from the server, with its kept
   lists) and tries again next time. It writes nothing on the server: a copy of
-  Nathan's vault came down byte for byte with no file there touched
+  a real vault came down byte for byte with no file there touched
   (`tools/e2e_mirror.py`).
 - **Never across people**: a sync carries a cookie, so whoever's cookie the
   page holds is whose folder it writes. The mirror's sync stops before anyone
@@ -311,5 +311,5 @@ so the page itself opens with no network too, and it never answers for `/dav/`.
   Obsidian of something Dvarim did loses to the merge. Undo in Dvarim instead.
   (See *When a file arrives* above.)
 - **A text editor's half-saved file** is taken as it is, as today.
-- **The server on morten does not stamp its changes** to settings. A setting
+- **The server does not stamp its changes** to settings. A setting
   changed there and, in the same moment, on a device goes to the device.

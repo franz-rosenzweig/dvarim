@@ -335,7 +335,7 @@ What I learned building it:
   Xcode is optional; see *Signing* for the one thing it buys you.
 - `brew install xcodegen`.
 - The server up. Check with `curl -s https://dvarim.tiresia.xyz/api/health`
-  before building anything, or `http://100.91.202.11:8420/api/health` on the
+  before building anything, or `http://<tailscale-ip>:8420/api/health` on the
   tailnet. `/api/state` answers 401 until you are signed in, which is the point.
 
 ## Build it
@@ -588,7 +588,7 @@ where you can give it a key — useful when the Quick Entry chord is spoken for.
 - **Reminders arrive twice** if the server's Signal reminders are on and the
   Mac's are too. Pick one.
 - **Reminder times are wall-clock times here, on the to-do's own When date.** The
-  server keeps its own zone (`TZ`, America/Phoenix as deployed; see
+  server keeps its own zone (`TZ`; see
   `docs/DEPLOY.md`), so its today and the Mac's differ for part of every day
   whenever the Mac is somewhere else; nothing here schedules by the Mac's today.
 - **The sandbox is off** so the app can open a socket and take a global hotkey.

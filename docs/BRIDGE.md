@@ -285,9 +285,9 @@ In a browser the server's page keeps a copy of its own: the mirror
 The menu bar, the badge, Quick Entry, the widget, reminders and the share
 sheet all talk to the server over HTTP today.
 
-In folder mode they keep doing that if a server is configured. That is
-Nathan's setup: the server writes to the vault, Syncthing brings the change
-to this folder, and the page picks it up.
+In folder mode they keep doing that if a server is configured. With a server
+and Syncthing side by side, the server writes to the vault, Syncthing brings
+the change to this folder, and the page picks it up.
 
 With no server, they are off until phase 6. Phase 6 moves them to local data,
 using the page's `window.dvarim.request(method, path, body)`. That call answers

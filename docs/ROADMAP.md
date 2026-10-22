@@ -7,14 +7,14 @@ has been decided; `ARCHITECTURE.md` describes what exists.
 
 ## Decisions
 
-Made by Nathan on 2026-09-23. Change them here, not in passing.
+Made on 2026-09-23. Change them here, not in passing.
 
 | Question | Decision |
 | --- | --- |
 | Licence | GPL-3.0-or-later. Public on GitHub since 2026-10-20. |
 | Own look | Yes, and it has one since 2026-10-20: the app icon is three paper slips, the first ticked; each list has its own earthy colour and a cut-paper icon; the accent is the tick's sage. |
-| Platforms | **macOS, Android, and the Linux server's web app.** iOS, Windows and Linux desktop are blocked until Nathan says otherwise. Nothing may be built for them; nothing may be built that rules them out. |
-| Sync | Options, not one answer. Nathan's own setup — the vault in Obsidian, Syncthing, the server on morten — is one of them and must keep working at every step. A hosted sync service is wanted someday. |
+| Platforms | **macOS, Android, and the Linux server's web app.** iOS, Windows and Linux desktop are blocked until the maintainer says otherwise. Nothing may be built for them; nothing may be built that rules them out. |
+| Sync | Options, not one answer. The original setup — an Obsidian vault, Syncthing, and a Dvarim server at home — is one of them and must keep working at every step. A hosted sync service is wanted someday. |
 
 ## Gates
 
@@ -33,7 +33,7 @@ negotiable piecemeal:
 - no personal defaults anywhere: `dvarim.tiresia.xyz` is the Mac app's default
   server and the Android build's launch address today. Still open.
 
-**Before work on a blocked platform**: Nathan says so, here.
+**Before work on a blocked platform**: the maintainer says so, here.
 
 ## Where it stands
 
@@ -41,7 +41,7 @@ negotiable piecemeal:
 runs on the engine, and devices can keep their own copy: see the phases.)*
 
 The server is the app. Parsing the Markdown, filing to-dos into Today and
-Upcoming, the date grammar, repeats and reminders are Python on morten
+Upcoming, the date grammar, repeats and reminders are Python on the server
 (`backend/dvarim`). The Mac and Android apps are windows onto that server.
 Offline, they show what they last saw and queue edits in an outbox — which, by
 its own design, cannot file anything or read a date, because that would be a
@@ -85,17 +85,17 @@ the other. Sync tools' conflict copies (`.sync-conflict-…`, "conflicted copy",
 CRDT: those merge better in theory, but the Markdown would become a rendering of
 a binary document and every Obsidian edit would have to be translated back in.
 
-## Nathan's three places
+## Three places, one set of files
 
-morten's web app, the Mac app and the Android app all read and write the same
+The server's web app, the Mac app and the Android app all read and write the same
 Markdown, and stay in step two ways, mixable per device:
 
-- **As now.** An app talks to the server on morten (the Remote backend). Kept
+- **As now.** An app talks to the server (the Remote backend). Kept
   working throughout; nothing changes until a device is switched.
-- **Each device its own copy.** morten keeps running on the vault. The Mac app
+- **Each device its own copy.** The server keeps running on the vault. The Mac app
   works on the vault copy Syncthing already keeps there. Android works on a
   Syncthing folder, or — the more dependable choice on Android — syncs with
-  morten directly. Everything works offline, and simultaneous edits merge per
+  the server directly. Everything works offline, and simultaneous edits merge per
   to-do instead of producing conflict copies that go unread.
 
 ## Phases
@@ -115,13 +115,13 @@ In order. Each leaves the daily app working; nothing switches over by itself.
 
 ## Who does what
 
-This server has no Xcode and no Android SDK, so work splits:
+The Linux server has no Xcode and no Android SDK, so work splits:
 
-- **here (morten):** the engine, the UI, the server, the file format, every
+- **on the Linux server:** the engine, the UI, the server, the file format, every
   test that runs in Node or a browser, and a brief plus conformance tests for
   whatever the native side has to do;
 - **on the Mac:** the macOS shell and the Android shell — building, signing,
   installing, and running the conformance tests on real devices.
 
-Briefs for the device sessions go beside their code, `mac/NEXT.md` and
+Notes for the native side go beside its code, `mac/NEXT.md` and
 `android/NEXT.md`, as each phase needs something done there.

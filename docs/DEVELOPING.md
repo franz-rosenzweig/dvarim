@@ -74,7 +74,7 @@ Merging the pull request is the deploy, so only merge what has passed the gate a
 
 - A change in behaviour belongs on the guide page that describes it too, and a change to the format in [FORMAT](FORMAT.md).
 - The API is the contract with the Mac and Android apps. [API.md](API.md) lists every route, and a shell should never need a server change.
-- Work for the Mac and Android apps is done on a Mac. Briefs for it go beside their code, in `mac/NEXT.md` and `android/NEXT.md`.
+- Work for the Mac and Android apps is done on a Mac. Notes on that work go beside their code, in `mac/NEXT.md` and `android/NEXT.md`.
 - The Mac and Android apps carry their own build of the web app (`frontend/dist`, copied in when they're built) and, keeping a copy of the to-dos, show that one rather than the server's. So a deploy reaches browsers only: a page change the apps should have needs them built again and installed, the Mac with `mac/build.sh`, Android with a new version.
 
 <sub>Next: [The file format](FORMAT.md) →</sub>

@@ -149,11 +149,11 @@ test('main: the environment the Python server read starts this one', async () =>
   const f = fixture({ password: 'correct horse battery' });
   writeFileSync(join(f.root, 'Inbox.md'), '- [ ] Already here 🆔 aa11bb22\n');
   const { app, watcher, reminders } = await start({ DVARIM_ROOT: f.root, DVARIM_STATIC: f.staticDir, DVARIM_AUTH_FILE: f.authFile,
-    PORT: '0', HOST: '127.0.0.1', DVARIM_OBSIDIAN_VAULT: 'Synergathan', DVARIM_OBSIDIAN_PREFIX: 'Notes/Projects/Tasks', TZ: 'America/Phoenix' });
+    PORT: '0', HOST: '127.0.0.1', DVARIM_OBSIDIAN_VAULT: 'MyVault', DVARIM_OBSIDIAN_PREFIX: 'Notes/Projects/Tasks', TZ: 'America/Phoenix' });
   assert.equal(app.auth.enabled, true);
   assert.ok(watcher, 'watching the folder');
   assert.deepEqual(app.api.services.reminders(), { configured: false, log: [] });
-  assert.match(app.store.todoJson(app.store.getTodo('aa11bb22')[2]).obsidian, /^obsidian:\/\/advanced-uri\?vault=Synergathan&filepath=Notes%2FProjects%2FTasks%2FInbox\.md/u);
+  assert.match(app.store.todoJson(app.store.getTodo('aa11bb22')[2]).obsidian, /^obsidian:\/\/advanced-uri\?vault=MyVault&filepath=Notes%2FProjects%2FTasks%2FInbox\.md/u);
   // someone edits the folder: the watcher reads it
   writeFileSync(join(f.root, 'Inbox.md'), '- [ ] Already here 🆔 aa11bb22\n- [ ] Typed in Obsidian\n');
   for (let i = 0; i < 50 && ![...app.store.files.get('Inbox.md').allTodos()].some((t) => t.title === 'Typed in Obsidian'); i++) await new Promise((r) => setTimeout(r, 100));

@@ -222,7 +222,7 @@ credential to manage, and they sign out when the app does.
 
   Time is the subtle part: `"15:00"` against the to-do's own When date means
   three in the afternoon **where you are**, so the two are combined in the
-  phone's timezone and never in the server's, which runs on America/Phoenix.
+  phone's timezone and never in the server's, which keeps its own (`TZ`).
 
   Android asks about notifications the first time the app opens. For a reminder
   on the dot rather than within a few minutes, Android 12 and up also want
@@ -336,7 +336,7 @@ Worth knowing:
 
 - **SAF is slow and has no atomic replace.** A file is rewritten in place and
   its size checked afterwards; a write that went short is reported, never
-  trusted. A rescan of the real Tasks folder (52 notes) takes about half a
+  trusted. A rescan of a Tasks folder of about 50 notes takes about half a
   second, and the page does one every 15 s while in front, and on coming back.
   Syncthing's changes arrive that way: document providers say nothing when a
   file changes.

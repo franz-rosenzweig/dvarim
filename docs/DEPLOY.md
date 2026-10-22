@@ -1,4 +1,8 @@
-# Deploying Dvarim on morten
+# Deploying Dvarim on the home server
+
+How the original copy is run: one Linux machine, Docker Compose, the to-dos in
+an Obsidian vault that Syncthing carries to the other devices. The paths are
+that machine's; put your own in their place.
 
 ## Build and run
 
@@ -26,11 +30,11 @@ Three directories, and they are deliberately separate:
 | --- | --- |
 | `/srv/dev/dvarim` | the source and the Dockerfile — this repo |
 | `/srv/docker/dvarim` | `auth.json` and `dvarim.env`: the password hash, session secret and CalDAV credentials; `requests.json`, the requests for an account; and `people/`, one folder per invited person (`docs/PEOPLE.md`). Outside git, and outside the Syncthing-synced vault |
-| `/srv/obsidian/Synergathan/Notes/Projects/Tasks` | the data. Mounted at `/data`; the Markdown files *are* the database |
+| `/srv/obsidian/MyVault/Tasks` | the data. Mounted at `/data`; the Markdown files *are* the database |
 
 The service declares no `networks:` key, and that is the point: the `docker`
 project's default network is `docker_default`, which is where `radicale` already
-sits, so `DVARIM_CALDAV_URL=http://radicale:5232/jason/` resolves by name with no
+sits, so `DVARIM_CALDAV_URL=http://radicale:5232/me/` resolves by name with no
 external-network plumbing. Verify after any change with:
 
 ```bash
@@ -47,7 +51,7 @@ A push to master reaches the server on its own. `tools/autodeploy.sh` runs from
 cron every five minutes and is silent unless it does something:
 
 ```
-*/5 * * * * /srv/dev/dvarim/tools/autodeploy.sh --quiet >> /home/lander/logs/cron.log 2>&1
+*/5 * * * * /srv/dev/dvarim/tools/autodeploy.sh --quiet >> $HOME/logs/cron.log 2>&1
 ```
 
 It refuses rather than guesses. This checkout is also where the code gets edited
@@ -60,7 +64,7 @@ fails before the build leaves the tree where it was; a deploy that never answers
 is rolled back to the image it replaced and the tree reset to the previous
 commit.
 
-Watch it with `grep dvarim-deploy /home/lander/logs/cron.log`, run it by hand
+Watch it with `grep dvarim-deploy ~/logs/cron.log`, run it by hand
 with `tools/autodeploy.sh`, and turn it off by removing that crontab line.
 
 The server has no dependencies to install: the engine and the server use Node's
@@ -71,8 +75,8 @@ own library, so nothing on the host needs updating for a deploy.
 It is one Docker container listening on port 8420, bound to localhost and to
 this machine's Tailscale address. Nothing else is in front of it.
 
-**http://100.91.202.11:8420** works right now from any device on the tailnet,
-as does **http://morten:8420** via MagicDNS. No sudo, no reverse proxy. That is
+`http://<tailscale-ip>:8420` works from any device on the tailnet, as does
+`http://<hostname>:8420` via MagicDNS. No sudo, no reverse proxy. That is
 the fastest way in and is enough for daily use in a browser tab.
 
 Plain HTTP has one limit: Chrome will not offer "Install app" on a non-secure
@@ -84,7 +88,7 @@ Tailscale's HTTPS in front of it once (this needs sudo):
 sudo tailscale serve --bg --https=443 http://127.0.0.1:8420
 ```
 
-The app is then at **https://morten.tail0523d1.ts.net/**. `sudo tailscale serve
+The app is then at `https://<hostname>.<tailnet>.ts.net/`. `sudo tailscale serve
 status` shows the mapping and `sudo tailscale serve --https=443 off` removes it.
 
 - **Mac**: open the URL in Safari, then File → Add to Dock. It gets its own
@@ -92,13 +96,13 @@ status` shows the mapping and `sudo tailscale serve --https=443 off` removes it.
 - **Android**: open in Chrome, then menu → Add to Home screen. The manifest and
   service worker are in place, so over HTTPS it installs as a real app.
 
-If you want a password in front of it, add a Caddy site with the same
-`basic_auth` block the homepage uses, pointing at `dvarim:8420`, and drop the
+If you want a password in front of it, add a Caddy site with a
+`basic_auth` block, pointing at `dvarim:8420`, and drop the
 Tailscale-IP port binding in `/srv/docker/docker-compose.yml`.
 
 ## Where the data lives
 
-Production root is `/srv/obsidian/Synergathan/Notes/Projects/Tasks` inside the
+Production root is `/srv/obsidian/MyVault/Tasks` inside the
 Obsidian vault, so Syncthing carries every change to the Mac and the phone and
 Obsidian can read and edit the same files. `/srv/dev/dvarim/data` (a copy of
 `sample-vault/`) is only for development; run against it with
@@ -107,13 +111,12 @@ Obsidian can read and edit the same files. `/srv/dev/dvarim/data` (a copy of
 On first start the app creates `Inbox.md`, `Standalone.md`, `Trash.md`,
 `Areas/`, `Projects/`, `Trash/` and a hidden `.dvarim/` for view state.
 
-**That folder already contains 17 ordinary notes** using a homegrown
-`kind: Task` front-matter scheme (`matzav`, `parent`, `due`, `priority_today`).
-Dvarim never touches them: the indexer only adopts a root-level file that
-declares `type: project` or `type: area`, plus everything under `Areas/` and
-`Projects/`. They stay invisible in the app and unchanged on disk. Converting
-them into real Dvarim projects would be a one-off import script, not something
-the app does on its own.
+**Other notes already in that folder are left alone**, whatever front matter
+they carry: the indexer only adopts a root-level file that declares
+`type: project` or `type: area`, plus everything under `Areas/` and
+`Projects/`. The rest stay invisible in the app and unchanged on disk.
+Converting them into real Dvarim projects would be a one-off import script,
+not something the app does on its own.
 
 `.dvarim/` is in the vault's `.gitignore`, so view state is not committed.
 
@@ -133,8 +136,8 @@ the app does on its own.
 
 The data folder is plain text. It is already covered by whatever backs up the
 vault (git + Syncthing versions). The other people's folders are not in the
-vault: they sit in `/srv/docker/dvarim/people/`, which the nightly Borg backup
-of `/srv/docker` covers.
+vault: they sit in `/srv/docker/dvarim/people/`, which the machine's nightly
+backup of `/srv/docker` covers.
 
 ## Signing in
 

@@ -7,8 +7,8 @@ Today and under each day in Upcoming:
 
 ```yaml
 environment:
-  DVARIM_CALDAV_URL: http://radicale:5232/jason/    # the user's collection root
-  DVARIM_CALDAV_USER: jason
+  DVARIM_CALDAV_URL: http://radicale:5232/me/       # the user's collection root
+  DVARIM_CALDAV_USER: me
   DVARIM_CALDAV_PASS: "…"                            # the htpasswd password
 ```
 
@@ -19,12 +19,12 @@ their EXDATEs and overrides honoured; multi-day all-day events show on every
 day they cover. Results are cached for 60 seconds.
 
 If the container is on the same compose network as Radicale, `radicale:5232`
-resolves; otherwise use `http://127.0.0.1:5232/jason/` with `network_mode: host`
+resolves; otherwise use `http://127.0.0.1:5232/me/` with `network_mode: host`
 or the host gateway address.
 
 ## Signal bot quick-add
 
-The bot at `/srv/obsidian/Synergathan/.claude/scripts/signal-bot.py` can forward
+A chat bot (here, a Signal bot) can forward
 any message that starts with `t ` (or a `+`) to the Inbox. One call, no parsing
 on the bot side; the API understands the quick-entry grammar:
 
@@ -64,7 +64,7 @@ Grammar: trailing date words set When (`tomorrow`, `sunday`, `in 3 days`,
 `@<time>` sets a reminder (`@9am`, `@15:30`); `#tag` anywhere. Anything the
 parser is unsure about stays in the title, so it never eats words.
 
-## Mazkir morning brief
+## A morning brief
 
 ```python
 today = httpx.get(f"{DVARIM}/api/lists/today", headers=AUTH, timeout=5).json()
@@ -168,13 +168,13 @@ per to-do. Web Push for the PWA comes after that.
 
 ## Radicale tasks: what is and is not connected
 
-**Events: connected.** All 12 of your Radicale calendars are read over CalDAV and
+**Events: connected.** Every one of your Radicale calendars is read over CalDAV and
 their events appear in Today and Upcoming. Read-only, cached for a minute, and
 `PUT /api/settings {"calendars": [...]}` narrows which ones show. Nothing Dvarim
 does ever writes to them.
 
-**Tasks: not connected, deliberately.** Radicale holds 15 VTODOs across four
-collections. Dvarim does not read or write them, and the two systems do not sync.
+**Tasks: not connected, deliberately.** Whatever VTODOs Radicale already holds,
+Dvarim does not read or write them, and the two systems do not sync.
 That is a real gap, not an oversight, and the reason is below.
 
 ## VTODO mirror to Radicale (not built)
