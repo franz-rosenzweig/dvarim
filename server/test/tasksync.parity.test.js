@@ -185,21 +185,21 @@ async function setup() {
 
 test('a client that knows only the basics cannot flatten what it cannot express', async () => {
   const { root, store, dav, sync } = await setup();
-  const p = store.createProject({ name: 'Manuscript' });
-  const h = store.addHeading(p.id, 'Hand-back');
-  const t = store.createTodo({ title: 'Send ch. 4', projectId: p.id, headingId: h.id, when: TODAY, evening: true, reminder: '15:00',
+  const p = store.createProject({ name: 'Report' });
+  const h = store.addHeading(p.id, 'Hand-in');
+  const t = store.createTodo({ title: 'Send part 4', projectId: p.id, headingId: h.id, when: TODAY, evening: true, reminder: '15:00',
     repeat: 'every week', checklist: [{ text: 'bundle', done: false }] });
   await sync.sync();
   const href = [...dav.items.keys()][0];
-  dav.items.set(href, `BEGIN:VCALENDAR\r\nBEGIN:VTODO\r\nUID:${t.id}@dvarim\r\nSUMMARY:Send chapter four\r\nSTATUS:NEEDS-ACTION\r\nDTSTART;VALUE=DATE:20260919\r\nEND:VTODO\r\nEND:VCALENDAR\r\n`);
+  dav.items.set(href, `BEGIN:VCALENDAR\r\nBEGIN:VTODO\r\nUID:${t.id}@dvarim\r\nSUMMARY:Send part four\r\nSTATUS:NEEDS-ACTION\r\nDTSTART;VALUE=DATE:20260919\r\nEND:VTODO\r\nEND:VCALENDAR\r\n`);
   dav.etags.set(href, 'changed');
   await sync.sync();
   const [, , obj] = store.getTodo(t.id);
-  assert.equal(obj.title, 'Send chapter four');
+  assert.equal(obj.title, 'Send part four');
   assert.equal(obj.evening, true);
   assert.equal(obj.reminder, '15:00');
   assert.equal(obj.repeat, 'every week');
-  assert.equal(obj.heading, 'Hand-back');
+  assert.equal(obj.heading, 'Hand-in');
   assert.deepEqual(obj.checklist.map((c) => c.text), ['bundle']);
   rmSync(root, { recursive: true, force: true });
 });
@@ -223,12 +223,12 @@ test('losing the state costs writes, not data; a broken server does not take the
 
 test('Tasks.org\'s reminders are not the to-do: their text never reaches the notes', async () => {
   const { root, store, dav, sync } = await setup();
-  const t = store.createTodo({ title: 'Wording for the testers', deadline: '2026-10-05', notes: 'Keep it short.' });
+  const t = store.createTodo({ title: 'Wording for the newsletter', deadline: '2026-10-05', notes: 'Keep it short.' });
   await sync.sync();
   const href = [...dav.items.keys()][0];
   // as DAVx⁵ writes it back for Tasks.org, with two default reminders
   const back = (description, status) => ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:DAVx5/4.5.19-ose ical4j/4.3.0 (org.tasks)',
-    'BEGIN:VTODO', `DESCRIPTION:${description}`, 'DUE;VALUE=DATE:20261005', `STATUS:${status}`, 'SUMMARY:Wording for the testers',
+    'BEGIN:VTODO', `DESCRIPTION:${description}`, 'DUE;VALUE=DATE:20261005', `STATUS:${status}`, 'SUMMARY:Wording for the newsletter',
     `UID:${t.id}@dvarim`, 'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Default Tasks.org description', 'TRIGGER;RELATED=END:PT0S',
     'END:VALARM', 'BEGIN:VALARM', 'ACTION:EMAIL', 'SUMMARY:A reminder', 'DESCRIPTION:Default Tasks.org description',
     'TRIGGER;RELATED=END:P1D', 'END:VALARM', 'END:VTODO', 'END:VCALENDAR', ''].join('\r\n');
@@ -236,7 +236,7 @@ test('Tasks.org\'s reminders are not the to-do: their text never reaches the not
   dav.etags.set(href, 'reminders added');
   await sync.sync();
   let obj = store.getTodo(t.id)[2];
-  assert.equal(obj.title, 'Wording for the testers');
+  assert.equal(obj.title, 'Wording for the newsletter');
   assert.equal(obj.notes, 'Keep it short.');
   // where an earlier cycle had already sent it back as the to-do's own text
   dav.items.set(href, back('Default Tasks.org description', 'COMPLETED'));
@@ -252,7 +252,7 @@ test('Tasks.org\'s reminders are not the to-do: their text never reaches the not
 
 test('a to-do another tool marked [/] is the same to-do to the mirror: ticked there, ticked here, not adopted again', async () => {
   const { root, store, dav, sync } = await setup();
-  const t = store.createTodo({ title: 'Rename the sandbox account', when: TODAY });
+  const t = store.createTodo({ title: 'Rename the shared folder', when: TODAY });
   await sync.sync();
   await store.flush();
   const path = join(root, store.getTodo(t.id)[0].path);
@@ -266,7 +266,7 @@ test('a to-do another tool marked [/] is the same to-do to the mirror: ticked th
   assert.equal(r.adopted, 0);
   const mine = readFileSync(path, 'utf8').split('\n').filter((l) => l.includes(t.id));
   assert.equal(mine.length, 1, mine.join('\n'));
-  assert.match(mine[0], /^- \[x\] Rename the sandbox account /u);
+  assert.match(mine[0], /^- \[x\] Rename the shared folder /u);
   assert.equal([...store.openTodos()].length, 0, 'nothing new in the Inbox');
   rmSync(root, { recursive: true, force: true });
 });

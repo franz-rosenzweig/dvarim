@@ -204,8 +204,8 @@ function mergeTodo(b, o, t, conflicts) {
   // Renamed on both sides: the wording of the side further along — done, then
   // in progress, then open — since a to-do is often reworded to say what came
   // of it as it is ticked; else the longer. On 5 October a conflict copy
-  // without a base brought "Licence sweep: confirm …" back over the "Licence
-  // sweep of 5d9d0c4: nothing …" it had been ticked off as.
+  // without a base brought a to-do's old wording ("… check: confirm …") back
+  // over the wording it had been ticked off with ("… check of …: done").
   const along = (x) => 2 * RANK[x.status] + (x.status === 'open' && x.mark ? 1 : 0);
   out.title = merge3(base.title, o.title, t.title,
     (x, y) => (along(o) !== along(t) ? (along(o) > along(t) ? o.title : t.title) : titleRule(x, y)), conflicts, what('title'));

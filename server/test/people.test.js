@@ -153,15 +153,15 @@ function unzip(buf) {
 
 test('"Download my files": a zip of one\'s own folder, and nobody else\'s', async (t) => {
   const { s, owner, dana } = await household(t);
-  await s.call('POST', '/api/todos', as(dana, { body: { title: 'שבת שלום', inbox: true } }));
+  await s.call('POST', '/api/todos', as(dana, { body: { title: 'בוקר טוב', inbox: true } }));
   const res = await fetch(`${s.base}/api/export`, { headers: { Cookie: dana } });
   assert.equal(res.headers.get('content-type'), 'application/zip');
   assert.match(res.headers.get('content-disposition'), /^attachment; filename="Dvarim \d{4}-\d\d-\d\d\.zip"$/u);
   const files = unzip(Buffer.from(await res.arrayBuffer()));
   assert.ok(files['Dvarim/Projects/Meet Dvarim.md']);
-  assert.match(files['Dvarim/Inbox.md'], /שבת שלום/u);
+  assert.match(files['Dvarim/Inbox.md'], /בוקר טוב/u);
   const mine = unzip(Buffer.from(await (await fetch(`${s.base}/api/export`, { headers: { Cookie: owner } })).arrayBuffer()));
-  assert.ok(!mine['Dvarim/Projects/Meet Dvarim.md'] && !Object.values(mine).some((x) => x.includes('שבת')));
+  assert.ok(!mine['Dvarim/Projects/Meet Dvarim.md'] && !Object.values(mine).some((x) => x.includes('בוקר')));
   assert.equal((await fetch(`${s.base}/api/export`)).status, 401);
 });
 

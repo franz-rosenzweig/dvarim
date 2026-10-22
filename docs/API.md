@@ -11,7 +11,7 @@ credential once a password is set.
 // Todo
 {
   "id": "a1b2c3d4",
-  "title": "Send ch. 4 back with queries",
+  "title": "Send the draft to the board with questions",
   "notes": "Markdown text, may be empty",
   "status": "open",                 // open | done | canceled
   "inbox": false,                   // lives in Inbox.md

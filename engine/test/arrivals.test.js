@@ -195,24 +195,24 @@ test('a copy waits while its file is being edited, then merges', async () => {
 });
 
 test('a copy\'s note lines the file already has, as to-dos or longer lines, are not added again', async () => {
-  const file = '---\ntype: inbox\n---\n- [ ] Body doubling? 🆔 body0001\n    What is the best way to stay on track?\n'
-    + '- [ ] do i have a way to start every day with a clean mind? 🆔 mind0001\n'
-    + '- [ ] good to have a BASIC system for consuming media, news, books 🆔 medi0001\n';
-  const copy = '---\ntype: inbox\n---\n- [ ] Body doubling? 🆔 body0001\n    What is the best way to stay on track?\n'
-    + '    \\- [ ] do i have a way to start every day with a clean mind?\n'
-    + '    \\- [ ] system for consuming media, news, books\n'
+  const file = '---\ntype: inbox\n---\n- [ ] Try a standing desk? 🆔 body0001\n    Would it help in the afternoons?\n'
+    + '- [ ] is there a way to end every day with a tidy desk? 🆔 mind0001\n'
+    + '- [ ] look for a SIMPLE routine for reading the news and books 🆔 medi0001\n';
+  const copy = '---\ntype: inbox\n---\n- [ ] Try a standing desk? 🆔 body0001\n    Would it help in the afternoons?\n'
+    + '    \\- [ ] is there a way to end every day with a tidy desk?\n'
+    + '    \\- [ ] routine for reading the news and books\n'
     + '    A thought only the copy has\n';
   const { storage } = await open({ 'Inbox.md': file, 'Inbox.sync-conflict-20260923-120000-ABCDEFG.md': copy });
   const notes = parse(text(storage, 'Inbox.md'), 'Inbox.md').sections[0].todos[0].notes;
-  assert.deepEqual(notes.split('\n').sort(), ['A thought only the copy has', 'What is the best way to stay on track?'], notes);
+  assert.deepEqual(notes.split('\n').sort(), ['A thought only the copy has', 'Would it help in the afternoons?'], notes);
 });
 
 // A note from another tool, 5 October: a tool on the server marks a to-do [/] or
 // ticks it, a save from another device wins in Syncthing, and the server's
 // version comes back as a conflict copy. [/] was not a to-do then, so the
 // copy's line was text the file did not have, and went in beside the to-do.
-const SWEEP = '- [/] Licence sweep: confirm nothing is non-commercial 👤 Research 🆔 licsweep ➕ 2026-09-22\n';
-const SWEPT = '- [x] Licence sweep of 5d9d0c4: nothing non-commercial 👤 Research 🆔 licsweep ➕ 2026-09-22 ✅ 2026-09-23\n';
+const SWEEP = '- [/] Font check: confirm every font is free to use 👤 Research 🆔 licsweep ➕ 2026-09-22\n';
+const SWEPT = '- [x] Font check of build 42: every font is free to use 👤 Research 🆔 licsweep ➕ 2026-09-22 ✅ 2026-09-23\n';
 const lines = (storage, id) => text(storage, 'Inbox.md').split('\n').filter((l) => l.includes(`🆔 ${id}`));
 
 test('a copy that marked a to-do [/] merges into its line, not beside it', async () => {
