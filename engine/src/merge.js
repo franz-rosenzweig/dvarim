@@ -423,7 +423,7 @@ export function hasSeen(base, ours, theirs, path) {
 
 // Conflict copies sync tools leave beside a file both sides changed.
 const SYNCTHING = /^(.*)\.sync-conflict-\d{8}-\d{6}-[A-Z0-9]{7}(\.[^./]+)$/u;      // name.sync-conflict-20260923-101500-ABCDEFG.md
-const CONFLICTED = /^(.*) \([^()]*conflicted copy[^()]*\)(\.[^./]+)$/iu;             // name (Sam's conflicted copy 2026-09-23).md
+const CONFLICTED = /^(.*) \([^()]*conflicted copy[^()]*\)(\.[^./]+)$/iu;             // name (Robin's conflicted copy 2026-09-23).md
 
 /** The file a conflict copy is a copy of, or null if it is not one. */
 export function conflictOriginal(path) {

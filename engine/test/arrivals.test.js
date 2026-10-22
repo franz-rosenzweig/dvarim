@@ -64,7 +64,7 @@ test('with mergeArrivals, a file made without this device\'s change is merged wi
 
 test('when a conflict copy was made, from its name', () => {
   assert.equal(copyTime('Inbox.sync-conflict-20260920-105958-K4MXQ7B.md'), Date.UTC(2026, 8, 20, 10, 59, 58));
-  assert.equal(copyTime("Inbox (Sam's conflicted copy 2026-09-20).md"), Date.UTC(2026, 8, 21));
+  assert.equal(copyTime("Inbox (Robin's conflicted copy 2026-09-20).md"), Date.UTC(2026, 8, 21));
   assert.equal(copyTime('Inbox.md'), null);
 });
 
@@ -216,10 +216,10 @@ const SWEPT = '- [x] Font check of build 42: every font is free to use 👤 Rese
 const lines = (storage, id) => text(storage, 'Inbox.md').split('\n').filter((l) => l.includes(`🆔 ${id}`));
 
 test('a copy that marked a to-do [/] merges into its line, not beside it', async () => {
-  const file = INBOX + '- [ ] Check the proofs 👤 Sam 🆔 continu1 ➕ 2026-09-22 📅 2026-09-24\n';
-  const copy = INBOX + '- [/] Check the proofs 👤 Sam 🆔 continu1 ➕ 2026-09-22 📅 2026-09-24\n    The full version is ready.\n';
+  const file = INBOX + '- [ ] Check the proofs 👤 Robin 🆔 continu1 ➕ 2026-09-22 📅 2026-09-24\n';
+  const copy = INBOX + '- [/] Check the proofs 👤 Robin 🆔 continu1 ➕ 2026-09-22 📅 2026-09-24\n    The full version is ready.\n';
   const { storage } = await open({ 'Inbox.md': file, 'Inbox.sync-conflict-20260923-102155-K4MXQ7B.md': copy });
-  assert.deepEqual(lines(storage, 'continu1'), ['- [/] Check the proofs 👤 Sam 🆔 continu1 ➕ 2026-09-22 📅 2026-09-24']);
+  assert.deepEqual(lines(storage, 'continu1'), ['- [/] Check the proofs 👤 Robin 🆔 continu1 ➕ 2026-09-22 📅 2026-09-24']);
   assert.match(text(storage, 'Inbox.md'), /continu1.*\n {4}The full version is ready\.\n/u);
 });
 
