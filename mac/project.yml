@@ -101,6 +101,8 @@ targets:
         # a server on the tailnet or the local network; 127.0.0.1 needs no asking
         NSLocalNetworkUsageDescription: Dvarim talks to your Dvarim server when it is on your local network or tailnet.
         NSUserNotificationsUsageDescription: Dvarim shows your to-do reminders.
+        # this Mac's calendars in Today and Upcoming, in folder mode, once turned on (Calendars.swift)
+        NSCalendarsFullAccessUsageDescription: With your to-dos in a folder on this Mac, Dvarim shows your calendars' events in Today and Upcoming.
         # "New To-Do in Dvarim Native" in every app's Services menu (ServiceProvider)
         NSServices:
           - NSMenuItem:
@@ -112,4 +114,6 @@ targets:
       path: Native/DvarimNative.entitlements
       properties:
         com.apple.security.app-sandbox: false
+        # the hardened runtime's door to EventKit, for this Mac's calendars in folder mode
+        com.apple.security.personal-information.calendars: true
 

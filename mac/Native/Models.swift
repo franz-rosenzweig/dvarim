@@ -141,6 +141,12 @@ struct AppState: Sendable {
     var tags: [String]
     var weekStartsOn: Int
     var badgeCount: String
+    /// The engine's other settings (store.js DEFAULT_SETTINGS), as Settings shows them.
+    var logCompleted: String
+    var groupTodayByList: Bool
+    var showCalendarEvents: Bool
+    /// The calendars shown: nil for all of them.
+    var calendars: [String]?
 
     static let empty = AppState(J(nil))
 
@@ -154,6 +160,10 @@ struct AppState: Sendable {
         tags = j["tags"].array.compactMap { $0["name"].string ?? $0.string }
         weekStartsOn = j["settings"]["weekStartsOn"].int ?? 0
         badgeCount = j["settings"]["badgeCount"].string ?? "today"
+        logCompleted = j["settings"]["logCompleted"].string ?? "immediately"
+        groupTodayByList = j["settings"]["groupTodayByList"].bool
+        showCalendarEvents = j["settings"]["showCalendarEvents"].exists ? j["settings"]["showCalendarEvents"].bool : true
+        calendars = j["settings"]["calendars"].exists ? j["settings"]["calendars"].strings : nil
     }
 
     func project(_ id: String) -> Project? {
@@ -184,6 +194,14 @@ enum Place: Hashable, Sendable, Codable {
         case "trash": self = .trash
         case "tomorrow", "deadlines", "repeating", "projects", "logged-projects": self = .extra(id)
         default: return nil
+        }
+    }
+
+    /// The lists with the tag filter under their title, as the web app's.
+    var filters: Bool {
+        switch self {
+        case .today, .anytime, .upcoming, .project: true
+        default: false
         }
     }
 
@@ -222,6 +240,28 @@ enum Place: Hashable, Sendable, Codable {
     }
 }
 
+/// A calendar's event on a day, as the engine gives it (engine/src/events.js):
+/// timed, or all day.
+struct CalEvent: Hashable, Sendable {
+    let date: String
+    let allDay: Bool
+    let time: String?
+    let title: String
+    let calendar: String
+    let color: String?
+
+    init(_ j: J) {
+        date = j["date"].string ?? ""
+        allDay = j["allDay"].bool
+        time = j["time"].string
+        title = j["title"].string ?? ""
+        calendar = j["calendar"].string ?? ""
+        color = j["color"].string
+    }
+
+    static func list(_ j: J) -> [CalEvent] { j.array.map(CalEvent.init) }
+}
+
 /// One list's content, as the screens draw it: sections of rows.
 struct ListContent: Sendable {
     struct Section: Identifiable, Sendable {
@@ -229,6 +269,8 @@ struct ListContent: Sendable {
         var title: String?
         var subtitle: String?
         var rows: [Row]
+        /// The day's events, under its heading (Upcoming).
+        var events: [CalEvent] = []
     }
     enum Row: Identifiable, Hashable, Sendable {
         case todo(Todo)
@@ -243,6 +285,12 @@ struct ListContent: Sendable {
 
     var sections: [Section] = []
     var notes: String = ""
+    /// The day's events, above its to-dos (Today, Tomorrow).
+    var events: [CalEvent] = []
+    /// Projects with more than one to-do in Today, for the note at its foot.
+    var crowded: [(id: String, name: String, count: Int)] = []
     var todoCount: Int { sections.reduce(0) { $0 + $1.rows.filter { if case .todo = $0 { true } else { false } }.count } }
     var allTodos: [Todo] { sections.flatMap { $0.rows.compactMap { if case .todo(let t) = $0 { t } else { nil } } } }
+    /// The tags its to-dos have, for the filter's pills.
+    var tags: [String] { Array(Set(allTodos.flatMap(\.tags))).sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending } }
 }

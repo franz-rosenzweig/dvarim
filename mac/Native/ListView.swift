@@ -16,6 +16,7 @@ struct ListScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     ListTitle(model: model)
+                    if model.place.filters, !model.fullContent.tags.isEmpty { FilterBar(model: model) }
                     switch model.place {
                     case .project(let id):
                         if let p = model.state.project(id) { EditableNotes(text: p.notes) { await model.setProjectNotes(p, $0) }.id("notes-" + id) }
@@ -24,12 +25,15 @@ struct ListScreen: View {
                     default:
                         EmptyView()
                     }
+                    if !model.content.events.isEmpty { EventsBlock(events: model.content.events).padding(.bottom, 10) }
                     ForEach(Array(model.content.sections.enumerated()), id: \.element.id) { index, section in
                         if let title = section.title {
                             let first = index == 0 || model.content.sections[..<index].allSatisfy { $0.rows.isEmpty && $0.title == nil }
                             Group {
                                 if case .project = model.place {
                                     HeadingHeader(model: model, id: section.id, name: title, first: first)
+                                } else if section.id.hasPrefix("th:") {
+                                    TodayHeadingHeader(model: model, id: String(section.id.dropFirst(3)), name: title, first: first)
                                 } else {
                                     SectionHeader(place: model.place, section: section, title: title, first: first)
                                 }
@@ -41,6 +45,7 @@ struct ListScreen: View {
                                 if model.dropTarget == .section(section.id) { InsertLine().offset(y: 3) }
                             }
                         }
+                        if !section.events.isEmpty { EventsBlock(events: section.events, bare: true) }
                         ForEach(Array(section.rows.enumerated()), id: \.element.id) { i, row in
                             switch row {
                             case .todo(let t):
@@ -55,8 +60,11 @@ struct ListScreen: View {
                             }
                         }
                     }
-                    if model.content.sections.allSatisfy({ $0.rows.isEmpty && $0.title == nil }) && !model.loading {
-                        Text(model.place == .today ? "Nothing for today." : "Nothing here.")
+                    if model.place == .today && !model.content.crowded.isEmpty {
+                        CrowdedNote(model: model, crowded: model.content.crowded)
+                    }
+                    if model.content.sections.allSatisfy({ $0.rows.isEmpty && $0.title == nil }) && model.content.events.isEmpty && !model.loading {
+                        Text(model.filterTag.map { "Nothing tagged “\($0)” here." } ?? (model.place == .today ? "Nothing for today." : "Nothing here."))
                             .foregroundStyle(Palette.text3)
                             .frame(maxWidth: .infinity)
                             .padding(.top, 60)
@@ -606,5 +614,113 @@ extension AppModel {
         }, set: { [weak self] shown in
             if !shown, self?.popover?.todoId == id { self?.popover = nil }
         })
+    }
+}
+
+/// A day's calendar events, as the web app draws them (EventsBlock.svelte):
+/// a timed one with its time in its calendar's colour, an all-day one after a
+/// small bar of it. In a grey card above Today's to-dos; bare under a day.
+struct EventsBlock: View {
+    let events: [CalEvent]
+    var bare = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            ForEach(Array(events.enumerated()), id: \.offset) { _, e in row(e) }
+        }
+        .font(.system(size: 12.5))
+        .padding(.horizontal, bare ? 0 : 12)
+        .padding(.vertical, bare ? 4 : 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(bare ? Color.clear : Palette.hair2, in: RoundedRectangle(cornerRadius: 9))
+        .padding(.leading, bare ? Metrics.box + 10 : 0)
+    }
+
+    private func row(_ e: CalEvent) -> some View {
+        let colour = e.color.flatMap(Color.init(css:)) ?? (e.allDay ? Color(hex: 0x4CB35B) : Color(hex: 0x5A9CF2))
+        return HStack(spacing: 7) {
+            if e.allDay {
+                RoundedRectangle(cornerRadius: 1.5).fill(colour).frame(width: 3, height: 11)
+            } else {
+                Text(e.time ?? "").monospacedDigit().foregroundStyle(colour)
+            }
+            Text(e.title).foregroundStyle(Palette.text2).lineLimit(1)
+        }
+    }
+}
+
+extension Color {
+    /// "#RRGGBB", as a calendar gives its colour.
+    init?(css: String) {
+        let h = css.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        guard h.count == 6, let v = UInt32(h, radix: 16) else { return nil }
+        self.init(hex: v)
+    }
+}
+
+/// The tags in the list, to show only the to-dos with one (FilterBar.svelte).
+struct FilterBar: View {
+    let model: AppModel
+
+    var body: some View {
+        // wraps as the web app's does, which a plain HStack wouldn't
+        FlowLayout(spacing: 6) {
+            pill("All", on: model.filterTag == nil) { model.filterTag = nil }
+            ForEach(model.fullContent.tags, id: \.self) { t in
+                pill(t, on: model.filterTag == t) { model.filterTag = model.filterTag == t ? nil : t }
+            }
+        }
+        .padding(.top, 6).padding(.bottom, 18)
+    }
+
+    private func pill(_ title: String, on: Bool, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 12.5))
+                .foregroundStyle(on ? Color.white : Palette.text2)
+                .padding(.horizontal, 10).padding(.vertical, 3)
+                .background(on ? Color(hex: 0x8E8E93) : .clear, in: Capsule())
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+}
+
+/// Lays its views in rows, starting a new one when the width runs out.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = arrange(proposal.width ?? .infinity, subviews)
+        return CGSize(width: proposal.width ?? rows.map(\.width).max() ?? 0, height: rows.map(\.height).reduce(0, +) + spacing * CGFloat(max(0, rows.count - 1)))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in arrange(bounds.width, subviews) {
+            var x = bounds.minX
+            for i in row.items {
+                let size = subviews[i].sizeThatFits(.unspecified)
+                subviews[i].place(at: CGPoint(x: x, y: y), proposal: .unspecified)
+                x += size.width + spacing
+            }
+            y += row.height + spacing
+        }
+    }
+
+    private struct Row { var items: [Int] = []; var width: CGFloat = 0; var height: CGFloat = 0 }
+
+    private func arrange(_ width: CGFloat, _ subviews: Subviews) -> [Row] {
+        var rows: [Row] = [Row()]
+        for i in subviews.indices {
+            let size = subviews[i].sizeThatFits(.unspecified)
+            if !rows[rows.count - 1].items.isEmpty, rows[rows.count - 1].width + spacing + size.width > width { rows.append(Row()) }
+            let r = rows.count - 1
+            rows[r].width += (rows[r].items.isEmpty ? 0 : spacing) + size.width
+            rows[r].height = max(rows[r].height, size.height)
+            rows[r].items.append(i)
+        }
+        return rows
     }
 }

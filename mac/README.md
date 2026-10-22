@@ -220,15 +220,44 @@ to the Trash.
   and reminders are the ones on, and this app's start off. Settings says so,
   and they are switches.
 
-**Not yet**, in the round to come:
-- the calendars' events in Today and Upcoming;
-- Dvarim's own settings beyond the badge (the week's first day, when completed
-  to-dos go to the Logbook, the calendars); the web app's Settings sets them
-  meanwhile;
-- polish, and then taking over as Dvarim: the name, ⌃Space, and the menu bar
-  and reminders on to begin with.
+**Round 6:**
+- **Calendar events in Today and Upcoming.** Today shows the day's events in a
+  grey card above its to-dos. Upcoming shows each day's under that day. A
+  timed event has its time in its calendar's colour; an all-day one has a
+  small bar of that colour.
+  - On this Mac (synced) and in Remote mode, the events are the server's
+    calendars (its CalDAV). The copy keeps yesterday to six weeks ahead, so
+    the events still show with no network.
+  - In a folder, they're this Mac's own calendars, once "Use this Mac's
+    calendars" is on in Settings → Dvarim. macOS asks first.
+  - Settings → Dvarim chooses whether events show, and from which calendars.
+- **Today, as the web app has it:**
+  - headings of its own: ⇧⌘N in Today makes one, a double-click renames it, a
+    right-click moves it up or down or deletes it, and dragging a to-do onto
+    one files it there;
+  - grouped by project or area, when Settings says so;
+  - a note at its foot when one project has more than one to-do in Today,
+    except a catch-all named with "agenda" or "admin".
+- **Dvarim's own settings, in Settings → Dvarim:**
+  - when completed to-dos move to the Logbook;
+  - the week's first day;
+  - grouping Today;
+  - the tutorial again.
 
-Until then the web-view app is still the one for those.
+  They're the vault's, so they're the same on every device.
+- **The tag filter.** Today, Anytime, Upcoming and a project have a row of
+  their to-dos' tags under the title. A click on one shows only the to-dos
+  with it, and All shows them all again.
+- **Settings has three tabs:** Where, Dvarim and This Mac.
+- **The pickers are the web app's dark panel.**
+  - When and Deadline read what I type: "tom", "sat", "in 3 days", "wed 8pm".
+  - Today, This Evening, Tomorrow, Next week and Someday each sit beside
+    their date.
+  - There's a month to pick a day from, and Add Reminder.
+  - ↑ and ↓ choose, and Return takes it.
+
+**Not yet:** taking over as Dvarim, once I say so: the name, ⌃Space, and the
+menu bar and reminders on to begin with.
 
 **Building and testing it:**
 
@@ -259,6 +288,11 @@ never touches my vault or my server. Then it runs the real app against it:
   badge both ways, Today in the menu bar and a tick there, which reminders
   are asked for, a reminder's Complete and its click, the three Shortcuts, and
   the chord;
+- a stand-in calendar's events in Today and Upcoming, choosing calendars and
+  turning events off, Today's own headings made, renamed, filled by a drop and
+  deleted, each undone, a heading moved, the tag filter, Today grouped by
+  list, its note, Dvarim's settings,
+  When read from what's typed, and a picture of each Settings tab;
 - the storage contract's checks;
 - Remote mode, and a Quick Entry line kept with no server and sent once it's back;
 - signing out.

@@ -39,6 +39,9 @@ final class EngineHost: NSObject, @unchecked Sendable {
     var onChanged: (@MainActor ([String]) -> Void)?
     /// The built-in sync's status as JSON ({state, at, error, offline}), on the main thread.
     var onSyncStatus: (@MainActor ([String: Any]) -> Void)?
+    /// The engine asking the Mac something it can't answer itself (the
+    /// calendars: `calendars`, `events`), on the main thread; the answer is JSON-able.
+    var onAsk: (@MainActor (String, [String: Any]) async -> Any)?
 
     init(root: URL) {
         self.root = root
@@ -120,10 +123,12 @@ final class EngineHost: NSObject, @unchecked Sendable {
         }
     }
 
-    /// Open the folder; `sync` is the server it keeps in step with, if any.
-    func open(tutorial: Bool, sync: (address: String, token: String)?) async throws {
+    /// Open the folder; `sync` is the server it keeps in step with, if any;
+    /// `events` where its calendar events come from ("server", "device"), if anywhere.
+    func open(tutorial: Bool, sync: (address: String, token: String)?, events: String? = nil) async throws {
         var opts: [String: Any] = ["tutorial": tutorial]
         if let sync { opts["sync"] = ["address": sync.address, "token": sync.token] }
+        if let events { opts["events"] = events }
         let json = String(decoding: try JSONSerialization.data(withJSONObject: opts), as: UTF8.self)
         let answer = try await call("open", [json])
         if answer.status != 200 { throw Failure(message: Self.message(answer) ?? "the folder would not open") }
@@ -143,6 +148,9 @@ final class EngineHost: NSObject, @unchecked Sendable {
     func syncNow() async throws -> Answer { try await call("syncNow", []) }
 
     func flush() async { _ = try? await call("flush", []) }
+
+    /// The calendars changed (turned on, a choice made): every list asks again.
+    func calendarsChanged() async { _ = try? await call("calendarsChanged", []) }
 
     /// The storage contract's own checks, on a scratch folder inside the vault.
     func conformance() async throws -> Answer { try await call("conformance", []) }
@@ -260,11 +268,23 @@ final class EngineHost: NSObject, @unchecked Sendable {
             Task { @MainActor [weak self] in self?.onSyncStatus?(box.value) }
         }
         let inFront: @convention(block) () -> Bool = { [weak self] in self?.inFront ?? false }
+        let ask: @convention(block) (Int, String, String) -> Void = { [weak self] id, op, argsJSON in
+            let args = (try? JSONSerialization.jsonObject(with: Data(argsJSON.utf8)) as? [String: Any]) ?? [:]
+            let box = UncheckedBox(args)
+            Task { @MainActor [weak self] in
+                let answer = await self?.onAsk?(op, box.value) ?? NSNull()
+                let data = (try? JSONSerialization.data(withJSONObject: answer, options: [.fragmentsAllowed])) ?? Data("null".utf8)
+                let json = String(decoding: data, as: UTF8.self)
+                self?.perform { [weak self] in
+                    _ = self?.context?.objectForKeyedSubscript("__askDone")?.call(withArguments: [id, json])
+                }
+            }
+        }
 
         for (name, fn) in [("log", log as Any), ("timer", timer), ("cancelTimer", cancelTimer), ("random", random),
                            ("utf8", utf8), ("parseURL", parseURL), ("fetch", fetch), ("today", today),
                            ("files", filesOp), ("reply", reply), ("changed", changed), ("syncStatus", syncStatus),
-                           ("inFront", inFront)] {
+                           ("inFront", inFront), ("ask", ask)] {
             native.setObject(fn, forKeyedSubscript: name as NSString)
         }
         ctx.setObject(native, forKeyedSubscript: "__native" as NSString)

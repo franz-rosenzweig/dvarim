@@ -69,6 +69,10 @@ extension AppModel {
         var change: [(String, UncheckedBox<[String: Any]>, UncheckedBox<[String: Any]>, String)] = []   // id, to, back, path
         var fresh: [Todo] = []
         for t in moving { fresh.append(await current(t)) }
+        // Today's own headings: under the one dropped in, or under none
+        let heading: String? = section.id.hasPrefix("th:") ? String(section.id.dropFirst(3)) : nil
+        let wasUnder = Dictionary(uniqueKeysWithValues: moving.map { ($0.id, todayHeading(of: $0.id)) })
+        let filing = place == .today && section.id != "evening" && moving.contains { wasUnder[$0.id] ?? nil != heading }
         for t in fresh {
             switch place {
             case .today:
@@ -97,12 +101,18 @@ extension AppModel {
                           if how == "MOVE" { _ = try await m.ask("POST", "/api/todos/\(id)/move", to.value) }
                           else { _ = try await m.ask("PATCH", "/api/todos/\(id)", to.value) }
                       }
+                      if filing { _ = try await m.ask("POST", "/api/today/file", ["ids": moving.map(\.id), "headingId": heading ?? NSNull()]) }
                       if let context { _ = try await m.ask("POST", "/api/reorder", ["context": context, "ids": order]) }
                   },
                   undo: { m in
                       for (id, _, back, how) in change {
                           if how == "MOVE" { _ = try await m.ask("POST", "/api/todos/\(id)/move", back.value) }
                           else { _ = try await m.ask("PATCH", "/api/todos/\(id)", back.value) }
+                      }
+                      if filing {
+                          for (under, ids) in Dictionary(grouping: moving.map(\.id), by: { wasUnder[$0] ?? nil }) {
+                              _ = try await m.ask("POST", "/api/today/file", ["ids": ids, "headingId": under ?? NSNull()])
+                          }
                       }
                       if let context, !oldOrder.isEmpty { _ = try await m.ask("POST", "/api/reorder", ["context": context, "ids": oldOrder]) }
                   })
