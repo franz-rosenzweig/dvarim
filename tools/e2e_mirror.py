@@ -110,7 +110,7 @@ async def main() -> int:
     try:
         async with Browser(args.devtools) as b:
             await b.send("Emulation.setDeviceMetricsOverride", {"width": 1200, "height": 900, "deviceScaleFactor": 1, "mobile": False})
-            # the server's day is the browser's: both Phoenix, as Nathan's devices and server are
+            # the server's day is the browser's: both on America/Phoenix, the zone the server runs in here
             await b.send("Emulation.setTimezoneOverride", {"timezoneId": "America/Phoenix"})
             await b.send("Network.clearBrowserCookies")
             await b.goto(srv.url + "/today")

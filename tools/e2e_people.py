@@ -126,7 +126,7 @@ async def main() -> int:
         print("\nAn invitation from Settings → Account")
         await settings_account(b)
         await b.wait_for("!!document.querySelector('#invite-note')", timeout=10)
-        await fill(b, "#owner-name", "Nathan")
+        await fill(b, "#owner-name", "Sam")
         await press(b, "Save")
         await asyncio.sleep(0.8)
         check("Eli's request is there, with what he wrote", await b.wait_for(REQUEST_SHOWN, timeout=8))
@@ -199,7 +199,7 @@ async def main() -> int:
 
         print("\nThe owner, back on the same browser")
         await sign_out(b)
-        check("signs in by the name they gave", bool(await sign_in(b, "Nathan", args.password)))
+        check("signs in by the name they gave", bool(await sign_in(b, "Sam", args.password)))
         await b.goto(args.url + "/inbox")
         check("and their own to-do is there again", await b.wait_for("document.body.innerText.includes(%s)" % json.dumps(SECRET), timeout=15))
         people = await b.js("return await (await fetch('/api/people')).json();")

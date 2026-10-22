@@ -94,10 +94,10 @@ test('signing in by name, or with none for the owner; a changed password signs o
   assert.equal((await signIn(s, { name: 'Dana', password: PW })).r.status, 401, 'her name, the owner\'s password');
   assert.deepEqual((await signIn(s, { password: PW })).r.json.person, { name: null, owner: true });
   // a name nobody has is the owner's password, as before there was anyone else
-  assert.equal((await signIn(s, { name: 'Nathan', password: PW })).r.json.person.owner, true);
+  assert.equal((await signIn(s, { name: 'Sam', password: PW })).r.json.person.owner, true);
   // the owner's own name, once given, is nobody else's to take
-  assert.deepEqual((await s.call('PUT', '/api/people/owner', as(owner, { body: { name: 'Nathan' } }))).json, { name: 'Nathan', owner: true });
-  assert.equal((await join_(s, (await invite(s, owner)).code, 'nathan', 'long enough')).r.status, 409);
+  assert.deepEqual((await s.call('PUT', '/api/people/owner', as(owner, { body: { name: 'Sam' } }))).json, { name: 'Sam', owner: true });
+  assert.equal((await join_(s, (await invite(s, owner)).code, 'sam', 'long enough')).r.status, 409);
 
   const changed = await s.call('POST', '/api/password', as(dana, { body: { currentPassword: 'dana password', newPassword: 'a new one for dana' } }));
   assert.equal(changed.status, 200);
@@ -172,7 +172,7 @@ test('asking for an account: the owner hears and answers; bots and floods get no
   const ask = (body, ip = '203.0.113.7') => s.call('POST', '/api/requests', { body, headers: { 'CF-Connecting-IP': ip } });
   assert.equal((await ask({ name: ' ', email: 'dana@example.com' })).status, 400);
   assert.equal((await ask({ name: 'Dana', email: 'not an email' })).status, 400);
-  assert.deepEqual((await ask({ name: 'Dana', email: 'Dana@Example.com', message: 'Nathan said to ask' })).json, { ok: true });
+  assert.deepEqual((await ask({ name: 'Dana', email: 'Dana@Example.com', message: 'Sam said to ask' })).json, { ok: true });
   // a bot fills in the field people never see: told yes, and nothing kept
   assert.deepEqual((await ask({ name: 'Bot', email: 'bot@example.com', website: 'http://spam.example' }, '198.51.100.1')).json, { ok: true });
   await new Promise((r) => setTimeout(r, 20));
@@ -180,13 +180,13 @@ test('asking for an account: the owner hears and answers; bots and floods get no
   const owner = (await signIn(s, { password: PW })).cookie;
   assert.equal((await s.call('GET', '/api/auth', as(owner))).json.requests, 1);
   let waiting = (await s.call('GET', '/api/people', as(owner))).json.requests;
-  assert.deepEqual(waiting.map((r) => [r.name, r.email, r.message]), [['Dana', 'dana@example.com', 'Nathan said to ask']]);
+  assert.deepEqual(waiting.map((r) => [r.name, r.email, r.message]), [['Dana', 'dana@example.com', 'Sam said to ask']]);
   // asked again from the same email: the same request, brought up to date
   await ask({ name: 'Dana L.', email: 'dana@example.com' });
   assert.equal((await ask({ name: 'Eli', email: 'eli@example.com' })).status, 200);
   assert.equal((await ask({ name: 'Flood', email: 'flood@example.com' })).status, 429, 'a few a day from one address');
   waiting = (await s.call('GET', '/api/people', as(owner))).json.requests;
-  assert.deepEqual(waiting.map((r) => [r.name, r.message]), [['Dana L.', 'Nathan said to ask'], ['Eli', '']]);
+  assert.deepEqual(waiting.map((r) => [r.name, r.message]), [['Dana L.', 'Sam said to ask'], ['Eli', '']]);
   // answered with an invitation in their name, and the request goes
   const inv = (await s.call('POST', `/api/people/requests/${waiting[0].id}/invite`, as(owner))).json;
   assert.match(inv.link, /\/join\//u);

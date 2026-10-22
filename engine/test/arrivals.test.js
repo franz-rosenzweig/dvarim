@@ -63,23 +63,23 @@ test('with mergeArrivals, a file made without this device\'s change is merged wi
 });
 
 test('when a conflict copy was made, from its name', () => {
-  assert.equal(copyTime('Inbox.sync-conflict-20260920-105958-YNYWZG2.md'), Date.UTC(2026, 8, 20, 10, 59, 58));
-  assert.equal(copyTime("Inbox (Nathan's conflicted copy 2026-09-20).md"), Date.UTC(2026, 8, 21));
+  assert.equal(copyTime('Inbox.sync-conflict-20260920-105958-K4MXQ7B.md'), Date.UTC(2026, 8, 20, 10, 59, 58));
+  assert.equal(copyTime("Inbox (Sam's conflicted copy 2026-09-20).md"), Date.UTC(2026, 8, 21));
   assert.equal(copyTime('Inbox.md'), null);
 });
 
 test('a conflict copy more than two days old is put away unmerged', async () => {
   const stale = INBOX + '- [ ] Drag test item 🆔 drag0001 ➕ 2026-09-20\n';
-  const { storage, store } = await open({ 'Inbox.md': INBOX, 'Inbox.sync-conflict-20260920-105958-YNYWZG2.md': stale });
+  const { storage, store } = await open({ 'Inbox.md': INBOX, 'Inbox.sync-conflict-20260920-105958-K4MXQ7B.md': stale });
   assert.deepEqual(ids(storage, 'Inbox.md'), ['keep0001']);
-  assert.ok(!storage.files.has('Inbox.sync-conflict-20260920-105958-YNYWZG2.md'));
-  assert.equal(text(storage, '.dvarim/conflicts/Inbox.sync-conflict-20260920-105958-YNYWZG2.md'), stale, 'kept, not deleted');
+  assert.ok(!storage.files.has('Inbox.sync-conflict-20260920-105958-K4MXQ7B.md'));
+  assert.equal(text(storage, '.dvarim/conflicts/Inbox.sync-conflict-20260920-105958-K4MXQ7B.md'), stale, 'kept, not deleted');
   assert.equal(store.syncLog[0].kind, 'old conflict copy, put away unmerged');
 });
 
 test('a conflict copy made today is merged', async () => {
   const copy = INBOX + '- [ ] Only in the copy 🆔 copy0001 ➕ 2026-09-23\n';
-  const { storage } = await open({ 'Inbox.md': INBOX, 'Inbox.sync-conflict-20260923-102155-YNYWZG2.md': copy });
+  const { storage } = await open({ 'Inbox.md': INBOX, 'Inbox.sync-conflict-20260923-102155-K4MXQ7B.md': copy });
   assert.deepEqual(ids(storage, 'Inbox.md'), ['keep0001', 'copy0001']);
 });
 
@@ -88,7 +88,7 @@ test('a conflict copy does not bring back a to-do that has gone to Trash or anot
   const project = PROJECT + '- [ ] Moved to a project 🆔 moved001\n';
   const { storage, store } = await open({
     'Inbox.md': INBOX, 'Trash.md': TRASH, 'Projects/P.md': project,
-    'Inbox.sync-conflict-20260923-102155-YNYWZG2.md': copy,
+    'Inbox.sync-conflict-20260923-102155-K4MXQ7B.md': copy,
   });
   assert.deepEqual(ids(storage, 'Inbox.md'), ['keep0001', 'copy0001']);
   assert.deepEqual(ids(storage, 'Trash.md'), ['gone0001']);
@@ -98,7 +98,7 @@ test('a conflict copy does not bring back a to-do that has gone to Trash or anot
 test('a conflict copy leaves its file\'s front matter as it is', async () => {
   const older = PROJECT.replace('tags: [personal, relationships]', 'tags:\n  - personal\n  - relationships')
     .replace('updated: 2026-09-21T11:47', 'updated: 2026-09-20T11:23') + '- [ ] From the copy 🆔 copy0001\n';
-  const { storage } = await open({ 'Projects/P.md': PROJECT, 'Projects/P.sync-conflict-20260923-102155-YNYWZG2.md': older });
+  const { storage } = await open({ 'Projects/P.md': PROJECT, 'Projects/P.sync-conflict-20260923-102155-K4MXQ7B.md': older });
   const now = text(storage, 'Projects/P.md');
   assert.equal(now.slice(0, now.indexOf('\n---\n') + 5), PROJECT.slice(0, PROJECT.indexOf('\n---\n') + 5));
   assert.deepEqual(ids(storage, 'Projects/P.md'), ['firs0001', 'copy0001']);
@@ -109,7 +109,7 @@ test('a conflict copy that changed a to-do since moved elsewhere keeps the chang
   const project = PROJECT + '- [ ] Moved to a project 🆔 moved001\n';
   const { storage } = await open({
     'Inbox.md': INBOX, 'Projects/P.md': project,
-    'Inbox.sync-conflict-20260923-102155-YNYWZG2.md': copy,
+    'Inbox.sync-conflict-20260923-102155-K4MXQ7B.md': copy,
   });
   assert.deepEqual(ids(storage, 'Inbox.md'), ['keep0001', 'moved001'], 'done where the copy had it, and still in the project');
 });
@@ -146,7 +146,7 @@ test('a copy of this device\'s own write, lost to an Obsidian save, is merged ag
   const own = text(storage, 'Inbox.md');
   // Obsidian saves what it had, plus a line and a note typed there, and wins
   await storage.write('Inbox.md', before.replace('Keep me 🆔 keep0001\n', 'Keep me 🆔 keep0001\n    typed in Obsidian\n') + '- [ ] Typed in Obsidian 🆔 obsd0001\n');
-  await storage.write('Inbox.sync-conflict-20260923-120000-YNYWZG2.md', own);
+  await storage.write('Inbox.sync-conflict-20260923-120000-K4MXQ7B.md', own);
   t += 1000;
   await store.scanChanges(); await store.flush();
   const after = text(storage, 'Inbox.md');
@@ -216,10 +216,10 @@ const SWEPT = '- [x] Licence sweep of 5d9d0c4: nothing non-commercial 👤 Resea
 const lines = (storage, id) => text(storage, 'Inbox.md').split('\n').filter((l) => l.includes(`🆔 ${id}`));
 
 test('a copy that marked a to-do [/] merges into its line, not beside it', async () => {
-  const file = INBOX + '- [ ] Check the proofs 👤 Nathan 🆔 continu1 ➕ 2026-09-22 📅 2026-09-24\n';
-  const copy = INBOX + '- [/] Check the proofs 👤 Nathan 🆔 continu1 ➕ 2026-09-22 📅 2026-09-24\n    The full version is ready.\n';
-  const { storage } = await open({ 'Inbox.md': file, 'Inbox.sync-conflict-20260923-102155-YNYWZG2.md': copy });
-  assert.deepEqual(lines(storage, 'continu1'), ['- [/] Check the proofs 👤 Nathan 🆔 continu1 ➕ 2026-09-22 📅 2026-09-24']);
+  const file = INBOX + '- [ ] Check the proofs 👤 Sam 🆔 continu1 ➕ 2026-09-22 📅 2026-09-24\n';
+  const copy = INBOX + '- [/] Check the proofs 👤 Sam 🆔 continu1 ➕ 2026-09-22 📅 2026-09-24\n    The full version is ready.\n';
+  const { storage } = await open({ 'Inbox.md': file, 'Inbox.sync-conflict-20260923-102155-K4MXQ7B.md': copy });
+  assert.deepEqual(lines(storage, 'continu1'), ['- [/] Check the proofs 👤 Sam 🆔 continu1 ➕ 2026-09-22 📅 2026-09-24']);
   assert.match(text(storage, 'Inbox.md'), /continu1.*\n {4}The full version is ready\.\n/u);
 });
 
@@ -232,12 +232,12 @@ test('a to-do ticked here, lost to an older save, comes back as its one line, as
   t += 1000; await store.scanChanges(); await store.flush();
   // the phone's save, made from the version before, wins; ours is the copy
   await storage.write('Inbox.md', before + '- [ ] Typed on the phone 🆔 phon0001\n');
-  await storage.write('Inbox.sync-conflict-20260923-120000-YNYWZG2.md', ticked);
+  await storage.write('Inbox.sync-conflict-20260923-120000-K4MXQ7B.md', ticked);
   t += 1000; await store.scanChanges(); await store.flush();
   assert.deepEqual(lines(storage, 'licsweep'), [SWEPT.trim()]);
   assert.deepEqual(ids(storage, 'Inbox.md'), ['keep0001', 'licsweep', 'phon0001']);
   // and with nothing to go on, a server just started: the same line
   const { storage: fresh } = await open({ 'Inbox.md': before + '- [ ] Typed on the phone 🆔 phon0001\n',
-    'Inbox.sync-conflict-20260923-120000-YNYWZG2.md': ticked });
+    'Inbox.sync-conflict-20260923-120000-K4MXQ7B.md': ticked });
   assert.deepEqual(lines(fresh, 'licsweep'), [SWEPT.trim()]);
 });

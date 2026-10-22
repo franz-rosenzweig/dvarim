@@ -11,8 +11,8 @@ import { Store } from '../src/store.js';
 import { MemoryStorage } from '../src/storage.js';
 import { WebDavSync, SYNC_STATE } from '../src/webdav.js';
 
-const BASE = 'https://cloud.example.com/remote.php/dav/files/nathan/Dvarim/';
-const LOGIN = `Basic ${Buffer.from('nathan:app-password-1').toString('base64')}`;
+const BASE = 'https://cloud.example.com/remote.php/dav/files/sam/Dvarim/';
+const LOGIN = `Basic ${Buffer.from('sam:app-password-1').toString('base64')}`;
 
 class Nextcloudish {
   constructor() {
@@ -100,7 +100,7 @@ async function device(name, cloud, files = {}, password = 'app-password-1', opts
     newId: (p = '') => p + `${name}${(++n).toString(36)}`.padStart(8 - p.length, '0'),
     ...opts,
   });
-  return { storage, store, sync: new WebDavSync(store, { url: BASE, user: 'nathan', password, fetch: cloud.fetch }) };
+  return { storage, store, sync: new WebDavSync(store, { url: BASE, user: 'sam', password, fetch: cloud.fetch }) };
 }
 
 const notes = async (store) => Object.fromEntries([...await store.syncTexts()].filter(([p]) => p.endsWith('.md')).sort());
@@ -215,7 +215,7 @@ test('pointed at another folder, a device starts again there and loses nothing',
   const other = new Nextcloudish();
   other.root = new URL(BASE.replace('Dvarim/', 'Elsewhere/'));
   other.put('Inbox.md', '- [ ] Already there 🆔 else0001\n');
-  const moved = new WebDavSync(A.store, { url: other.root.href, user: 'nathan', password: 'app-password-1', fetch: other.fetch });
+  const moved = new WebDavSync(A.store, { url: other.root.href, user: 'sam', password: 'app-password-1', fetch: other.fetch });
   await moved.sync();
   const ids = [...A.store._file('Inbox.md').allTodos()].map((x) => x.id).sort();
   assert.deepEqual(ids, ['else0001', 'inbx0001']);

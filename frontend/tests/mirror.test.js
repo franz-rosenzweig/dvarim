@@ -16,7 +16,7 @@ test('what only the server answers, and what the copy here does', () => {
 });
 
 test('whose copy: the owner\'s has no name; anyone else\'s is their account\'s id, not their name', () => {
-  assert.equal(personKey({ name: 'Nathan', owner: true }), '');
+  assert.equal(personKey({ name: 'Sam', owner: true }), '');
   assert.equal(personKey(null), '');
   assert.equal(personKey({ name: 'Dana', owner: false, uid: 'Xy_12abCD-90' }), 'xy_12abcd-90');
   assert.equal(personKey({ name: ' Dana L ', owner: false }), 'dana l', 'a server without ids yet: the name');
