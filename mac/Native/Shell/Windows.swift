@@ -52,7 +52,7 @@ enum Windows {
     }
 }
 
-/// "New To-Do in Dvarim Native" in every app's Services menu, for whatever
+/// "New To-Do in Dvarim" in every app's Services menu, for whatever
 /// text is chosen there. It can have a key of its own (System Settings →
 /// Keyboard → Keyboard Shortcuts → Services), a second way in when Quick
 /// Entry's chord is spoken for. Quick Entry opens with it, the first line the

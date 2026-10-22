@@ -63,9 +63,10 @@ targets:
         # the hardened runtime's door to EventKit, for the device's calendars in folder mode
         com.apple.security.personal-information.calendars: true
 
-  # Dvarim as a native Mac app: SwiftUI and AppKit for every screen, and the
-  # engine (engine/src) inside it in JavaScriptCore. Beside the web-view app
-  # until it does everything that one does; built by build-native.sh.
+  # Dvarim on the Mac: SwiftUI and AppKit for every screen, and the engine
+  # (engine/src) inside it in JavaScriptCore; built by build-native.sh. Built
+  # beside the web-view app as "Dvarim Native", it took over as Dvarim on
+  # 2026-10-22 and kept its own bundle id, so its copy and settings stayed put.
   DvarimNative:
     type: application
     platform: macOS
@@ -78,7 +79,7 @@ targets:
       - path: Shared
     settings:
       base:
-        PRODUCT_NAME: Dvarim Native
+        PRODUCT_NAME: Dvarim
         PRODUCT_BUNDLE_IDENTIFIER: moe.ptr.dvarim.native
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -89,8 +90,8 @@ targets:
     info:
       path: Native/Info.plist
       properties:
-        CFBundleName: Dvarim Native
-        CFBundleDisplayName: Dvarim Native
+        CFBundleName: Dvarim
+        CFBundleDisplayName: Dvarim
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSMinimumSystemVersion: "26.0"
@@ -103,12 +104,12 @@ targets:
         NSUserNotificationsUsageDescription: Dvarim shows your to-do reminders.
         # this Mac's calendars in Today and Upcoming, in folder mode, once turned on (Calendars.swift)
         NSCalendarsFullAccessUsageDescription: With your to-dos in a folder on this Mac, Dvarim shows your calendars' events in Today and Upcoming.
-        # "New To-Do in Dvarim Native" in every app's Services menu (ServiceProvider)
+        # "New To-Do in Dvarim" in every app's Services menu (ServiceProvider)
         NSServices:
           - NSMenuItem:
-              default: New To-Do in Dvarim Native
+              default: New To-Do in Dvarim
             NSMessage: newToDo
-            NSPortName: Dvarim Native
+            NSPortName: Dvarim
             NSSendTypes: [public.utf8-plain-text]
     entitlements:
       path: Native/DvarimNative.entitlements

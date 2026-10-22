@@ -116,7 +116,8 @@ enum Account {
         return c
     }
 
-    /// ~/Library/Application Support/Dvarim Native/Copies/<host>/<who>/
+    /// ~/Library/Application Support/Dvarim Native/Copies/<host>/<who>/: the
+    /// folder kept its first name when the app became Dvarim, as the copy did.
     static func folder(for c: Copy) -> URL {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let url = URL(string: c.server)

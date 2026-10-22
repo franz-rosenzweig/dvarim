@@ -42,10 +42,10 @@ final class Reminders {
     func ask() async {
         do {
             let granted = try await center.requestAuthorization(options: [.alert, .sound])
-            problem = granted ? nil : "Notifications for Dvarim Native are off. Turn them on in System Settings → Notifications; macOS asks only once."
+            problem = granted ? nil : "Notifications for Dvarim are off. Turn them on in System Settings → Notifications; macOS asks only once."
         } catch {
             // refused with no prompt: macOS does that for an app outside /Applications
-            problem = "macOS refused. Dvarim Native has to be in /Applications for notifications."
+            problem = "macOS refused. Dvarim has to be in /Applications for notifications."
         }
     }
 
