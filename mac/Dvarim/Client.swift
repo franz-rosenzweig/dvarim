@@ -233,7 +233,7 @@ enum Defaults {
     static let notificationsKey = "nativeReminders"
 
     /// Over the Cloudflare tunnel, so it works off the tailnet too. The tailnet
-    /// address (http://100.91.202.11:8420) works as well; set it in Settings.
+    /// address (http://<tailscale-ip>:8420) works as well; set it in Settings.
     static let defaultServer = "https://dvarim.tiresia.xyz"
 
     static var server: URL {

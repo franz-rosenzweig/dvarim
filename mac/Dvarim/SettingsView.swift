@@ -71,7 +71,7 @@ struct SettingsView: View {
             } header: {
                 Text("Server")
             } footer: {
-                Text(verbatim: "The public address, or http://100.91.202.11:8420 on the tailnet. Sign in once in a Dvarim window: the badge, reminders and Quick Entry use that login — and go on using the server with your to-dos in a folder.")
+                Text(verbatim: "The public address, or the server's address on your tailnet or local network. Sign in once in a Dvarim window: the badge, reminders and Quick Entry use that login — and go on using the server with your to-dos in a folder.")
                     .font(.caption).foregroundStyle(.secondary)
             }
 
