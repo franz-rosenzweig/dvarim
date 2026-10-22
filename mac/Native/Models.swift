@@ -197,6 +197,14 @@ enum Place: Hashable, Sendable, Codable {
         }
     }
 
+    /// The lists with the tag filter under their title, as the web app's.
+    var filters: Bool {
+        switch self {
+        case .today, .anytime, .upcoming, .project: true
+        default: false
+        }
+    }
+
     /// The API path that answers it.
     var path: String {
         switch self {
@@ -283,4 +291,6 @@ struct ListContent: Sendable {
     var crowded: [(id: String, name: String, count: Int)] = []
     var todoCount: Int { sections.reduce(0) { $0 + $1.rows.filter { if case .todo = $0 { true } else { false } }.count } }
     var allTodos: [Todo] { sections.flatMap { $0.rows.compactMap { if case .todo(let t) = $0 { t } else { nil } } } }
+    /// The tags its to-dos have, for the filter's pills.
+    var tags: [String] { Array(Set(allTodos.flatMap(\.tags))).sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending } }
 }

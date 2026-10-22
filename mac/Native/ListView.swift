@@ -16,6 +16,7 @@ struct ListScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     ListTitle(model: model)
+                    if model.place.filters, !model.fullContent.tags.isEmpty { FilterBar(model: model) }
                     switch model.place {
                     case .project(let id):
                         if let p = model.state.project(id) { EditableNotes(text: p.notes) { await model.setProjectNotes(p, $0) }.id("notes-" + id) }
@@ -63,7 +64,7 @@ struct ListScreen: View {
                         CrowdedNote(model: model, crowded: model.content.crowded)
                     }
                     if model.content.sections.allSatisfy({ $0.rows.isEmpty && $0.title == nil }) && model.content.events.isEmpty && !model.loading {
-                        Text(model.place == .today ? "Nothing for today." : "Nothing here.")
+                        Text(model.filterTag.map { "Nothing tagged “\($0)” here." } ?? (model.place == .today ? "Nothing for today." : "Nothing here."))
                             .foregroundStyle(Palette.text3)
                             .frame(maxWidth: .infinity)
                             .padding(.top, 60)
@@ -654,5 +655,72 @@ extension Color {
         let h = css.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
         guard h.count == 6, let v = UInt32(h, radix: 16) else { return nil }
         self.init(hex: v)
+    }
+}
+
+/// The tags in the list, to show only the to-dos with one (FilterBar.svelte).
+struct FilterBar: View {
+    let model: AppModel
+
+    var body: some View {
+        // wraps as the web app's does, which a plain HStack wouldn't
+        FlowLayout(spacing: 6) {
+            pill("All", on: model.filterTag == nil) { model.filterTag = nil }
+            ForEach(model.fullContent.tags, id: \.self) { t in
+                pill(t, on: model.filterTag == t) { model.filterTag = model.filterTag == t ? nil : t }
+            }
+        }
+        .padding(.top, 6).padding(.bottom, 18)
+    }
+
+    private func pill(_ title: String, on: Bool, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 12.5))
+                .foregroundStyle(on ? Color.white : Palette.text2)
+                .padding(.horizontal, 10).padding(.vertical, 3)
+                .background(on ? Color(hex: 0x8E8E93) : .clear, in: Capsule())
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+}
+
+/// Lays its views in rows, starting a new one when the width runs out.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = arrange(proposal.width ?? .infinity, subviews)
+        return CGSize(width: proposal.width ?? rows.map(\.width).max() ?? 0, height: rows.map(\.height).reduce(0, +) + spacing * CGFloat(max(0, rows.count - 1)))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in arrange(bounds.width, subviews) {
+            var x = bounds.minX
+            for i in row.items {
+                let size = subviews[i].sizeThatFits(.unspecified)
+                subviews[i].place(at: CGPoint(x: x, y: y), proposal: .unspecified)
+                x += size.width + spacing
+            }
+            y += row.height + spacing
+        }
+    }
+
+    private struct Row { var items: [Int] = []; var width: CGFloat = 0; var height: CGFloat = 0 }
+
+    private func arrange(_ width: CGFloat, _ subviews: Subviews) -> [Row] {
+        var rows: [Row] = [Row()]
+        for i in subviews.indices {
+            let size = subviews[i].sizeThatFits(.unspecified)
+            if !rows[rows.count - 1].items.isEmpty, rows[rows.count - 1].width + spacing + size.width > width { rows.append(Row()) }
+            let r = rows.count - 1
+            rows[r].width += (rows[r].items.isEmpty ? 0 : spacing) + size.width
+            rows[r].height = max(rows[r].height, size.height)
+            rows[r].items.append(i)
+        }
+        return rows
     }
 }

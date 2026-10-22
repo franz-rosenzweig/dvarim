@@ -69,6 +69,34 @@ extension SelfTest {
             _ = await until(5) { m.todayHeadings.isEmpty }
         }
 
+        // two headings, and the second moved up above the first, then back
+        await m.newTodayHeading()
+        await m.renameTodayHeading(m.todayHeadings.last?.id ?? "", "Morning")
+        await m.newTodayHeading()
+        await m.renameTodayHeading(m.todayHeadings.last?.id ?? "", "Evening errands")
+        _ = await until(5) { m.todayHeadings.map(\.name) == ["Morning", "Evening errands"] }
+        if let second = m.todayHeadings.last?.id {
+            await m.moveTodayHeading(second, by: -1)
+            check(await until(5) { m.todayHeadings.map(\.name) == ["Evening errands", "Morning"] }, "Move Up puts a heading above the one before it")
+            m.history.undo()
+            check(await until(5) { m.todayHeadings.map(\.name) == ["Morning", "Evening errands"] }, "and ⌘Z puts it back")
+        }
+        for h in m.todayHeadings { await m.deleteTodayHeading(h.id) }
+        _ = await until(5) { m.todayHeadings.isEmpty }
+
+        // the tag filter: only the to-dos with that tag, then all again
+        let all = m.content.todoCount
+        if let tag = m.fullContent.tags.first {
+            m.filterTag = tag
+            check(!m.content.allTodos.isEmpty && m.content.allTodos.allSatisfy { $0.tags.contains(tag) } && m.content.todoCount < all,
+                  "the tag filter shows only the to-dos with that tag", "\(tag): \(m.content.todoCount) of \(all)")
+            await snap("today-filtered")
+            m.filterTag = nil
+            check(m.content.todoCount == all, "and All shows them all again")
+        } else {
+            check(false, "Today has tags to filter by")
+        }
+
         // grouped by list, and the note about a project with several to-dos in Today
         _ = try? await m.ask("PUT", "/api/settings", ["groupTodayByList": true])
         check(await until(5) { await reload(m); return m.content.sections.contains { $0.id.hasPrefix("group:") } },

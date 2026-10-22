@@ -233,7 +233,8 @@ to the Trash.
   - Settings → Dvarim chooses whether events show, and from which calendars.
 - **Today, as the web app has it:**
   - headings of its own: ⇧⌘N in Today makes one, a double-click renames it, a
-    right-click deletes it, and dragging a to-do onto one files it there;
+    right-click moves it up or down or deletes it, and dragging a to-do onto
+    one files it there;
   - grouped by project or area, when Settings says so;
   - a note at its foot when one project has more than one to-do in Today,
     except a catch-all named with "agenda" or "admin".
@@ -244,6 +245,9 @@ to the Trash.
   - the tutorial again.
 
   They're the vault's, so they're the same on every device.
+- **The tag filter.** Today, Anytime, Upcoming and a project have a row of
+  their to-dos' tags under the title. A click on one shows only the to-dos
+  with it, and All shows them all again.
 - **Settings has three tabs:** Where, Dvarim and This Mac.
 - **The pickers are the web app's dark panel.**
   - When and Deadline read what I type: "tom", "sat", "in 3 days", "wed 8pm".
@@ -252,11 +256,8 @@ to the Trash.
   - There's a month to pick a day from, and Add Reminder.
   - ↑ and ↓ choose, and Return takes it.
 
-**Not yet:**
-- the tag filter above a list;
-- moving Today's headings up and down;
-- taking over as Dvarim, once I say so: the name, ⌃Space, and the menu bar
-  and reminders on to begin with.
+**Not yet:** taking over as Dvarim, once I say so: the name, ⌃Space, and the
+menu bar and reminders on to begin with.
 
 **Building and testing it:**
 
@@ -289,7 +290,8 @@ never touches my vault or my server. Then it runs the real app against it:
   the chord;
 - a stand-in calendar's events in Today and Upcoming, choosing calendars and
   turning events off, Today's own headings made, renamed, filled by a drop and
-  deleted, each undone, Today grouped by list, its note, Dvarim's settings,
+  deleted, each undone, a heading moved, the tag filter, Today grouped by
+  list, its note, Dvarim's settings,
   When read from what's typed, and a picture of each Settings tab;
 - the storage contract's checks;
 - Remote mode, and a Quick Entry line kept with no server and sent once it's back;

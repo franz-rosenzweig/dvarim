@@ -242,7 +242,24 @@ final class AppModel {
     var history: UndoManager { session.history }
     var undoManager: UndoManager? { session.history }
 
+    /// The list as the engine gave it, and as it shows: less what the tag
+    /// filter leaves out. Everything that acts on rows acts on what shows.
+    private(set) var fullContent = ListContent()
     private(set) var content = ListContent()
+    /// The tag the list is filtered by (the pills under its title), or none.
+    var filterTag: String? {
+        didSet { if filterTag != oldValue { show() } }
+    }
+
+    private func show() {
+        if let t = filterTag, !fullContent.tags.contains(t) { filterTag = nil; return }
+        content = Lists.filtered(fullContent, tag: filterTag)
+        // what the filter hides isn't chosen either
+        if filterTag != nil {
+            let shown = Set(content.allTodos.map { "t:" + $0.id })
+            selected = selected.filter { !$0.hasPrefix("t:") || shown.contains($0) }
+        }
+    }
     private(set) var loading = false
     var place: Place = .today {
         didSet {
@@ -251,6 +268,7 @@ final class AppModel {
             anchor = nil
             openId = nil
             popover = nil
+            filterTag = nil
             Task { await loadList() }
         }
     }
@@ -300,6 +318,7 @@ final class AppModel {
 
     /// Signed out: nothing of the last person's stays on screen.
     func clear() {
+        fullContent = ListContent()
         content = ListContent()
         selected = []
         anchor = nil
@@ -326,7 +345,8 @@ final class AppModel {
         loading = true
         defer { loading = false }
         guard let j = try? await backend.request("GET", asked.path, body: nil), asked == place else { return }
-        content = Lists.content(asked, j, state: state)
+        fullContent = Lists.content(asked, j, state: state)
+        show()
     }
 
     // ---- ticking off, with ⌘Z --------------------------------------------------------
@@ -432,6 +452,22 @@ enum Lists {
 }
 
 extension Lists {
+    /// Only the to-dos with this tag (FilterBar.svelte): no events, no
+    /// projects, and no section left empty but the first.
+    static func filtered(_ c: ListContent, tag: String?) -> ListContent {
+        guard let tag else { return c }
+        var out = c
+        out.events = []
+        out.crowded = []
+        out.sections = c.sections.enumerated().compactMap { i, s in
+            var s = s
+            s.rows = s.rows.filter { if case .todo(let t) = $0 { t.tags.contains(tag) } else { false } }
+            s.events = []
+            return s.rows.isEmpty && i > 0 ? nil : s
+        }
+        return out
+    }
+
     /// Today as the web app lays it out (TodayView.svelte): the events, the
     /// projects, the day's to-dos (by list, under a heading each, when Settings
     /// says so), Today's own headings with theirs, then This Evening.

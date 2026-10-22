@@ -33,6 +33,17 @@ extension AppModel {
                   undo: { m in _ = try await m.ask("PATCH", "/api/today/headings/\(id)", ["name": old]) })
     }
 
+    /// A place up (-1) or down (1) among Today's headings.
+    func moveTodayHeading(_ id: String, by d: Int) async {
+        let before = todayHeadings.map(\.id)
+        guard let i = before.firstIndex(of: id), before.indices.contains(i + d) else { return }
+        var after = before
+        after.swapAt(i, i + d)
+        await act("Move Heading", notice: nil,
+                  do: { m in _ = try await m.ask("POST", "/api/reorder", ["context": "today-headings", "ids": after]) },
+                  undo: { m in _ = try await m.ask("POST", "/api/reorder", ["context": "today-headings", "ids": before]) })
+    }
+
     /// Its to-dos stay in Today; ⌘Z makes it again where it was, with them under it.
     func deleteTodayHeading(_ id: String) async {
         let all = todayHeadings
@@ -82,6 +93,9 @@ struct TodayHeadingHeader: View {
         .contentShape(Rectangle())
         .contextMenu {
             Button("Rename") { model.renamingHeading = key }
+            let ids = model.todayHeadings.map(\.id)
+            if ids.first != id { Button("Move Up") { Task { await model.moveTodayHeading(id, by: -1) } } }
+            if ids.last != id { Button("Move Down") { Task { await model.moveTodayHeading(id, by: 1) } } }
             Divider()
             Button("Delete Heading") { Task { await model.deleteTodayHeading(id) } }
         }
