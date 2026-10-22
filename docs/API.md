@@ -40,8 +40,8 @@ credential once a password is set.
 // Area
 { "id", "name", "notes", "tags", "file", "projects": [Project], "openCount" }
 // CalendarEvent (phase 2; empty until Radicale is configured)
-{ "date": "2026-09-19", "allDay": true, "time": null, "end": null, "title": "Shabbat Shuva",
-  "calendar": "hebcal", "color": "#4CB35B" }
+{ "date": "2026-09-19", "allDay": true, "time": null, "end": null, "title": "Street festival",
+  "calendar": "holidays", "color": "#4CB35B" }
 ```
 
 ## Sign in

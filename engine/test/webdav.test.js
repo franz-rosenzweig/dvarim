@@ -109,7 +109,7 @@ const VAULT = {
   'Inbox.md': '- [ ] Call Dana 🆔 inbx0001\n',
   'Areas/Personal/Personal.md': '---\ntype: area\nid: aper0001\n---\n',
   'Areas/Personal/Teaching Hebrew & Spanish.md': '---\ntype: project\nid: ptea0001\nstatus: open\ncreated: 2026-09-19\n---\n- [ ] Aleph-bet #1 🆔 teac0001\n',
-  'Projects/שבת.md': '---\ntype: project\nid: pshb0001\nstatus: open\ncreated: 2026-09-19\n---\n- [ ] Candles 🆔 shab0001\n',
+  'Projects/גינה.md': '---\ntype: project\nid: pgin0001\nstatus: open\ncreated: 2026-09-19\n---\n- [ ] Water the herbs 🆔 gina0001\n',
 };
 
 test('a vault sent to an empty folder, then fetched by a second device, folders and odd names included', async () => {
@@ -119,7 +119,7 @@ test('a vault sent to an empty folder, then fetched by a second device, folders 
   const A = await device('a', cloud, VAULT);
   const r = await A.sync.sync();
   assert.ok(r.sent.includes('Areas/Personal/Teaching Hebrew & Spanish.md'));
-  assert.ok(cloud.files.has('Projects/שבת.md'));
+  assert.ok(cloud.files.has('Projects/גינה.md'));
   assert.ok(cloud.requests.some((q) => q.startsWith('MKCOL')), 'made the folders it needed');
   assert.ok(!cloud.requests.some((q) => q.startsWith('PROPFIND') && q.includes('.obsidian')), 'never looked inside .obsidian');
   const B = await device('b', cloud);
