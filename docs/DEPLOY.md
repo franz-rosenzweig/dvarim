@@ -128,7 +128,7 @@ not something the app does on its own.
 | `DVARIM_STATIC` | `../frontend/dist` | built frontend to serve at `/` |
 | `DVARIM_WATCH` | `1` | set `0` to disable the file watcher (tests) |
 | `DVARIM_MERGE_ARRIVALS` | `0` | set `1` only if the folder's sync keeps the newer file of two and leaves no conflict copy (not Syncthing): see `docs/SYNC.md`, "When a file arrives" |
-| `TZ` | `America/Phoenix` | what "today" means. It must match where you are: get it wrong and Today rolls over at the wrong hour and calendar events show at the wrong time |
+| `TZ` | `UTC` | what "today" means. It must match where you are: get it wrong and Today rolls over at the wrong hour and calendar events show at the wrong time |
 | `DVARIM_CALDAV_URL/USER/PASS` | unset | phase 2: Radicale calendars in Today and Upcoming |
 | `DVARIM_PEOPLE` | `people/` beside `DVARIM_AUTH_FILE` | the folders of the people the owner invites (`docs/PEOPLE.md`); refused inside `DVARIM_ROOT` |
 

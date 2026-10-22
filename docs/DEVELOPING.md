@@ -38,7 +38,7 @@ python3 tools/phone/sample_vault.py /tmp/dv-dev
 docker run --rm --network host -u "$(id -u):$(id -g)" -e HOME=/tmp \
   -v "$PWD:/repo:ro" -v /tmp/dv-dev:/vault \
   -e DVARIM_ROOT=/vault -e DVARIM_STATIC=/repo/frontend/dist \
-  -e PORT=8422 -e HOST=127.0.0.1 -e TZ=America/Phoenix \
+  -e PORT=8422 -e HOST=127.0.0.1 -e TZ=UTC \
   node:22-alpine node /repo/server/src/main.js
 ```
 

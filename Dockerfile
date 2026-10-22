@@ -11,7 +11,7 @@ RUN npm run build
 # ---- runtime: the server on the engine (server/, docs/DEPLOY.md) ----
 # No dependencies to install: the engine and the server use Node's own library.
 FROM node:22-alpine
-ENV TZ=America/Phoenix DVARIM_ROOT=/data DVARIM_STATIC=/app/static NODE_ENV=production
+ENV TZ=UTC DVARIM_ROOT=/data DVARIM_STATIC=/app/static NODE_ENV=production
 RUN apk add --no-cache tzdata
 WORKDIR /app
 COPY engine/package.json ./engine/package.json
