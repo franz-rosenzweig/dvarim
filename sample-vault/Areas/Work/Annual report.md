@@ -1,5 +1,5 @@
 ---
-id: pmanu0001
+id: prept0001
 type: project
 status: open
 deadline: 2026-09-24

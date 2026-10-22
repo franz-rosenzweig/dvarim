@@ -254,7 +254,7 @@ async def main():
 
     if want("heading"):
         await dismiss(p)
-        q = Phone(); import touch as T; old_url = T.URL; T.URL = "http://localhost:8421/project/pmanu0001"
+        q = Phone(); import touch as T; old_url = T.URL; T.URL = "http://localhost:8421/project/prept0001"
         await q.launch(); T.URL = old_url
         heads0 = await q.js("[...document.querySelectorAll('.hd .hname')].map(e => e.textContent.trim())")
         f = await q.rect(".fab"); r = await q.rect("[data-todo-id]", 1)
@@ -427,7 +427,7 @@ async def main():
         await dismiss(p)
         # a day still to come shows on the row. Not in Anytime — those have no day
         # at all — but in a list that mixes them, like a project's.
-        await p.goto("/project/pmanu0001"); await p.wait("document.querySelectorAll('[data-todo-id]').length", 5)
+        await p.goto("/project/prept0001"); await p.wait("document.querySelectorAll('[data-todo-id]').length", 5)
         pills = await p.js("[...document.querySelectorAll('.row .dl.when')].map(e => e.textContent.trim())")
         check("a day still to come shows on the row", len(pills) > 0, f"{pills[:4]}")
         await p.goto("/today"); await p.wait("document.querySelector('h1.t')", 5)

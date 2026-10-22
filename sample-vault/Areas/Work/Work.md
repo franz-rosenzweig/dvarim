@@ -1,5 +1,5 @@
 ---
-id: aedit0001
+id: awork0001
 type: area
 tags: [work]
 ---
