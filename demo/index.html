@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dvarim</title>
+<meta name="description" content="My to-do app, where every to-do is a line in a Markdown file. Try the real thing here, on made-up to-dos that stay in your browser.">
+<meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161618" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="taste.css">
+</head>
+<body>
+<main class="page">
+  <nav class="crumb"><a href="../">← stuffs</a></nav>
+
+  <header class="intro">
+    <div class="mark"><img src="icons/icon.svg" alt="" width="64" height="64"><span><b>Dvarim</b><span class="he" lang="he" dir="rtl">דברים</span></span></div>
+    <h1>My to-do app, where every to-do is a line in a Markdown file</h1>
+    <p class="lede">Delete the app tomorrow and your to-dos are STILL there, as plain text you can open in Obsidian or anything else. It runs on my own server, so there's nothing to sign up for here, but you can try the real app right below, running in your browser on made-up to-dos. Go ahead and poke at it.</p>
+  </header>
+
+  <section class="try" aria-label="Try Dvarim">
+    <div class="trybar">
+      <p><b>Try it right here.</b> The to-dos are made up, and whatever you do stays in this browser.</p>
+      <span class="tryacts">
+        <button type="button" class="btn ghost" id="resetDemo">Reset the demo</button>
+        <a class="btn ghost" href="app/" target="_blank" rel="noopener">Open it full size</a>
+      </span>
+    </div>
+    <div class="window" id="window">
+      <iframe id="demo" title="Dvarim, running on made-up to-dos" data-src="app/"></iframe>
+    </div>
+
+    <div class="trycard">
+      <picture>
+        <source srcset="shots/today-phone-dark.webp" media="(prefers-color-scheme: dark)">
+        <img src="shots/today-phone-light.webp" width="297" height="578" loading="lazy" alt="Today on a phone: ten to-dos, three calendar events and This Evening">
+      </picture>
+      <div class="trytext">
+        <p class="big">Try the real app, on made-up to-dos.</p>
+        <p>It opens full screen. Whatever you do stays in this browser, and nothing is sent anywhere.</p>
+        <a class="btn primary" href="app/">Try it</a>
+        <a class="small" href="app/?reset">Reset the demo</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="tour" aria-labelledby="tourTitle">
+    <h2 id="tourTitle">Where to tap</h2>
+    <ul>
+      <li><span class="ic plus"><!--icon:plus--></span><p><b>The + button</b> adds a to-do. On a computer it's in the bar at the bottom of the list. On a phone it's the round one, and you can drag it into the list.</p></li>
+      <li><span class="ic"><!--icon:sun--></span><p><b>Today</b> is what you're doing today. Tick a box and the to-do goes to the Logbook.</p></li>
+      <li><span class="ic"><!--icon:upcoming--></span><p><b>Upcoming</b> is the next few days, one by one. Give a to-do a day and it waits there until that day comes.</p></li>
+      <li><span class="ic pie"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.2"/><path d="M8 8V3.4A4.6 4.6 0 0 1 12.6 8z" fill="currentColor" stroke="none"/></svg></span><p><b>A project</b>, like Plan the garden, has headings and a little pie that fills up. Meet Dvarim is the tour I wrote inside the app, where every to-do is something to try.</p></li>
+      <li><span class="ic"><!--icon:files--></span><p><b>It's all Markdown.</b> In a project, the ••• menu has "Edit the note itself", which opens the actual file.</p></li>
+    </ul>
+  </section>
+
+  <section class="shots" aria-labelledby="shotsTitle">
+    <h2 id="shotsTitle">From the full app</h2>
+    <div class="grid">
+      <figure class="wide"><a href="shots/phones.webp"><img src="shots/phones.webp" width="1862" height="1156" loading="lazy" alt="Three phones: Today with three calendar events, the project Plan the trip to the coast, and a to-do open with its checklist"></a><figcaption>On the phone: Today, a project, and a to-do open with its checklist.</figcaption></figure>
+      <figure><a href="shots/files.webp"><img src="shots/files.webp" width="1486" height="961" loading="lazy" alt="The Kitchen renovation project's Markdown file on the left, and the same project in Dvarim on the right"></a><figcaption>The same project twice: the file on disk, and what Dvarim makes of it.</figcaption></figure>
+      <figure><a href="shots/upcoming.webp"><img src="shots/upcoming.webp" width="1486" height="961" loading="lazy" alt="Upcoming: tomorrow and the next days, each with its calendar events and to-dos"></a><figcaption>Upcoming, day by day, with the events from my own calendar under each day.</figcaption></figure>
+      <figure><a href="shots/when.webp"><img src="shots/when.webp" width="1486" height="961" loading="lazy" alt="The When popover open on a to-do, with Today, This Evening, Tomorrow, Next week, Someday and a calendar"></a><figcaption>The When popover. Pick a day, or type it the way you'd say it: "tom", "sat", "wed 8pm".</figcaption></figure>
+      <figure><a href="shots/hero-dark.webp"><img src="shots/hero-dark.webp" width="1700" height="1100" loading="lazy" alt="Today in dark mode: the sidebar with the lists and three areas, three calendar events, ten to-dos and This Evening"></a><figcaption>Today in the dark, with the day's events on top.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="what" aria-labelledby="whatTitle">
+    <h2 id="whatTitle">What it does</h2>
+    <p>I wanted a Today list, This Evening, and the difference between the day I'll start something and the day it's due. I also wanted my to-dos to live where everything else I write lives: in Markdown files I own, that sync to every device I have. So I built Dvarim (Hebrew for "words", and also the things on your plate).</p>
+    <p>Underneath there's no database at all. An area is a folder, a project is a Markdown file, and a to-do is one line in it, in the same format the Obsidian Tasks plugin uses. So I can open my to-dos in Obsidian like any other note, change them there, and the app picks the change up a moment later.</p>
+    <p>On top of the files it's a full to-do app: the Inbox, Today with This Evening, Upcoming, Anytime, Someday and the Logbook, with areas, projects and headings, checklists, notes, tags, repeats and reminders, and a keyboard shortcut for nearly everything. You type dates the way you'd say them ("tom", "fri", "in 3 days") and it understands.</p>
+    <p>It works on every device I have. The web app keeps a full copy of the to-dos, so it works offline. The Mac app has Quick Entry from any app and Today in the menu bar, and the Android app has a widget you can tick things off from. When two devices change the same file, Dvarim merges them to-do by to-do, so nothing gets lost.</p>
+    <p>It also gets along with the rest of my server. Events from my calendar sit at the top of Today, my to-dos can show up in Tasks.org, and my Signal bot adds one with a single message.</p>
+  </section>
+
+  <section class="own" aria-labelledby="ownTitle">
+    <h2 id="ownTitle">Run your own</h2>
+    <p>Dvarim is one Docker container and a folder of Markdown. Point it at a folder (an Obsidian vault works fine), set a password, and open it in any browser. The Mac and Android apps are built from the same repository, and the docs walk through all of it, from the first command to calendars and inviting your family.</p>
+    <p class="links">
+      <a class="btn primary" href="https://github.com/franz-rosenzweig/dvarim">Run your own</a>
+      <a class="btn ghost" href="https://docs.tiresia.xyz/dvarim/">Docs</a>
+      <a class="btn ghost" href="../">Back to stuffs</a>
+    </p>
+    <p class="foot">Dvarim is free software under the GNU GPL, version 3 or later. This page doesn't send anything anywhere: the demo's to-dos live in your browser's storage until you reset them or clear it.</p>
+  </section>
+</main>
+<script src="taste.js"></script>
+</body>
+</html>

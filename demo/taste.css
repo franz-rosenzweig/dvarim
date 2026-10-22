@@ -1,0 +1,116 @@
+/* The taste of Dvarim on stuffs (stuffs.tiresia.xyz/dvarim/): the page around
+   the app. The colours are the app's own (frontend/src/app.css), and so is the
+   type: the system's, as in the app. */
+:root{
+  --bg:#F5F5F7; --surface:#FFFFFF; --text:#1C1C1E; --text2:#5F5F65; --text3:#6E6E73; --hair:#E2E2E7;
+  --accent:#668250; --button:#5F7A49; --link:#4F6A3B; --star:#D08E2C; --upc:#587089; --plus:#7A9564; --files:#7D6893;
+  --frame:rgba(0,0,0,.14); --shadow:0 24px 60px rgba(20,20,40,.16), 0 2px 8px rgba(20,20,40,.07);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#161618; --surface:#2A2A2D; --text:#F2F2F7; --text2:#B4B4BA; --text3:#8A8A90; --hair:#38383C;
+    --accent:#7E9A66; --button:#5F7A49; --link:#A9C08F; --star:#E8A944; --upc:#8FA4BC; --plus:#8FAA76; --files:#A996C4;
+    --frame:rgba(255,255,255,.12); --shadow:0 24px 60px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:16px/1.55 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased}
+a{color:var(--link)}
+a:focus-visible,button:focus-visible,iframe:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+
+.page{max-width:1180px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 18px) 24px calc(env(safe-area-inset-bottom,0px) + 56px)}
+.crumb a{font-size:14px;color:var(--text2);text-decoration:none}
+.crumb a:hover{color:var(--text)}
+
+/* ---- the top */
+.intro{max-width:1020px;margin-top:22px}
+.mark{display:flex;align-items:center;gap:14px}
+.mark img{display:block;width:52px;height:52px;filter:drop-shadow(0 4px 10px rgba(20,20,40,.12))}
+.mark b{font-size:22px;font-weight:700;letter-spacing:-.01em;margin-right:10px}
+.mark .he{font-size:20px;color:var(--text2)}
+h1{font-size:36px;line-height:1.14;font-weight:700;letter-spacing:-.022em;margin:18px 0 12px;text-wrap:balance}
+.lede{font-size:18px;line-height:1.6;color:var(--text2);margin:0;max-width:760px}
+
+/* ---- the app in a window */
+.try{margin-top:30px}
+.trybar{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;margin-bottom:14px}
+.trybar p{margin:0;color:var(--text2);font-size:15px}
+.trybar b{color:var(--text)}
+.tryacts{display:flex;gap:8px;flex-wrap:wrap}
+.window{height:clamp(540px,calc(100vh - 150px),780px);border-radius:12px;overflow:hidden;background:var(--surface);
+  box-shadow:0 0 0 1px var(--frame),var(--shadow)}
+.window iframe{display:block;width:100%;height:100%;border:0;background:var(--surface)}
+.trycard{display:none}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:9px;
+  font:inherit;font-size:15px;font-weight:600;text-decoration:none;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.btn.primary{background:var(--button);color:#fff;border:0}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:var(--surface);color:var(--text);border:1px solid var(--hair)}
+.btn.ghost:hover{border-color:var(--text3)}
+
+/* ---- where to tap */
+.tour{margin-top:56px}
+h2{font-size:24px;line-height:1.2;font-weight:700;letter-spacing:-.015em;margin:0 0 18px}
+.tour ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:14px}
+.tour li{background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:16px 16px 14px}
+.tour li p{margin:10px 0 0;font-size:14.5px;line-height:1.5;color:var(--text2)}
+.tour li b{color:var(--text)}
+.tour .ic{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;background:var(--bg);color:var(--text2)}
+.tour .ic svg{width:19px;height:19px}
+.tour .ic.plus{background:var(--plus);color:#fff}
+.tour .ic.plus svg{width:15px;height:15px}
+.tour .ic.pie{color:var(--accent)}
+.tour li:nth-child(5) .ic{color:var(--files)}
+
+/* ---- pictures of the full app */
+.shots{margin-top:56px}
+.shots .grid{display:grid;grid-template-columns:1fr 1fr;gap:26px 30px}
+.shots figure{margin:0}
+.shots figure.wide{grid-column:1 / -1;max-width:940px;justify-self:center}
+.shots img{display:block;width:100%;height:auto}
+.shots figcaption{margin:6px 4% 0;font-size:14px;line-height:1.45;color:var(--text2)}
+
+/* ---- words */
+.what{margin-top:56px;max-width:740px}
+.what p{font-size:17px;line-height:1.65;margin:0 0 14px}
+.own{margin-top:44px;max-width:740px}
+.own p{font-size:17px;line-height:1.65;margin:0 0 14px}
+.own .links{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 26px}
+.own .foot{font-size:13.5px;line-height:1.5;color:var(--text3)}
+
+/* ---- a phone or a narrow window: the app opens on its own page */
+@media (max-width:899px){
+  .trybar,.window{display:none}
+  .trycard{display:grid;grid-template-columns:minmax(0,148px) 1fr;gap:20px;align-items:center;
+    background:var(--surface);border:1px solid var(--hair);border-radius:16px;padding:18px}
+  .trycard img{display:block;width:100%;height:auto}
+  .trycard .big{font-size:19px;font-weight:700;line-height:1.3;margin:0 0 8px;color:var(--text)}
+  .trycard p{margin:0 0 14px;font-size:15px;line-height:1.5;color:var(--text2)}
+  .trycard .btn{width:100%;height:46px;font-size:16.5px}
+  .trycard .small{display:inline-block;margin-top:12px;font-size:14px}
+}
+@media (max-width:640px){
+  .page{padding-left:16px;padding-right:16px}
+  .intro{margin-top:22px}
+  .mark img{width:46px;height:46px}
+  .mark b{font-size:20px}
+  .mark .he{font-size:19px}
+  h1{font-size:29px;line-height:1.16;margin-top:18px}
+  .lede{font-size:16.5px}
+  .try{margin-top:26px}
+  .trycard{grid-template-columns:minmax(0,112px) 1fr;gap:16px;padding:16px}
+  .trycard .big{font-size:17.5px}
+  .tour,.shots,.what{margin-top:44px}
+  .tour ul{grid-template-columns:1fr;gap:10px}
+  .tour li{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;padding:14px}
+  .tour li p{margin:0}
+  .shots .grid{grid-template-columns:1fr;gap:22px}
+  .what p,.own p{font-size:16.5px}
+}
+.shots figure a{display:block;border-radius:12px}

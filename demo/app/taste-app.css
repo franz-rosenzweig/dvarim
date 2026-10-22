@@ -1,0 +1,94 @@
+/* The taste's frame around the real app: the bar on top, the two sheets, and
+   the few things in Settings that only a server can do, put away. The app's
+   own stylesheet (frontend/src/app.css) arrives with the app, a moment later,
+   so the bar carries its own copy of the colours it needs. */
+:root{
+  --tb-h:40px;
+  --tb-bg:#F5F5F7; --tb-text:#1C1C1E; --tb-text2:#6E6E73; --tb-hair:#E5E5EA; --tb-accent:#4F6A3B; --tb-btn:#E9EAEE; --tb-button:#5F7A49;
+  --tb-sheet:#FFFFFF;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --tb-bg:#1E1E21; --tb-text:#F2F2F7; --tb-text2:#A1A1A6; --tb-hair:#3A3A3E; --tb-accent:#8FAA76; --tb-btn:#2F2F33;
+  --tb-sheet:#2A2A2D;
+}}
+:root[data-theme="dark"]{
+  --tb-bg:#1E1E21; --tb-text:#F2F2F7; --tb-text2:#A1A1A6; --tb-hair:#3A3A3E; --tb-accent:#8FAA76; --tb-btn:#2F2F33;
+  --tb-sheet:#2A2A2D;
+}
+html.taste-top, html.taste-top body{background:var(--tb-bg)}
+
+/* ---- the bar */
+.taste-bar{display:none}
+html.taste-top .taste-bar{
+  display:flex;align-items:center;gap:12px;box-sizing:border-box;
+  height:calc(var(--tb-h) + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 12px 0;
+  background:var(--tb-bg);color:var(--tb-text2);border-bottom:1px solid var(--tb-hair);
+  font:13px/1.2 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;white-space:nowrap;overflow:hidden;
+}
+.taste-bar .tb-home{display:flex;align-items:center;gap:7px;color:var(--tb-text);text-decoration:none;flex:none}
+.taste-bar .tb-home img{display:block;border-radius:5px}
+.taste-bar .tb-home b{font-weight:650;font-size:14px}
+.taste-bar .tb-note{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.taste-bar .tb-acts{display:flex;align-items:center;gap:4px;flex:none}
+.taste-bar .tb-btn,.taste-bar .tb-link{
+  font:inherit;font-weight:550;color:var(--tb-accent);background:none;border:0;border-radius:7px;
+  padding:6px 9px;cursor:pointer;text-decoration:none;-webkit-tap-highlight-color:transparent;
+}
+.taste-bar .tb-btn:hover,.taste-bar .tb-link:hover{background:var(--tb-btn)}
+.taste-bar .tb-btn:focus-visible,.taste-bar .tb-link:focus-visible,.taste-bar .tb-home:focus-visible{outline:2px solid var(--tb-accent);outline-offset:1px}
+.taste-bar .tb-short{display:none}
+
+/* The app fills what the bar leaves. */
+html.taste-top body{overflow:hidden}
+html.taste-top #app{height:auto}
+html.taste-top .app{height:calc(100dvh - var(--tb-h) - env(safe-area-inset-top,0px))}
+
+@media (max-width:720px){
+  html.taste-top .taste-bar{gap:8px;padding-left:10px;padding-right:6px}
+  .taste-bar .tb-long{display:none}
+  .taste-bar .tb-short{display:inline}
+  .taste-bar .tb-btn[data-taste="tour"]{min-width:32px;font-weight:700}
+}
+
+/* ---- the sheets */
+.taste-sheet{
+  box-sizing:border-box;width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 32px);overflow:auto;
+  padding:22px 24px 20px;border:0;border-radius:14px;background:var(--tb-sheet);color:var(--tb-text);
+  box-shadow:0 20px 60px rgba(20,20,40,.25),0 2px 8px rgba(20,20,40,.1);
+  font:14.5px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.taste-sheet.small{width:min(400px,calc(100vw - 24px))}
+.taste-sheet::backdrop{background:rgba(20,20,30,.32)}
+.taste-sheet h2{margin:0 0 8px;font-size:19px;font-weight:700;letter-spacing:-.01em}
+.taste-sheet .ts-lede{margin:0 0 14px;color:var(--tb-text2)}
+.taste-sheet .ts-tour{margin:0 0 14px;padding-left:20px;display:grid;gap:9px}
+.taste-sheet .ts-tour li::marker{color:var(--tb-accent);font-weight:700}
+.taste-sheet .ts-note{margin:0 0 16px;font-size:13px;color:var(--tb-text2)}
+.taste-sheet .ts-acts{display:flex;align-items:center;flex-wrap:wrap;gap:10px 16px}
+.taste-sheet .ts-primary{
+  font:inherit;font-weight:600;color:#fff;background:var(--tb-button,#5F7A49);border:0;border-radius:8px;padding:8px 18px;cursor:pointer;
+}
+.taste-sheet .ts-plain{font:inherit;color:var(--tb-accent);background:none;border:0;padding:8px 6px;cursor:pointer}
+.taste-sheet .ts-links{display:flex;flex-wrap:wrap;gap:4px 14px}
+.taste-sheet a{color:var(--tb-accent);font-weight:550;text-decoration:none}
+.taste-sheet a:hover{text-decoration:underline}
+.taste-sheet button:focus-visible,.taste-sheet a:focus-visible{outline:2px solid var(--tb-accent);outline-offset:2px}
+.taste-sheet .on-narrow{display:none}
+@media (max-width:720px){
+  .taste-sheet .on-wide{display:none}
+  .taste-sheet .on-narrow{display:inline}
+  .taste-sheet{padding:20px 18px 18px}
+}
+
+/* ---- what only a server does: signing in, devices and sync, quick add over
+   HTTP, and going back to a server from a browser vault */
+#pane-tab-quickadd,#pane-tab-account,#pane-tab-sync{display:none!important}
+#pane-body > p.note + button.linkish{display:none!important}
+
+/* ---- when the browser won't keep a vault */
+.taste-fail{max-width:460px;margin:12vh auto 0;padding:0 20px;color:var(--tb-text);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.taste-fail h1{font-size:22px;margin:0 0 10px}
+.taste-fail a{color:var(--tb-accent)}

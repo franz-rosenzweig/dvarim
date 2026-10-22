@@ -15,6 +15,7 @@ This page is what you need to work on Dvarim's code: what's where, how to build 
 | `android/` | The Android app: Bubblewrap's project, and `android/shell/`, everything that's ours. [android/README.md](https://github.com/franz-rosenzweig/dvarim/blob/master/android/README.md) |
 | `tools/` | The test gate, the auto-deploy, the browser suites, and `tools/phone/`, the checks on a real phone |
 | `sample-vault/` | A small vault for development and tests. Never point a tool at a real one |
+| `demo/` | The taste on stuffs: the web app on a made-up vault in the visitor's browser, and the page around it (below) |
 | `docs/` | These pages, and the specs: [FORMAT](FORMAT.md), [API](API.md), [SYNC](SYNC.md), [BRIDGE](BRIDGE.md) |
 
 ## Building the web app
@@ -69,6 +70,16 @@ git push -u origin my-change     # then open a pull request against master
 ```
 
 Merging the pull request is the deploy, so only merge what has passed the gate and the browser suites. When several pull requests depend on each other, point each one at `master` before merging the one below it, because deleting a branch that another pull request is based on closes that pull request on GitHub.
+
+## The taste on stuffs
+
+My public shelf of apps, stuffs, has a page where anyone can try Dvarim without a server: [stuffs.tiresia.xyz/dvarim](https://stuffs.tiresia.xyz/dvarim/). It's the real web app in its local mode (`lib/backend.js`), so the engine answers everything in the page from a vault in the browser's IndexedDB, and nothing in `frontend/` knows it's a demo. `demo/app/demo.js` is the entry point: it fills the vault with the made-up one in `demo/vault.js` the first time (and again on "Reset the demo"), refuses any request outside its own folder, leaves the service worker out, keeps the address as it is, and then loads `frontend/src/main.js`. The Settings panes that only make sense with a server (Quick Add, Account, Sync) are hidden by `demo/app/taste-app.css`. The page around it, with the pictures from `docs/images`, is `demo/index.html`.
+
+```bash
+python3 tools/build_taste.py OUT_DIR     # for stuffs, its site/dvarim/ folder
+```
+
+builds all of it in Docker, after checking with the engine that the made-up vault reads as it should (`demo/check_vault.mjs`). Nothing deploys it by itself, so run it again after a change the taste should show.
 
 ## What to keep in step
 

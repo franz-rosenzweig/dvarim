@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- The taste on stuffs: the real web app (frontend/), on a made-up vault
+         kept in this browser. tools/build_taste.py builds it with demo.js as
+         the entry, which loads frontend/src/main.js once the vault is there. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title>Dvarim · try it</title>
+    <meta name="description" content="Dvarim, my to-do app over Markdown files, running in your browser on made-up to-dos. Nothing leaves this browser." />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1E1E21" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="../icons/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="../icons/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+    <script>
+      // In the page's own window the demo has a bar on top; inside the frame on
+      // the About page (../) that page is the frame, so it has none.
+      try { document.documentElement.classList.add(window.top === window.self ? 'taste-top' : 'taste-embed'); }
+      catch (e) { document.documentElement.classList.add('taste-embed'); }
+      // the app's own: a theme chosen in the app, before first paint
+      try {
+        var t = localStorage.getItem('dvarim.theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div class="taste-bar" id="taste-bar">
+      <a class="tb-home" href="../" title="About Dvarim"><img src="../icons/icon.svg" alt="" width="22" height="22" /><b>Dvarim</b></a>
+      <span class="tb-note"><span class="tb-long">A demo on made-up to-dos. It all stays in this browser.</span><span class="tb-short">Demo · only in this browser</span></span>
+      <span class="tb-acts">
+        <button type="button" class="tb-btn" data-taste="tour" aria-label="Where to tap" title="Where to tap"><span class="tb-long">Where to tap</span><span class="tb-short" aria-hidden="true">?</span></button>
+        <button type="button" class="tb-btn" data-taste="reset" aria-label="Reset the demo"><span class="tb-long">Reset the demo</span><span class="tb-short" aria-hidden="true">Reset</span></button>
+        <a class="tb-link tb-long" href="https://github.com/franz-rosenzweig/dvarim" target="_blank" rel="noopener">Run your own</a>
+        <a class="tb-link tb-long" href="https://docs.tiresia.xyz/dvarim/" target="_blank" rel="noopener">Docs</a>
+      </span>
+    </div>
+    <div id="app"></div>
+
+    <dialog class="taste-sheet" id="taste-tour" aria-labelledby="tour-title">
+      <form method="dialog">
+        <h2 id="tour-title">Have a look around</h2>
+        <p class="ts-lede">This is the real Dvarim, on made-up to-dos. Change anything you like: it all stays in this browser, and nothing is sent anywhere.</p>
+        <ol class="ts-tour">
+          <li><b>The + button</b> adds a to-do. <span class="on-wide">It's in the bar at the bottom of the list.</span><span class="on-narrow">It's the round one at the bottom. You can also drag it into the list, and the to-do lands where you let go.</span></li>
+          <li><b>Today</b> is what you're doing today. Tick a box and the to-do goes to the Logbook. <span class="on-narrow">Tap ‹ at the top left for all the lists.</span></li>
+          <li><b>Upcoming</b> is the next few days, one by one. Give a to-do a day (<span class="on-wide">the calendar button at the bottom</span><span class="on-narrow">swipe it to the right</span>) and it waits there until that day comes.</li>
+          <li><b>A project</b>, like Plan the garden, has headings and a little pie that fills up. Meet Dvarim is the tour I wrote inside the app, where every to-do is something to try.</li>
+          <li><b>It's all Markdown.</b> In a project, the ••• menu has "Edit the note itself", which shows you the actual file.</li>
+        </ol>
+        <p class="ts-note">Settings here only has what works in a browser. Signing in, other devices, sync and calendars need a server of your own.</p>
+        <div class="ts-acts">
+          <button class="ts-primary" value="ok" autofocus>Got it</button>
+          <span class="ts-links">
+            <a href="https://github.com/franz-rosenzweig/dvarim" target="_blank" rel="noopener">Run your own</a>
+            <a href="https://docs.tiresia.xyz/dvarim/" target="_blank" rel="noopener">Docs</a>
+            <a href="../">About Dvarim</a>
+          </span>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="taste-sheet small" id="taste-reset" aria-labelledby="reset-title">
+      <form method="dialog">
+        <h2 id="reset-title">Reset the demo?</h2>
+        <p class="ts-lede">The made-up to-dos go back to how they were, and whatever you added or changed here goes.</p>
+        <div class="ts-acts">
+          <button class="ts-primary" value="reset">Reset the demo</button>
+          <button class="ts-plain" value="cancel">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="./demo.js"></script>
+  </body>
+</html>
