@@ -132,14 +132,14 @@ test('passwords and session cookies pass between the two servers both ways', { s
 const PROPFIND = [
   `<?xml version="1.0" encoding="utf-8"?>
 <multistatus xmlns="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:ICAL="http://apple.com/ns/ical/">
- <response><href>/jason/</href><propstat><prop><resourcetype><collection/></resourcetype><displayname>jason</displayname></prop><status>HTTP/1.1 200 OK</status></propstat></response>
- <response><href>/jason/work/</href><propstat><prop><resourcetype><collection/><C:calendar/></resourcetype><displayname> Work &amp; Life </displayname>
+ <response><href>/me/</href><propstat><prop><resourcetype><collection/></resourcetype><displayname>me</displayname></prop><status>HTTP/1.1 200 OK</status></propstat></response>
+ <response><href>/me/work/</href><propstat><prop><resourcetype><collection/><C:calendar/></resourcetype><displayname> Work &amp; Life </displayname>
   <C:supported-calendar-component-set><C:comp name="VEVENT"/></C:supported-calendar-component-set><ICAL:calendar-color>#4CB35BFF</ICAL:calendar-color></prop>
   <status>HTTP/1.1 200 OK</status></propstat></response>
- <response><href>/jason/dvarim/</href><propstat><prop><resourcetype><collection/><C:calendar/></resourcetype>
+ <response><href>/me/dvarim/</href><propstat><prop><resourcetype><collection/><C:calendar/></resourcetype>
   <C:supported-calendar-component-set><C:comp name="VTODO"/></C:supported-calendar-component-set></prop><status>HTTP/1.1 200 OK</status></propstat>
   <propstat><prop><ICAL:calendar-color/><displayname/></prop><status>HTTP/1.1 404 Not Found</status></propstat></response>
- <response><href>http://radicale:5232/jason/holidays/</href><propstat><prop><resourcetype><C:calendar/></resourcetype><displayname><![CDATA[Holidays <IL>]]></displayname></prop></propstat></response>
+ <response><href>http://radicale:5232/me/holidays/</href><propstat><prop><resourcetype><C:calendar/></resourcetype><displayname><![CDATA[Holidays <IL>]]></displayname></prop></propstat></response>
 </multistatus>`,
   '<d:multistatus xmlns:d="DAV:"><d:response><d:href>/x/</d:href></d:response></d:multistatus>',
   '<not xml',
@@ -156,7 +156,7 @@ END:VCALENDAR]]></C:calendar-data></prop></propstat></response><response><href>/
 ];
 
 test('CalDAV answers are read the same', { skip }, async () => {
-  const qs = [...PROPFIND.map((xml) => ({ op: 'caldav_xml', kind: 'propfind', xml, base: 'http://radicale:5232/jason/' })),
+  const qs = [...PROPFIND.map((xml) => ({ op: 'caldav_xml', kind: 'propfind', xml, base: 'http://radicale:5232/me/' })),
     ...REPORT.map((xml) => ({ op: 'caldav_xml', kind: 'report', xml }))];
   const answers = await askAll(qs);
   qs.forEach((q, i) => {

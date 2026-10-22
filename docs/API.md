@@ -25,12 +25,12 @@ credential once a password is set.
   "checklist": [{"text": "Rice", "done": false}],
   "created": "2026-09-19",          // ➕
   "completed": null,                // ✅ or ❌ date
-  "projectId": "p7k3j9a2", "projectName": "Client manuscript, ch. 4",
-  "areaId": "a5m6n7o8",  "areaName": "Editing & Translation",
-  "headingId": "p7k3j9a2:Hand-back", "headingName": "Hand-back",
+  "projectId": "p7k3j9a2", "projectName": "Annual report",
+  "areaId": "a5m6n7o8",  "areaName": "Work",
+  "headingId": "p7k3j9a2:Hand-in", "headingName": "Hand-in",
   "index": 3,                       // position within its container (file order)
   "todayIndex": 1,                  // position in Today when applicable
-  "file": "Areas/Editing & Translation/Client manuscript, ch. 4.md",
+  "file": "Areas/Work/Annual report.md",
   "line": 27
 }
 // Project

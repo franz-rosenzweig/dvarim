@@ -1,7 +1,7 @@
 // Calendars over CalDAV (backend/dvarim/calendar.py's client, ported): the
 // events for Today and Upcoming, read-only and cached for a minute, and the
 // few writes the to-do mirror needs (tasksync.js). Configured with
-// DVARIM_CALDAV_URL (the user's collection root, e.g. http://radicale:5232/jason/),
+// DVARIM_CALDAV_URL (the user's collection root, e.g. http://radicale:5232/me/),
 // DVARIM_CALDAV_USER and DVARIM_CALDAV_PASS; without them, no calendars and no
 // errors.
 import { parseXml, findAll, find, findText, iter } from '../../engine/src/xml.js';

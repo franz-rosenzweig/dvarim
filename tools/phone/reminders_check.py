@@ -131,7 +131,7 @@ async def main():
     p = Phone(); await p.launch()             # DevActivity: the native pieces now follow localhost
     today = get("/lists/today")["date"]
     # The sample, dated to today (sample_vault.py), has reminders of its own due
-    # today — Read 20 minutes in Hebrew, ⏰ 16:00 — and caught up on as well,
+    # today — Practise Spanish for 20 minutes, ⏰ 16:00 — and caught up on as well,
     # they group this check's out of sight in the shade.
     for t in get("/lists/today")["items"]:
         if t.get("reminder"): send("PATCH", f"/todos/{t['id']}", {"reminder": None})

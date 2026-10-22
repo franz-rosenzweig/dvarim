@@ -9,7 +9,7 @@ remain readable as plain text forever.
 ## Folder layout
 
 ```
-<root>/                          e.g. Synergathan/Tasks/  or  /srv/dev/dvarim/data/
+<root>/                          e.g. MyVault/Tasks/  or  /srv/dev/dvarim/data/
   Inbox.md                       to-dos in the Inbox (start = inbox)
   Standalone.md                  to-dos in no area and no project
   Trash.md                       deleted to-dos, restorable
@@ -17,8 +17,8 @@ remain readable as plain text forever.
     Work/                        an area is a folder
       Work.md                    the area's own note (same name as folder): notes, tags,
                                  and to-dos that live directly in the area
-      Client manuscript.md       a project inside the area
-      Style guide revision.md
+      Annual report.md           a project inside the area
+      Team handbook.md
     Personal/
       Personal.md
       Run a 10k.md
@@ -242,7 +242,7 @@ Plain files with no front matter, containing only to-do lines. `Trash.md` lines
 carry an extra marker so they can be restored:
 
 ```
-- [ ] Old idea 🆔 w5x6y7 🗑️ 2026-09-19 ↩ Areas/Work/Client manuscript.md#Planning
+- [ ] Old idea 🆔 w5x6y7 🗑️ 2026-09-19 ↩ Areas/Work/Annual report.md#Planning
 ```
 
 Deleting a project moves the whole file to `Trash/`. "Empty Trash" deletes files
