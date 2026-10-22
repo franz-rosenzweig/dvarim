@@ -1,11 +1,14 @@
-# Next on Android: the app on a folder (phase 3)
+# The Android app on a folder (phases 3 to 6)
 
-For the Claude session that builds the Android shell. Written on morten, where
-there is no Android SDK. Everything that could be built and tested there has
-been. This is the part that needs the SDK and a phone. The protocol is in
-`docs/BRIDGE.md`; read that first. The plan as a whole is in `docs/ROADMAP.md`.
+How the Android app came to keep its to-dos in a folder on the phone, sync it,
+and take calendars, reminders and the widget from the phone itself. The page's
+side of each phase was built and tested on Linux, where there is no Android
+SDK; what follows is the part that needed the SDK and a phone, as it was
+planned and then as it turned out. It is still the best map of why the
+shell's folder code is the way it is. The protocol is in `docs/BRIDGE.md`;
+read that first. The plan as a whole is in `docs/ROADMAP.md`.
 
-## What exists already
+## What existed at the start
 
 - **The page's half of the bridge** (`engine/src/storage-bridge.js`,
   `frontend/src/lib/backend.js`):
@@ -41,10 +44,10 @@ So in folder mode the launcher hands over to `FolderActivity` instead. Server
 mode stays exactly as it is: the TWA, or the WebView fallback for other
 servers.
 
-## The steps
+## The steps, as planned
 
-Work on a branch from master once #54, #56 and this phase's PR are merged. If
-they are not merged yet, branch from `device-folders`.
+Built on a branch from master after #54 and #56 (the engine and the two
+backends).
 
 1. **Build the web app**: `cd frontend && npm ci && npm run build`. That makes
    `frontend/dist/`.
@@ -112,22 +115,22 @@ they are not merged yet, branch from `device-folders`.
    This is the way in when there is no page to ask, and the first time.
 
 8. **What stays on the server.** Leave the widget, reminders, the tile's
-   network calls and `Outbox` on `Server`/`Api` as they are. With Nathan's
-   server they go on working, because the server's changes reach the phone's
-   folder through Syncthing. Phase 6 moves them to local data.
+   network calls and `Outbox` on `Server`/`Api` as they are. With a server
+   beside the folder they go on working, because the server's changes reach
+   the phone's folder through Syncthing. Phase 6 moves them to local data.
 
 ## Done when
 
 Done on the phone, 2026-09-23 (branch `android-folder`), with
 `tools/phone/folder_check.py` — 25 checks, all passing, twice in a row — and
-a copy of the vault's Tasks folder made on the phone itself:
+a copy of a real Tasks folder made on the phone itself:
 
 - [x] Settings → choose that folder (through Android's own picker, driven by a
       finger). The app opens on it, with no browser bar, and the Inbox matches
       `Inbox.md`.
 - [x] Settings → Data → **Check this folder**: all 17 checks pass, including
       *names are kept exactly as they were written*. SAF is slow: 12–23 s on
-      `sample-vault`, 25.6 s on a copy of the real Tasks folder (52 notes),
+      `sample-vault`, 25.6 s on a copy of a real Tasks folder (about 50 notes),
       where a rescan takes about 0.55 s (0.2 s on `sample-vault`). On that
       copy the page's engine and the Python server agree about the state and
       every list.
@@ -177,14 +180,13 @@ What the drafts needed, beyond compiling (they compiled as written):
 - **Writes are not atomic on SAF.** There is no rename-over, so a file is
   rewritten in place and its size checked afterwards. A short write is
   reported, never trusted. If SAF turns out slow or unreliable on the phone,
-  the roadmap's other road for Android is syncing with morten directly
+  the roadmap's other road for Android is syncing with the server directly
   (phase 5), with the folder in app storage, where it is fast and atomic.
 - **Conflict copies, since phase 4 (#60).** Two copies of one file edited at
   nearly the same time leave Syncthing's `.sync-conflict-…` file. The app on a
   folder merges it back into its file, to-do by to-do, and moves the copy to
   `.dvarim/conflicts/`, never deleting it (`docs/SYNC.md`) — and so does the
-  server on morten, which runs on the engine since #63. The two the real Tasks
-  folder had from 2026-09-20 had left it by the evening of the cutover.
+  server, which runs on the engine since #63.
 
 ## Phase 5: built-in sync
 
@@ -197,26 +199,25 @@ check on a phone:
   and back; a revoked token.
 
 The requests go through the `http` op, which the app now offers (`ShellHttp`,
-on OkHttp, since `HttpURLConnection` refuses PROPFIND and MKCOL). Still to do:
-- the same check by hand against dvarim.tiresia.xyz, with a token only Nathan
-  makes;
+on OkHttp, since `HttpURLConnection` refuses PROPFIND and MKCOL). Not done here:
+- the same check by hand against a live server;
 - the token in the Keystore.
 
-The brief, as written:
+The plan, as written:
 
 The page can now sync its vault by itself with a WebDAV folder (`docs/SYNC.md`,
-"Built-in sync"). On Android that is the "direct sync with morten" choice in `docs/ROADMAP.md`: the app in the folder activity,
+"Built-in sync"). On Android that is the "syncs with the server directly" choice in `docs/ROADMAP.md`: the app in the folder activity,
 on a folder no other tool syncs, and Settings → Sync → *A Dvarim server*.
 
 **Nothing native is needed to sync with a Dvarim server.** The page makes the
-requests, and the server answers pages from other origins. Please check it on
-the device:
+requests, and the server answers pages from other origins. The check on the
+device:
 
 1. Put the app in the folder activity on a new, empty folder: not the Syncthing vault,
    which already has a sync.
-2. On dvarim.tiresia.xyz, Settings → Sync → *Add a device*, named for this
-   device. On the device, Settings → Sync → *A Dvarim server*, with
-   `dvarim.tiresia.xyz` and the token. *Save and sync.*
+2. On the server's web app, Settings → Sync → *Add a device*, named for this
+   device. On the device, Settings → Sync → *A Dvarim server*, with the
+   server's address and the token. *Save and sync.*
 3. The vault arrives. A to-do made on the device shows in the web app within
    seconds. One made in the web app arrives when the device's window comes to
    the front, or on *Sync now*.
@@ -247,7 +248,7 @@ storage. The Android Keystore is the right home for them.
 
 Checked by `tools/phone/local_check.py`. What is not done: nothing refreshes
 the copy while the app is closed. A change Syncthing or a sync brings reaches
-the widget and the reminders at the next open. The brief, as written:
+the widget and the reminders at the next open. The plan, as written:
 
 For the app on a folder, the things the server did must come from Android.
 
@@ -258,7 +259,7 @@ Settings → Calendar then lists the device's calendars to choose from.
 `tools/bridge_sim.py --calendars FILE` is the reference, and `tools/e2e_folder.py`
 checks the page with it. For the shell: `CalendarContract.Calendars` for the list, and `CalendarContract.Instances` (not `Events`: instances have repeats expanded) for the occurrences, queried with `Instances.CONTENT_URI` and the range. All-day instances are in UTC, so read their dates as UTC days. It needs `READ_CALENDAR`, asked for at runtime the first time.
 
-**Reminders.** In folder mode nobody sends the Signal reminder. The shell
+**Reminders.** In folder mode there may be no server to send reminders. The shell
 already schedules its own notifications from the server's lists. On a folder
 it can ask the page for the same lists instead, with `window.dvarim.request('GET',
 '/api/lists/upcoming')` and `…/today`, which the engine answers from the

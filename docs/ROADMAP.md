@@ -118,7 +118,7 @@ In order. Each leaves the daily app working; nothing switches over by itself.
 The Linux server has no Xcode and no Android SDK, so work splits:
 
 - **on the Linux server:** the engine, the UI, the server, the file format, every
-  test that runs in Node or a browser, and a brief plus conformance tests for
+  test that runs in Node or a browser, and notes plus conformance tests for
   whatever the native side has to do;
 - **on the Mac:** the macOS shell and the Android shell — building, signing,
   installing, and running the conformance tests on real devices.

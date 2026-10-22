@@ -1,11 +1,14 @@
-# Next on the Mac: the app on a folder (phase 3)
+# The Mac app on a folder (phases 3 to 6)
 
-For the Claude session that builds the macOS shell. Written on morten, where
-there is no Xcode. Everything that could be built and tested there has been.
-This is the part that needs a Mac. The protocol is in `docs/BRIDGE.md`; read
-that first. The plan as a whole is in `docs/ROADMAP.md`.
+How the macOS app came to keep its to-dos in a folder on the Mac, sync it, and
+take calendars and reminders from the Mac itself. The page's side of each
+phase was built and tested on Linux, where there is no Xcode; what follows is
+the part that needed a Mac, as it was planned and then as it turned out. It is
+still the best map of why the shell's folder code is the way it is. The
+protocol is in `docs/BRIDGE.md`; read that first. The plan as a whole is in
+`docs/ROADMAP.md`.
 
-## What exists already
+## What existed at the start
 
 - **The page's half of the bridge** (`engine/src/storage-bridge.js`,
   `frontend/src/lib/backend.js`):
@@ -34,10 +37,10 @@ that first. The plan as a whole is in `docs/ROADMAP.md`.
   | `AppScheme.swift` | `WKURLSchemeHandler` serving the bundled web app at `dvarim-app://app/` |
   | `FolderBridge.swift` | the `dvarimStorage` handler over `FileManager`, on a serial queue, plus FSEvents |
 
-## The steps
+## The steps, as planned
 
-Work on a branch from master once #54, #56 and this phase's PR are merged. If
-they are not merged yet, branch from `device-folders`.
+Built on a branch from master after #54 and #56 (the engine and the two
+backends).
 
 1. **Build the web app** once: `cd frontend && npm ci && npm run build`. That
    makes `frontend/dist/`. It needs Node, which the Android build already needs.
@@ -105,7 +108,7 @@ they are not merged yet, branch from `device-folders`.
 
 7. **What stays on the server.** Leave the badge, the menu bar, Quick Entry,
    reminders and the Services item on `Client`/`Defaults.server` as they are.
-   - Nathan keeps his server, so they go on working: the server writes the
+   - With a server beside the folder they go on working: the server writes the
      vault, Syncthing brings the change to the folder, and FSEvents tells the
      page.
    - With no server they fail as they do offline today.
@@ -131,8 +134,8 @@ Done on the Mac, 2026-09-23 (branch `mac-folder`, on `device-folders`):
 
 - [x] `./build.sh` with and without `frontend/dist` both build, and without it
       the app is exactly today's (it says why folder mode is unavailable).
-- [x] Folder mode on a **copy** of the vault: the conformance checks all pass,
-      17 in 213 ms on a copy of the real Tasks folder (140–160 ms on
+- [x] Folder mode on a **copy** of a vault: the conformance checks all pass,
+      17 in 213 ms on a copy of a real Tasks folder of about 50 notes (140–160 ms on
       `sample-vault`). On the same copy, the page's engine and the Python server
       agree about the state and every list (`-SelfTestCompare YES`).
 - [x] A box ticked in the app is `[x]` with its ✅ date in the file.
@@ -173,12 +176,11 @@ writes and reads again when any happened meanwhile; a test in
 ## Conflict copies, since phase 4
 
 Phase 4 (#60) landed before this did. Two copies of the same file edited at
-nearly the same time — the Mac folder and the server on morten, with
+nearly the same time — the Mac folder and the server, with
 Syncthing between them — leave `Inbox.sync-conflict-….md`. The app on a folder
 merges it back into its file, to-do by to-do, and moves the copy to
-`.dvarim/conflicts/`, never deleting it (`docs/SYNC.md`) — and so does the server
-on morten, which runs on the engine since #63. The two the real Tasks folder had
-from 2026-09-20 had left it by the evening of the cutover.
+`.dvarim/conflicts/`, never deleting it (`docs/SYNC.md`) — and so does the server,
+which runs on the engine since #63.
 
 ## Phase 5: built-in sync
 
@@ -186,23 +188,23 @@ from 2026-09-20 had left it by the evening of the cutover.
 a server of its own on a copy of `sample-vault/` (the new, empty folder; a wrong
 token; the vault arriving byte for byte; a change each way; offline and back;
 a revoked token), run once with the page making the requests and once through
-the `http` op, which the app now offers (`ShellHTTP.swift`). What is left is
-the same check by hand against dvarim.tiresia.xyz, with a token only Nathan
-makes, and moving the token to the Keychain. The brief, as written:
+the `http` op, which the app now offers (`ShellHTTP.swift`). Not done here:
+the same check by hand against a live server, and moving the token to the
+Keychain. The plan, as written:
 
 The page can now sync its vault by itself with a WebDAV folder (`docs/SYNC.md`,
 "Built-in sync"). On the Mac that is the app in the folder mode,
 on a folder no other tool syncs, and Settings → Sync → *A Dvarim server*.
 
 **Nothing native is needed to sync with a Dvarim server.** The page makes the
-requests, and the server answers pages from other origins. Please check it on
-the device:
+requests, and the server answers pages from other origins. The check on the
+device:
 
 1. Put the app in the folder mode on a new, empty folder: not the Syncthing vault,
    which already has a sync.
-2. On dvarim.tiresia.xyz, Settings → Sync → *Add a device*, named for this
-   device. On the device, Settings → Sync → *A Dvarim server*, with
-   `dvarim.tiresia.xyz` and the token. *Save and sync.*
+2. On the server's web app, Settings → Sync → *Add a device*, named for this
+   device. On the device, Settings → Sync → *A Dvarim server*, with the
+   server's address and the token. *Save and sync.*
 3. The vault arrives. A to-do made on the device shows in the web app within
    seconds. One made in the web app arrives when the device's window comes to
    the front, or on *Sync now*.
@@ -226,7 +228,7 @@ macOS asks the first time). The badge, the menu bar, Quick Entry, reminders,
 the Services item and the intents ask the folder's page (`LocalPage.swift`):
 a window's, or with none open one the app keeps hidden, which also goes on
 watching the folder and syncing. Op `changed` makes them ask again at once.
-The Mac has no widget. Checked by `./selftest.sh … calendars,local`. The brief,
+The Mac has no widget. Checked by `./selftest.sh … calendars,local`. The plan,
 as written:
 
 For the app on a folder, the things the server did must come from the Mac.
@@ -238,7 +240,7 @@ Settings → Calendar then lists the device's calendars to choose from.
 `tools/bridge_sim.py --calendars FILE` is the reference, and `tools/e2e_folder.py`
 checks the page with it. For the shell: `EKEventStore`: `requestFullAccessToEvents` (macOS 14) the first time, `calendars(for: .event)`, and `predicateForEvents(withStart:end:calendars:)` for the occurrences. Format the dates in the current time zone. It needs the `NSCalendarsFullAccessUsageDescription` key in Info.plist, and the calendars entitlement for the sandbox.
 
-**Reminders.** In folder mode nobody sends the Signal reminder. The shell
+**Reminders.** In folder mode there may be no server to send reminders. The shell
 already schedules its own notifications from the server's lists. On a folder
 it can ask the page for the same lists instead, with `window.dvarim.request('GET',
 '/api/lists/upcoming')` and `…/today`, which the engine answers from the
