@@ -1,7 +1,7 @@
 #!/bin/zsh
-# Builds Dvarim Native.app, the native app (Native/), with the Command Line
+# Builds Dvarim.app, the native app (Native/), with the Command Line
 # Tools and XcodeGen, the way build.sh builds the web-view one:
-#   ./build-native.sh && open "build-native/Dvarim Native.app"
+#   ./build-native.sh && open build-native/Dvarim.app
 # The engine (../engine/src) goes inside it as one script, bundled by esbuild
 # with Native/Engine/host.js; Native/Engine/prelude.js goes beside it.
 #   DVARIM_SIGN=-        ad hoc signing (tests, and anywhere the keychain is locked)
@@ -21,7 +21,7 @@ BUNDLE_ID=$(setting PRODUCT_BUNDLE_IDENTIFIER)
 VERSION=$(setting MARKETING_VERSION)
 BUILD=$(setting CURRENT_PROJECT_VERSION)
 MACOS=$(setting deploymentTarget)
-NAME="Dvarim Native"
+NAME="Dvarim"
 
 OUT=${DVARIM_OUT:-build-native}
 APP="$OUT/$NAME.app"
@@ -77,7 +77,7 @@ if [[ -n $PROCESSOR ]]; then
         --deployment-aware-processing --quiet-warnings >/dev/null 2>$OUT/appintents.log \
         || { cat $OUT/appintents.log; exit 1; }
 else
-    echo "note: no Xcode, so no App Intents metadata; Shortcuts won't see Dvarim Native"
+    echo "note: no Xcode, so no App Intents metadata; Shortcuts won't see Dvarim"
 fi
 
 IDENTITY=${DVARIM_SIGN:-$(security find-identity -v -p codesigning | sed -n 's/^ *[0-9]*) \([0-9A-F]*\) "Apple Development.*/\1/p' | head -1)}

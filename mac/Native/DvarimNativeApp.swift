@@ -173,6 +173,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             UNUserNotificationCenter.current().delegate = self
             Shell.shared.start()
             Reminders.shared.start()
+            // an install that takes over from an app that opened at login: -OpenAtLogin YES
+            if !SelfTest.asked, UserDefaults.standard.bool(forKey: "OpenAtLogin") {
+                if let problem = Shell.shared.openAtLogin(true) { NSLog("Dvarim: open at login: \(problem)") }
+            }
             NSApp.servicesProvider = ServiceProvider()
             NSUpdateDynamicServices()
             if SelfTest.asked { SelfTest.start() }

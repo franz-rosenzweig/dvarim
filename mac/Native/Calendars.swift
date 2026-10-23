@@ -115,7 +115,7 @@ enum Calendars {
     /// splits into its rows (events.js occurrenceRows).
     actor Device {
         static let shared = Device()
-        static let refused = "Dvarim Native may not read your calendars. Allow it in System Settings → Privacy & Security → Calendars."
+        static let refused = "Dvarim may not read your calendars. Allow it in System Settings → Privacy & Security → Calendars."
         private var store: EKEventStore?
 
         func calendars() async -> Any {

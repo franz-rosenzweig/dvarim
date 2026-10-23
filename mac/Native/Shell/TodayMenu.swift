@@ -99,8 +99,8 @@ struct MenuBarContent: View {
             }
             Divider().padding(.vertical, 6)
             command("Quick Entry", shell.chord?.display) { QuickEntry.shared.show() }
-            command("Open Dvarim Native", nil) { Windows.bringUp(openWindow) }
-            command("Quit Dvarim Native", "⌘Q") { NSApp.terminate(nil) }
+            command("Open Dvarim", nil) { Windows.bringUp(openWindow) }
+            command("Quit Dvarim", "⌘Q") { NSApp.terminate(nil) }
             Spacer(minLength: 6)
         }
         .frame(width: 290)

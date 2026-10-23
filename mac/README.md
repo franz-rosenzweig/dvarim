@@ -1,53 +1,25 @@
 # Dvarim for macOS
 
-A native shell around the web app. The web app stays the entire interface; this
-adds only the things a browser cannot do:
+Dvarim on the Mac is a native app: SwiftUI and AppKit for every screen, and
+Dvarim's one engine inside it (`Native/`, built by `build-native.sh`). I built it
+in rounds beside the web-view app, as "Dvarim Native", and on 22 October 2026 it
+took over as Dvarim. *Dvarim on the Mac* below is how it works and how it came
+to be.
 
-- **Your to-dos in a folder, with no server**: Settings → Where your to-dos live
-  → *In a folder on this Mac*. The app then carries the web app inside it and
-  reads and writes that folder's Markdown itself — the Tasks folder of an
-  Obsidian vault, say, with Syncthing or iCloud Drive keeping it in step
-  elsewhere. See *A folder instead of a server* below.
-- **Quick Entry from any app**, on ⌃Space to begin with, and on whatever chord
-  you record in Settings after that: a title, and notes under it. The server
-  does the date parsing. It takes the keyboard without bringing Dvarim forward,
-  and hands it back when you save or press Escape.
-- **Today in the menu bar**: the count beside the clock, the list behind it, each
-  line tickable without opening a window.
-- **Dock badge** from `GET /api/state`, counting whatever the web app's
-  Settings → Badge count says.
-- **Native reminder notifications** instead of, or as well as, Signal. Each has a
-  Complete button, as on the phone, and clicking it opens the to-do.
-- **Real windows**: ⌃⌘N for a new one, and the web app's "open in a new window"
-  button opens one on the list you were looking at. ⌘N is left alone so it
-  reaches the web app, where it means New To-Do.
-- **Links out**: a link in a to-do's notes opens in your browser instead of
-  stranding you inside the app.
-- **Open at login**, so the badge, the hotkey and the reminders are there without
-  you starting anything.
-- **"New To-Do in Dvarim" in the Services menu**, on the selection in any app,
-  with a key of your own if you give it one in System Settings. It opens Quick
-  Entry with the first line as the title and the rest as notes.
-- **Shortcuts, Spotlight and Siri** through App Intents: Create To-Do, Show Quick
-  Entry, Open List.
-- **No server, no problem**: a Quick Entry line, a Create To-Do from Shortcuts, a
-  tick in the menu bar and a reminder's Complete are kept on this Mac when the
-  server cannot be reached, and sent when it can (`Outbox.swift`). The badge and
-  the menu bar keep what they last knew rather than emptying, and Quick Entry
-  says how many are waiting. The window itself is the web app, whose own outbox
-  covers everything else.
+One engine stays one engine. The native app draws every screen itself, but
+nothing in it re-implements a rule: it asks the same engine the server runs,
+inside the app, and draws the answers.
 
-One engine stays one engine. Dvarim Native (below) draws every screen itself,
-but nothing in it re-implements a rule: it asks the same engine the server runs,
-inside the app, and draws the answers. This app asks the server, or the page's
-own copy of the engine.
+The web-view app it replaced (`Dvarim/`, built by `build.sh`) is retired. It
+isn't installed any more, and the rest of this file after *Dvarim on the Mac*
+describes it, for as long as its code is here.
 
-## Dvarim Native
+## Dvarim on the Mac
 
-I'm making Dvarim for the Mac the way a Mac app is made: SwiftUI and AppKit for
-every screen, not the web app in a window. It's being built in rounds and sits
-beside this app as its own app, **Dvarim Native** (`moe.ptr.dvarim.native`), so I
-can use both. When it does everything this one does, it becomes Dvarim.
+I made Dvarim for the Mac the way a Mac app is made: SwiftUI and AppKit for
+every screen, not the web app in a window. It was built in rounds beside the
+web-view app as its own app, **Dvarim Native** (`moe.ptr.dvarim.native`), so I
+could use both. Once it did everything that one did, it became Dvarim.
 
 **One engine.** Dvarim's rules live in `engine/`, and the server and the web app
 already run it. Dvarim Native runs the same engine inside the app in
@@ -256,13 +228,22 @@ to the Trash.
   - There's a month to pick a day from, and Add Reminder.
   - ↑ and ↓ choose, and Return takes it.
 
-**Not yet:** taking over as Dvarim, once I say so: the name, ⌃Space, and the
-menu bar and reminders on to begin with.
+**Taking over, 22 October 2026:**
+- **It's called Dvarim**, in /Applications as `Dvarim.app`, and "New To-Do in
+  Dvarim" is in the Services menu.
+- **It kept its own bundle id**, `moe.ptr.dvarim.native`, so its copy, its
+  token and its settings stayed where they were. Behind the scenes some names
+  stay "Dvarim Native": the folder in Application Support, the Keychain item,
+  and this Mac's token on the server.
+- **What was the web-view app's is its now.** With that app gone from
+  Applications, Quick Entry is on ⌃Space, and Today in the menu bar and the
+  reminders are on to begin with. macOS asked again about notifications.
+- **The web-view app went to the Trash.**
 
 **Building and testing it:**
 
 ```sh
-./build-native.sh                       # build-native/Dvarim Native.app
+./build-native.sh                       # build-native/Dvarim.app
 ./selftest-native.sh                    # takes over the screen for about a minute
 ```
 
@@ -328,6 +309,45 @@ What I learned building it:
   panel of its own instead.
 - **A Mac that sleeps stops a build.** It isn't stuck: it waits, at no CPU,
   until the lid opens.
+
+## The web-view app, retired
+
+A native shell around the web app. The web app stays the entire interface; this
+adds only the things a browser cannot do:
+
+- **Your to-dos in a folder, with no server**: Settings → Where your to-dos live
+  → *In a folder on this Mac*. The app then carries the web app inside it and
+  reads and writes that folder's Markdown itself — the Tasks folder of an
+  Obsidian vault, say, with Syncthing or iCloud Drive keeping it in step
+  elsewhere. See *A folder instead of a server* below.
+- **Quick Entry from any app**, on ⌃Space to begin with, and on whatever chord
+  you record in Settings after that: a title, and notes under it. The server
+  does the date parsing. It takes the keyboard without bringing Dvarim forward,
+  and hands it back when you save or press Escape.
+- **Today in the menu bar**: the count beside the clock, the list behind it, each
+  line tickable without opening a window.
+- **Dock badge** from `GET /api/state`, counting whatever the web app's
+  Settings → Badge count says.
+- **Native reminder notifications** instead of, or as well as, Signal. Each has a
+  Complete button, as on the phone, and clicking it opens the to-do.
+- **Real windows**: ⌃⌘N for a new one, and the web app's "open in a new window"
+  button opens one on the list you were looking at. ⌘N is left alone so it
+  reaches the web app, where it means New To-Do.
+- **Links out**: a link in a to-do's notes opens in your browser instead of
+  stranding you inside the app.
+- **Open at login**, so the badge, the hotkey and the reminders are there without
+  you starting anything.
+- **"New To-Do in Dvarim" in the Services menu**, on the selection in any app,
+  with a key of your own if you give it one in System Settings. It opens Quick
+  Entry with the first line as the title and the rest as notes.
+- **Shortcuts, Spotlight and Siri** through App Intents: Create To-Do, Show Quick
+  Entry, Open List.
+- **No server, no problem**: a Quick Entry line, a Create To-Do from Shortcuts, a
+  tick in the menu bar and a reminder's Complete are kept on this Mac when the
+  server cannot be reached, and sent when it can (`Outbox.swift`). The badge and
+  the menu bar keep what they last knew rather than emptying, and Quick Entry
+  says how many are waiting. The window itself is the web app, whose own outbox
+  covers everything else.
 
 ## What you need
 
