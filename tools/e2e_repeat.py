@@ -3,7 +3,7 @@
 
     tools/e2e_repeat.py --url http://172.19.0.1:8425
 """
-import argparse, asyncio, sys
+import argparse, asyncio, re, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -44,8 +44,8 @@ async def main() -> int:
         check("the card opens", bool(await b.wait_for("!!document.querySelector('.card .ttl')", timeout=10)))
 
         await b.js("document.querySelector('.card .icons button[aria-label=\"Repeat\"]')?.click(); return true;")
-        check("the repeat editor opens", bool(await b.wait_for("!!document.querySelector('.rep')", timeout=8)))
-        print("  default preview:", await b.js("return document.querySelector('.preview')?.textContent?.trim();"))
+        check("the repeat editor opens", bool(await b.wait_for("!!document.querySelector('.rpt')", timeout=8)))
+        print("  default preview:", await b.js("return document.querySelector('.rpt .next')?.textContent?.trim();"))
 
         print("\n  building: every 2 weeks on Monday and Thursday")
         await b.js("""
@@ -53,8 +53,8 @@ async def main() -> int:
               Object.getOwnPropertyDescriptor(p.prototype,'value').set.call(el,v);
               el.dispatchEvent(new Event('change',{bubbles:true}));
               el.dispatchEvent(new Event('input',{bubbles:true}));};
-            set(document.querySelector('.rep input[type=number]'), '2');
-            set(document.querySelector('.rep select'), 'week');
+            set(document.querySelector('.rpt input[type=number]'), '2');
+            set(document.querySelector('.rpt select'), 'week');
             return true;
         """)
         await asyncio.sleep(0.8)
@@ -62,12 +62,14 @@ async def main() -> int:
         await b.js("""
             const btns=[...document.querySelectorAll('.days button')];
             btns.forEach(b => { if (b.getAttribute('aria-pressed')==='true') b.click(); });
-            btns[0].click(); btns[3].click();
+            // by name: which day comes first depends on Settings → Week starts on
+            btns.find(b => b.getAttribute('aria-label') === 'Monday').click();
+            btns.find(b => b.getAttribute('aria-label') === 'Thursday').click();
             return true;
         """)
         await asyncio.sleep(1.5)
-        prev = await b.js("return document.querySelector('.preview')?.textContent?.trim();")
-        check("it previews real dates", 'Next:' in (prev or ''), str(prev))
+        prev = await b.js("return document.querySelector('.rpt .next')?.textContent?.trim();")
+        check("it previews real dates", bool(re.match(r'Next\s*\d', prev or '')), str(prev))
         print("  preview:", prev)
 
         await b.js("[...document.querySelectorAll('.acts button')].find(x=>/Repeat|Update/.test(x.textContent))?.click(); return true;")
@@ -82,13 +84,13 @@ async def main() -> int:
         await b.js("const r=document.querySelector('[data-todo-id=\"%s\"]'); r.click(); r.click(); return true;" % tid)
         await asyncio.sleep(1.2)
         await b.js("document.querySelector('.card .icons button[aria-label=\"Repeat\"]')?.click(); return true;")
-        await b.wait_for("!!document.querySelector('.rep')", timeout=8)
-        loaded = await b.js("return document.querySelector('.rep input[type=number]')?.value;")
+        await b.wait_for("!!document.querySelector('.rpt')", timeout=8)
+        loaded = await b.js("return document.querySelector('.rpt input[type=number]')?.value;")
         check("it opens showing the existing rule", loaded == '2', str(loaded))
         await b.js("[...document.querySelectorAll('.seg button')].find(x=>x.textContent.includes('After'))?.click(); return true;")
         await asyncio.sleep(0.5)
         await b.js("""
-            const sels=[...document.querySelectorAll('.rep select')];
+            const sels=[...document.querySelectorAll('.rpt select')];
             const ends=sels[sels.length-1];
             Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype,'value').set.call(ends,'after');
             ends.dispatchEvent(new Event('change',{bubbles:true}));

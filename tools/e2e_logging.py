@@ -15,6 +15,18 @@ async def main() -> int:
     refuse_live_data(None, args.url)
 
     async with Browser(args.devtools) as b:
+        # The page shows its own copy of the vault, which hears of a change made
+        # on the server only once the server has written it (a moment later) and
+        # the copy has synced. So each check waits for what it expects, up to
+        # WAIT seconds, rather than sleeping a fixed time and looking once.
+        WAIT = 12
+        row = lambda tid: "document.querySelector('[data-todo-id=\"%s\"]')" % tid
+        async def there(tid):
+            return bool(await b.wait_for("!!" + row(tid), timeout=WAIT))
+        async def gone(tid):
+            await b.wait_for("document.querySelectorAll('.content [data-todo-id]').length > 0 || !!document.querySelector('.empty')", timeout=WAIT)
+            return bool(await b.wait_for("!" + row(tid), timeout=WAIT))
+
         async def settings(patch):
             await b.js("await fetch('/api/settings',{method:'PUT',headers:{'Content-Type':'application/json'},"
                        "body:JSON.stringify(%s)}); return true;" % patch)
@@ -40,12 +52,14 @@ async def main() -> int:
             ];
         """)
         await settings('{"groupTodayByList": false}')
-        await b.goto(args.url + "/today"); await asyncio.sleep(2.5)
+        await b.goto(args.url + "/today")
+        await b.wait_for(" && ".join("!!" + row(i) for i in seeded), timeout=WAIT)
         flat_heads = await b.js("return document.querySelectorAll('.hd.grp').length;")
         check("off: one flat list", flat_heads == 0, f"{flat_heads} headings")
 
         await settings('{"groupTodayByList": true}')
-        await b.goto(args.url + "/today"); await asyncio.sleep(2.5)
+        await b.goto(args.url + "/today")
+        await b.wait_for("document.querySelectorAll('.hd.grp').length > 0", timeout=WAIT)
         heads = await b.js("return [...document.querySelectorAll('.hd.grp')].map(h=>h.textContent.trim());")
         check("on: a heading per list", len(heads) > 0, str(heads))
         print("  headings:", heads)
@@ -73,25 +87,24 @@ async def main() -> int:
                 await fetch('/api/todos/' + t.id + '/complete', {method:'POST'});
                 return t.id;
             """)
-            await b.goto(args.url + "/today"); await asyncio.sleep(2.5)
-            check("it leaves the list at once", not await b.js("return !!document.querySelector('[data-todo-id=\"%s\"]');" % tid))
-            await b.goto(args.url + "/logbook"); await asyncio.sleep(2.5)
-            check("and is in the Logbook", bool(await b.js("return !!document.querySelector('[data-todo-id=\"%s\"]');" % tid)))
+            await b.goto(args.url + "/today")
+            check("it leaves the list at once", await gone(tid))
+            await b.goto(args.url + "/logbook")
+            check("and is in the Logbook", await there(tid))
 
             print("\nLogging: manually")
             await settings('{"logCompleted": "manually", "logCutoff": null}')
-            await b.goto(args.url + "/today"); await asyncio.sleep(2.5)
-            check("the completed one comes back to its list", bool(await b.js("return !!document.querySelector('[data-todo-id=\"%s\"]');" % tid)))
-            check("shown as done", bool(await b.js("return document.querySelector('[data-todo-id=\"%s\"]')?.classList.contains('done');" % tid)))
+            await b.goto(args.url + "/today")
+            check("the completed one comes back to its list", await there(tid))
+            check("shown as done", bool(await b.wait_for("!!" + row(tid) + "?.classList.contains('done')", timeout=WAIT)))
 
-            await b.goto(args.url + "/logbook"); await asyncio.sleep(2.5)
-            check("the Logbook offers to file it", bool(await b.js("return !!document.querySelector('.pendrow button');")))
+            await b.goto(args.url + "/logbook")
+            check("the Logbook offers to file it", bool(await b.wait_for("!!document.querySelector('.pendrow button')", timeout=WAIT)))
             print("  banner:", await b.js("return document.querySelector('.pendrow')?.textContent?.trim().slice(0,80);"))
             await b.js("document.querySelector('.pendrow button')?.click(); return true;")
-            await asyncio.sleep(2.5)
-            check("Log Now files it", bool(await b.js("return !!document.querySelector('[data-todo-id=\"%s\"]');" % tid)))
-            await b.goto(args.url + "/today"); await asyncio.sleep(2.5)
-            check("and it leaves the list", not await b.js("return !!document.querySelector('[data-todo-id=\"%s\"]');" % tid))
+            check("Log Now files it", await there(tid))
+            await b.goto(args.url + "/today")
+            check("and it leaves the list", await gone(tid))
 
             print("\nLogging: daily")
             await settings('{"logCompleted": "daily"}')
@@ -103,8 +116,8 @@ async def main() -> int:
                 await fetch('/api/todos/' + t.id + '/complete', {method:'POST'});
                 return t.id;
             """)
-            await b.goto(args.url + "/today"); await asyncio.sleep(2.5)
-            check("completed today stays put", bool(await b.js("return !!document.querySelector('[data-todo-id=\"%s\"]');" % tid2)))
+            await b.goto(args.url + "/today")
+            check("completed today stays put", await there(tid2))
 
         finally:
             await settings('{"logCompleted": "immediately"}')

@@ -35,8 +35,11 @@ async def main() -> int:
             await b.js("const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:%r})}); return r.status;" % pw)
             await asyncio.sleep(1.5)
 
-        # a project with plenty of rows, so nothing real is disturbed by accident
-        pid = await b.js("const r=await fetch('/api/state'); const s=await r.json(); return s.areas[0].projects[0].id;")
+        # the project with the most open to-dos: the range below needs five rows,
+        # and the first project in the first area may not have them
+        pid = await b.js("const s=await (await fetch('/api/state')).json(); "
+                         "const all=[...s.areas.flatMap(a=>a.projects), ...(s.projects||[])]; "
+                         "return all.sort((a,b)=>(b.openCount||0)-(a.openCount||0))[0].id;")
         await b.goto(args.url + "/project/" + pid)
         await b.wait_for("document.querySelectorAll('[data-todo-id]').length > 4", timeout=25)
         ids = await b.js("return [...document.querySelectorAll('[data-todo-id]')].map(r=>r.dataset.todoId);")
