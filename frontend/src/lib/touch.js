@@ -49,13 +49,24 @@ export function releaseTouch(who) {
   if (owner === who) owner = null;
 }
 
-/** Where the phone's gestures are armed: the phone layout, and only there. They
- *  used to arm on any touchscreen at any width, but everything they draw — the
- *  tabs, the circles, the lifted card, the parting list — is styled inside the
- *  same 720px breakpoint in app.css, so a tablet or a phone on its side got
- *  gestures with nothing to show for them. */
-export const touchLayout = () =>
-  typeof matchMedia !== 'undefined' && matchMedia('(max-width: 720px)').matches;
+/** The layouts, as app.css draws them; the queries here and there must agree.
+ *  The phone layout is a narrow screen, or a finger on anything short of a
+ *  tablet on its side; touch is any screen a finger drives, phone or tablet.
+ *  `(pointer: coarse)` follows the primary pointer, so a mouse or a trackpad,
+ *  a tablet's in DeX among them, brings the desk back. */
+export const PHONE_MQ = '(max-width: 720px), (pointer: coarse) and (max-width: 899px), (pointer: coarse) and (max-height: 559px)';
+export const TOUCH_MQ = '(max-width: 720px), (pointer: coarse)';
+
+const matches = (q) => typeof matchMedia !== 'undefined' && matchMedia(q).matches;
+
+/** The phone layout: the drawer, the full-screen card, popovers as panels. */
+export const phoneLayout = () => matches(PHONE_MQ);
+
+/** Where the phone's gestures are armed: wherever a finger drives, which is
+ *  where app.css styles what they draw — the tabs, the circles, the lifted
+ *  card, the parting list. On a tablet on its side that is the desk's two
+ *  panes, with all of them. */
+export const touchLayout = () => matches(TOUCH_MQ);
 
 /** A pointerup is followed by a click, and a drag is not a click: catch the next
  *  one on the way down, before it reaches whatever it landed on. A same-node

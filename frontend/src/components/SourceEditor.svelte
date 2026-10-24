@@ -147,5 +147,5 @@
   .err { margin: 8px 14px 0; font-size: 12.5px; color: var(--dead); }
   .warn { margin: 8px 14px 0; font-size: 12.5px; color: var(--star); }
   .loading { padding: 24px 14px; color: var(--text2); font-size: 13px; }
-  @media (max-width: 720px) { .sheet { inset: 8px; width: auto; } }
+  @media (max-width: 720px), (pointer: coarse) and (max-width: 899px), (pointer: coarse) and (max-height: 559px) { .sheet { inset: 8px; width: auto; } }
 </style>

@@ -3,6 +3,7 @@ import './app.css';
 import App from './App.svelte';
 import { installShellBridge } from './lib/shell.js';
 import { setupBackend } from './lib/backend.js';
+import { installPen } from './lib/pen.js';
 
 // Server, or a vault on this device: decided before anything asks for data.
 // It is quick when it is the server (nothing is loaded) and a moment when it is
@@ -14,6 +15,9 @@ setupBackend()
 
 // window.dvarim: how the macOS shell builds its menu bar. Harmless in a browser.
 installShellBridge();
+
+// A pen's palm is not a finger (lib/pen.js).
+installPen();
 
 // The service worker keeps the app for offline use when it comes from a
 // server. A shell that carries the app inside itself (docs/BRIDGE.md) has

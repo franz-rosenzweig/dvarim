@@ -13,6 +13,7 @@
 //
 // A phone has the drawer instead (lib/drawer.svelte.js); this does nothing there.
 import { app, toggleSlim } from './store.svelte.js';
+import { phoneLayout } from './touch.js';
 
 /** Sideways travel, in wheel pixels, that counts as meaning it. */
 const ACT = 60;
@@ -21,7 +22,7 @@ const QUIET_MS = 180;
 /** How much of the left of the window answers when the sidebar is away. */
 const RETURN_STRIP = 140;
 
-const wide = () => typeof matchMedia !== 'undefined' && matchMedia('(min-width: 721px)').matches;
+const wide = () => typeof matchMedia !== 'undefined' && !phoneLayout();
 
 export function slimSwipe(node) {
   let sum = 0;

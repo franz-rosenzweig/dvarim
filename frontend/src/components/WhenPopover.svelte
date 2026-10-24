@@ -1,5 +1,5 @@
 <script>
-  import { touchLayout } from '../lib/touch.js';
+  import { touchLayout, phoneLayout } from '../lib/touch.js';
   /**
    * When popover, also used for Deadline (pop.kind === 'deadline').
    * Natural-language input → POST /api/parse-date (150 ms debounce); static options;
@@ -40,9 +40,9 @@
   let reminder = $state('09:00');
   let cal = $state({ y: 0, m: 0 });
   // The phone panel is a different panel, and everything that draws it lives
-  // under the same 720px breakpoint in app.css — so ask the same question the
+  // under the phone layout's query in app.css — so ask the same question the
   // stylesheet asks, not "is this a touchscreen".
-  const narrow = () => typeof matchMedia !== 'undefined' && matchMedia('(max-width: 720px)').matches;
+  const narrow = () => phoneLayout();
   let phone = $state(narrow());
   $effect(() => {
     const on = () => (phone = narrow());

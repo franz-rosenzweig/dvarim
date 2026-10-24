@@ -346,7 +346,7 @@
   .acts .danger:hover { color: #FF9A9A; }
 
   /* A phone gives the panel the screen's width and a thumb to work it with. */
-  @media (max-width: 720px) {
+  @media (max-width: 720px), (pointer: coarse) and (max-width: 899px), (pointer: coarse) and (max-height: 559px) {
     .rpt { gap: 12px; font-size: 15px; }
     .seg button { height: 32px; font-size: 14px; }
     .about { font-size: 13px; }

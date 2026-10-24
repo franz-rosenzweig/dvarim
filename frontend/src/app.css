@@ -413,7 +413,8 @@ h1.t .more:hover{color:var(--text2)}
 /* The sidebar put away, so a list can live in a narrow window. The
    column closes and the sidebar goes with it, rather than being squashed; it is
    inert while away so Tab cannot wander into it. See lib/slim.svelte.js. */
-@media (min-width:721px){
+/* Not the phone layout: the exact complement of its query below. */
+@media (min-width:721px) and (pointer:fine),(min-width:721px) and (pointer:none),(min-width:900px) and (min-height:560px){
   .app{transition:grid-template-columns .28s cubic-bezier(.2,.9,.25,1)}
   .app .sidebar{width:236px;transition:transform .28s cubic-bezier(.2,.9,.25,1),visibility 0s linear 0s}
   .app.slim{grid-template-columns:0 1fr}
@@ -424,8 +425,18 @@ h1.t .more:hover{color:var(--text2)}
   .app.slim .sidebar{transform:translateX(-236px);visibility:hidden;transition:transform .28s cubic-bezier(.2,.9,.25,1),visibility 0s linear .28s}
 }
 @media (prefers-reduced-motion:reduce){ .app,.app .sidebar{transition:none !important} }
-/* phone */
-@media (max-width:720px){
+/* Three layouts, by the screen and by what touches it (lib/touch.js says the same
+   in JavaScript, and the two must agree):
+     the phone layout   narrow, or a finger on anything short of a tablet on its
+                        side: the drawer, the full-screen card, panels for popovers;
+     touch              any screen a finger drives, phone or tablet: swiping rows,
+                        choosing several, pulling to search, the + that lifts, and
+                        everything at the size of a fingertip;
+     the tablet         a finger on a wide screen: the desk's two panes, with touch.
+   A mouse or a trackpad, on a tablet in DeX too, makes the pointer fine again and
+   brings back the desk. */
+/* phone layout */
+@media (max-width:720px),(pointer:coarse) and (max-width:899px),(pointer:coarse) and (max-height:559px){
   /* minmax(0,…): a bare 1fr will not go narrower than its content, and a title
      that does not wrap is as wide as it likes. */
   .app{grid-template-columns:minmax(0,1fr)}
@@ -489,6 +500,127 @@ h1.t .more:hover{color:var(--text2)}
   /* Room at the bottom for the button that now floats over it. */
   .content{padding:10px 18px 96px}
   .toolbar{display:none}
+
+  /* One line and an ellipsis: a title that wraps pushes its own icons onto a
+     second line, and with the circles taking room most do. */
+  .row .title{flex-wrap:nowrap;min-width:0}
+  .row .title .txt{white-space:nowrap;min-width:0;flex:0 1 auto}
+  .row .title .inds,.row .title .dl,.row .title .star,.row .title .moonic{flex:none}
+  .row .title .tag{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* ---- A to-do, open ------------------------------------------------------
+     An open to-do gets the screen: the card goes edge to edge, white on
+     a grey wash, the list behind it fades back and stops taking taps, the
+     navigation bar goes, and the blue plus is replaced by what you can do with
+     this to-do (components/CardBar.svelte). A tap anywhere outside closes it —
+     with the list not taking taps, that tap lands on the pane and
+     onContentClick already knows what to do with it. */
+  .app.editing .main{background:var(--wash)}
+  .app.editing .col :is(.row,.prow,.hd,h1.t,.pnotes,.filters,.events,.showdone,.empty){
+    opacity:.35;pointer-events:none;transition:opacity .24s ease-out
+  }
+  /* The bar does not fade where it stands: the page carries it off the top as
+     the card opens, translated and clipped. The card's own 430ms is the speed
+     it leaves at. */
+  .app.editing .topbar .back,.app.editing .topbar .qfind,.app.editing .topbar .wtitle{
+    opacity:0;transform:translateY(-16px);pointer-events:none;
+    transition:opacity .22s ease,transform .43s cubic-bezier(.2,.8,.2,1)
+  }
+  .topbar{overflow:hidden}
+  .app.editing .fab{display:none}
+  /* The capsule goes the frame the keyboard starts rising, and comes back
+     when the keyboard goes: while you are typing, what you can do with
+     this to-do is not the question. (lib/keyboard.js sets .kb.) */
+  .app.kb .cardbar,.app.fmt .cardbar{display:none}
+  .app.editing .content{padding-bottom:124px}
+  .card{
+    margin:18px -18px 22px;border-radius:2px;border:0;padding:16px 18px 14px;
+    box-shadow:0 1px 0 var(--hair2),0 -1px 0 var(--hair2);
+    /* clear of the bar at the top and the capsule at the bottom */
+    scroll-margin:16px 0 84px
+  }
+  .cardbar{
+    display:flex;align-items:center;position:absolute;z-index:8;
+    left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));
+    height:52px;padding:0 6px 0 16px;border-radius:14px;
+    background:var(--capsule);color:#fff;
+    box-shadow:0 8px 24px rgba(10,10,20,.34),0 2px 6px rgba(10,10,20,.2);
+    animation:selbar .22s cubic-bezier(.2,.9,.25,1)
+  }
+  .cardbar button{color:#fff;display:grid;place-items:center;width:52px;height:52px;border-radius:12px}
+  .cardbar button:active{background:rgba(255,255,255,.14)}
+  .cardbar .move{grid-auto-flow:column;gap:9px;width:auto;flex:1;justify-content:flex-start;font-size:16px;font-weight:600}
+  .cardbar svg{width:19px;height:19px}
+
+  /* Popovers on a phone: the page dims, and a panel
+     nearly the width of the screen grows out of the row it is about. Centred
+     with left and right rather than a transform, which the animation needs. */
+  .scrim{background:rgba(0,0,0,.22);animation:dim .13s ease-out}
+  @keyframes dim{from{opacity:0}to{opacity:1}}
+  .pop,.pop.wide{
+    /* Not pinned under the bar: the card is centred on the screen, and its
+       shadow is large, soft and offsetless enough to wash out what is behind
+       it. It still grows out of the row it is about — Popover.place() works out
+       where that is relative to the card's own top, because the card no longer
+       starts at a fixed height. */
+    left:5% !important;right:5%;width:auto;
+    top:0 !important;bottom:0;margin-block:auto;height:fit-content;
+    max-height:calc(100% - env(safe-area-inset-top) - 72px);overflow-y:auto;overscroll-behavior:contain;
+    padding:6px 10px 10px;border-radius:9px;font-size:15px;
+    box-shadow:0 0 70px rgba(0,0,0,.5),0 0 0 .5px rgba(0,0,0,.4);
+    /* The panel: a blue charcoal rather than a neutral one, growing out of
+       the tab at the row's left end, a little past its size and back. */
+    --pop:#252A35;
+    transform-origin:0 var(--from,50%);
+    animation:popgrow .235s linear
+  }
+  @keyframes popgrow{0%{transform:scale(.15);opacity:0}30%{transform:scale(.66);opacity:.8}58%{transform:scale(1.06);opacity:1}100%{transform:none;opacity:1}}
+  .pophead{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:40px;font-weight:600;font-size:15px}
+  .pophead span{grid-column:2}
+  .pophead button{grid-column:3;justify-self:end;color:var(--popmuted);font-size:14px;font-weight:400;height:40px;padding:0 4px}
+  .pop .opt{padding:10px 8px;gap:11px}
+  .pop .opt .ic,.pop .opt svg{width:17px;height:17px}
+  .pop .in{padding:8px 10px;margin-bottom:4px}
+  /* A calendar a thumb can hit a day on. */
+  .pop .cal{font-size:14px;gap:1px;padding:4px 0 2px}
+  .pop .cal .d{padding:9px 0;border-radius:8px}
+  .pop .calhead{font-size:14.5px;padding:6px 4px 2px}
+  .pop .calhead button{width:40px;height:34px}
+  .pop .calhead button:disabled{opacity:.3}
+  /* Four weeks at a glance, today marked with its star. */
+  .pop .cal.roll .d{padding:10px 0;position:relative}
+  .pop .cal.roll .d.today{background:none;font-weight:700}
+  .pop .cal.roll .d .star{position:absolute;left:50%;top:1px;margin-left:-6px;width:12px;height:12px;color:var(--star)}
+  .pop .cal.roll .d .star svg{width:12px;height:12px}
+  .pop .cal.roll .d.pick{outline:1.5px solid var(--poptext)}
+  /* Held for a moment when tapped, with a tick, before the panel goes. */
+  .pop .opt.pressed{background:#424850}
+  .pop .opt .tick{margin-left:auto;display:grid;place-items:center;color:#fff}
+  .pop .opt .tick svg{width:15px;height:15px}
+  .pop.closing{animation:popgo .1s ease-in forwards}
+  @keyframes popgo{to{transform:scale(.86);opacity:0}}
+  .scrim.going{animation:dimgo .1s ease-in forwards}
+  @keyframes dimgo{to{opacity:0}}
+  /* Clear of the status bar and the camera. Everything else that floats over
+     the page already allows for it; this was measuring from the very top of the
+     viewport, which on this phone is 34px under the clock. */
+  .qf{top:calc(env(safe-area-inset-top) + 10px);width:calc(100% - 20px)}
+  .qf .in{padding:12px 14px}
+  .qf .in input{font-size:16px}
+  .qf .res{max-height:min(420px,52vh)}
+  .qf .r{padding:10px 8px;font-size:15px}
+  .qf .r .ic{width:19px;height:19px}
+  .row .tag{display:none}
+  .row .inds .tagic{display:inline-flex}
+  /* A day header on a phone: ~28px bold over a regular weekday, and a day's
+     worth of air between groups. */
+  .hd.day{margin-top:60px}
+  .hd.day b{font-size:calc(28px * var(--text-scale))}
+  .hd.day span{font-size:calc(19px * var(--text-scale));font-weight:400;padding-top:7px}
+}
+/* touch */
+@media (max-width:720px),(pointer:coarse){
   /* A 50px disc about 13px from the corner, flat, with a shadow at a tenth of
      black and no offset. A Material FAB is bigger and sits on a much darker
      one; this one barely leaves the page until it is picked up. */
@@ -589,13 +721,7 @@ h1.t .more:hover{color:var(--text2)}
     height:48px;color:var(--poptext);font-size:14px;font-weight:500
   }
   .selbar button:active{background:rgba(255,255,255,.12)}
-  /* One line and an ellipsis: a title that wraps pushes its own icons onto a
-     second line, and with the circles taking room most do. */
-  .row .title{flex-wrap:nowrap;min-width:0}
-  .row .title .txt{white-space:nowrap;min-width:0;flex:0 1 auto}
-  .row .title .inds,.row .title .dl,.row .title .star,.row .title .moonic{flex:none}
-  .row .title .tag{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .row .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
   /* ---- Pulling down to search --------------------------------------------
      The list comes down with the finger and a magnifier with it, in the room
      that opens under the bar: a grey ring until the pull is far enough, then
@@ -619,50 +745,6 @@ h1.t .more:hover{color:var(--text2)}
   }
   .main.armed .pullmark{background:var(--accent);border-color:var(--accent);color:#fff}
   .main.armed .pullmark::after{border-color:var(--accent)}
-
-  /* ---- A to-do, open ------------------------------------------------------
-     An open to-do gets the screen: the card goes edge to edge, white on
-     a grey wash, the list behind it fades back and stops taking taps, the
-     navigation bar goes, and the blue plus is replaced by what you can do with
-     this to-do (components/CardBar.svelte). A tap anywhere outside closes it —
-     with the list not taking taps, that tap lands on the pane and
-     onContentClick already knows what to do with it. */
-  .app.editing .main{background:var(--wash)}
-  .app.editing .col :is(.row,.prow,.hd,h1.t,.pnotes,.filters,.events,.showdone,.empty){
-    opacity:.35;pointer-events:none;transition:opacity .24s ease-out
-  }
-  /* The bar does not fade where it stands: the page carries it off the top as
-     the card opens, translated and clipped. The card's own 430ms is the speed
-     it leaves at. */
-  .app.editing .topbar .back,.app.editing .topbar .qfind,.app.editing .topbar .wtitle{
-    opacity:0;transform:translateY(-16px);pointer-events:none;
-    transition:opacity .22s ease,transform .43s cubic-bezier(.2,.8,.2,1)
-  }
-  .topbar{overflow:hidden}
-  .app.editing .fab{display:none}
-  /* The capsule goes the frame the keyboard starts rising, and comes back
-     when the keyboard goes: while you are typing, what you can do with
-     this to-do is not the question. (lib/keyboard.js sets .kb.) */
-  .app.kb .cardbar,.app.fmt .cardbar{display:none}
-  .app.editing .content{padding-bottom:124px}
-  .card{
-    margin:18px -18px 22px;border-radius:2px;border:0;padding:16px 18px 14px;
-    box-shadow:0 1px 0 var(--hair2),0 -1px 0 var(--hair2);
-    /* clear of the bar at the top and the capsule at the bottom */
-    scroll-margin:16px 0 84px
-  }
-  .cardbar{
-    display:flex;align-items:center;position:absolute;z-index:8;
-    left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));
-    height:52px;padding:0 6px 0 16px;border-radius:14px;
-    background:var(--capsule);color:#fff;
-    box-shadow:0 8px 24px rgba(10,10,20,.34),0 2px 6px rgba(10,10,20,.2);
-    animation:selbar .22s cubic-bezier(.2,.9,.25,1)
-  }
-  .cardbar button{color:#fff;display:grid;place-items:center;width:52px;height:52px;border-radius:12px}
-  .cardbar button:active{background:rgba(255,255,255,.14)}
-  .cardbar .move{grid-auto-flow:column;gap:9px;width:auto;flex:1;justify-content:flex-start;font-size:16px;font-weight:600}
-  .cardbar svg{width:19px;height:19px}
 
   /* Everything inside the card, at the size of a finger rather than a mouse. */
   .card .cb{width:22px;height:22px;border-radius:6px;margin-top:3px}
@@ -771,71 +853,7 @@ h1.t .more:hover{color:var(--text2)}
   .app.selecting .fab{display:none}
   .app.selecting .content{padding-bottom:124px}
   .topbar .done{position:absolute;right:12px;top:8px;height:28px;padding:0 13px;border-radius:7px;background:var(--accent);color:#fff;font-size:14px;font-weight:600}
-  /* Popovers on a phone: the page dims, and a panel
-     nearly the width of the screen grows out of the row it is about. Centred
-     with left and right rather than a transform, which the animation needs. */
-  .scrim{background:rgba(0,0,0,.22);animation:dim .13s ease-out}
-  @keyframes dim{from{opacity:0}to{opacity:1}}
-  .pop,.pop.wide{
-    /* Not pinned under the bar: the card is centred on the screen, and its
-       shadow is large, soft and offsetless enough to wash out what is behind
-       it. It still grows out of the row it is about — Popover.place() works out
-       where that is relative to the card's own top, because the card no longer
-       starts at a fixed height. */
-    left:5% !important;right:5%;width:auto;
-    top:0 !important;bottom:0;margin-block:auto;height:fit-content;
-    max-height:calc(100% - env(safe-area-inset-top) - 72px);overflow-y:auto;overscroll-behavior:contain;
-    padding:6px 10px 10px;border-radius:9px;font-size:15px;
-    box-shadow:0 0 70px rgba(0,0,0,.5),0 0 0 .5px rgba(0,0,0,.4);
-    /* The panel: a blue charcoal rather than a neutral one, growing out of
-       the tab at the row's left end, a little past its size and back. */
-    --pop:#252A35;
-    transform-origin:0 var(--from,50%);
-    animation:popgrow .235s linear
-  }
-  @keyframes popgrow{0%{transform:scale(.15);opacity:0}30%{transform:scale(.66);opacity:.8}58%{transform:scale(1.06);opacity:1}100%{transform:none;opacity:1}}
-  .pophead{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:40px;font-weight:600;font-size:15px}
-  .pophead span{grid-column:2}
-  .pophead button{grid-column:3;justify-self:end;color:var(--popmuted);font-size:14px;font-weight:400;height:40px;padding:0 4px}
-  .pop .opt{padding:10px 8px;gap:11px}
-  .pop .opt .ic,.pop .opt svg{width:17px;height:17px}
-  .pop .in{padding:8px 10px;margin-bottom:4px}
-  /* A calendar a thumb can hit a day on. */
-  .pop .cal{font-size:14px;gap:1px;padding:4px 0 2px}
-  .pop .cal .d{padding:9px 0;border-radius:8px}
-  .pop .calhead{font-size:14.5px;padding:6px 4px 2px}
-  .pop .calhead button{width:40px;height:34px}
-  .pop .calhead button:disabled{opacity:.3}
-  /* Four weeks at a glance, today marked with its star. */
-  .pop .cal.roll .d{padding:10px 0;position:relative}
-  .pop .cal.roll .d.today{background:none;font-weight:700}
-  .pop .cal.roll .d .star{position:absolute;left:50%;top:1px;margin-left:-6px;width:12px;height:12px;color:var(--star)}
-  .pop .cal.roll .d .star svg{width:12px;height:12px}
-  .pop .cal.roll .d.pick{outline:1.5px solid var(--poptext)}
-  /* Held for a moment when tapped, with a tick, before the panel goes. */
-  .pop .opt.pressed{background:#424850}
-  .pop .opt .tick{margin-left:auto;display:grid;place-items:center;color:#fff}
-  .pop .opt .tick svg{width:15px;height:15px}
-  .pop.closing{animation:popgo .1s ease-in forwards}
-  @keyframes popgo{to{transform:scale(.86);opacity:0}}
-  .scrim.going{animation:dimgo .1s ease-in forwards}
-  @keyframes dimgo{to{opacity:0}}
-  /* Clear of the status bar and the camera. Everything else that floats over
-     the page already allows for it; this was measuring from the very top of the
-     viewport, which on this phone is 34px under the clock. */
-  .qf{top:calc(env(safe-area-inset-top) + 10px);width:calc(100% - 20px)}
-  .qf .in{padding:12px 14px}
-  .qf .in input{font-size:16px}
-  .qf .res{max-height:min(420px,52vh)}
-  .qf .r{padding:10px 8px;font-size:15px}
-  .qf .r .ic{width:19px;height:19px}
-  .row .tag{display:none}
-  .row .inds .tagic{display:inline-flex}
-  /* A day header on a phone: ~28px bold over a regular weekday, and a day's
-     worth of air between groups. */
-  .hd.day{margin-top:60px}
-  .hd.day b{font-size:calc(28px * var(--text-scale))}
-  .hd.day span{font-size:calc(19px * var(--text-scale));font-weight:400;padding-top:7px}
+
   /* Touch targets. The sizes above assume a mouse: a 28px list row, a 16px
      checkbox and a 30px toolbar button are around half of the 48dp a fingertip
      covers, which is what makes the phone feel fiddly rather than small.
@@ -851,6 +869,31 @@ h1.t .more:hover{color:var(--text2)}
   .toolbar button svg{width:20px;height:20px}
   .sidefoot{padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
 }
+/* tablet: the two panes of a desk, under a finger. The sidebar stays; the list
+   keeps the touch sizes above, the + floats in the list's corner as on a phone,
+   and Quick Find has the bar's corner, so the desk's toolbar goes: what it did
+   to a selected to-do, the card, a swipe and the row's own menu do here. */
+@media (pointer:coarse) and (min-width:900px) and (min-height:560px){
+  .app .sidebar{width:260px}
+  .content{padding-bottom:96px}
+  .toolbar{display:none}
+  .topbar .newwin{display:none}
+  .topbar .qfind{display:grid;place-items:center;position:absolute;right:8px;width:44px;height:44px;color:var(--text3)}
+  .fab{right:22px;bottom:calc(22px + env(safe-area-inset-bottom));width:56px;height:56px}
+  .fab svg{width:26px;height:26px}
+  .pullmark{top:calc(env(safe-area-inset-top) + 38px + (var(--pull,0px) - 46px) / 2)}
+  /* Popovers stay where they open, as at a desk, with rows a finger can hit. */
+  .pop .opt{padding:9px 8px;gap:10px}
+  .pop .cal .d{padding:8px 0}
+  .qf .r{padding:10px 8px}
+  .qf .in{padding:11px 12px}
+}
+/* A phone layout with room to spare (a tablet held upright), or any window this
+   wide, names a to-do's tags rather than only marking that it has some. */
+@media (min-width:600px){
+  .row .tag{display:revert}
+  .row .inds .tagic{display:none}
+}
 
 
 /* ---- Text size -------------------------------------------------------------
@@ -863,10 +906,10 @@ h1.t .more:hover{color:var(--text2)}
 h1.t { font-size: calc(26px * var(--text-scale)); }
 .hd, .hd.grp, .item { font-size: calc(13.5px * var(--text-scale)); }
 
-/* Phone type. The numbers above are drawn for a Mac window at desk distance;
-   on a phone held at arm's length they read a size too small. Same slider,
-   larger base — this block follows the one above so it wins on source order. */
-@media (max-width:720px){
+/* Touch type. The numbers above are drawn for a Mac window at desk distance;
+   on a phone or a tablet held at arm's length they read a size too small. Same
+   slider, larger base — this block follows the one above so it wins on source order. */
+@media (max-width:720px),(pointer:coarse){
   .window, .sidebar, .content, .toolbar, .topbar { font-size: calc(15px * var(--text-scale)); }
   .row .title { font-size: calc(15.5px * var(--text-scale)); }
   .card .ttl { font-size: calc(18px * var(--text-scale)); }

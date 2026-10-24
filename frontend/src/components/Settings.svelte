@@ -1005,8 +1005,8 @@
   .devices li.asked { color: var(--text2); font-size: 12.5px; border-bottom: 1px solid var(--hair); padding-top: 0; }
   .tut { margin: 18px 0 0; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
   .tut .note { margin: 0; }
-  @media (max-width: 720px) { .pw { grid-template-columns: 1fr; } .pw label { justify-self: start; } }
-  @media (max-width: 720px) {
+  @media (max-width: 720px), (pointer: coarse) and (max-width: 899px), (pointer: coarse) and (max-height: 559px) { .pw { grid-template-columns: 1fr; } .pw label { justify-self: start; } }
+  @media (max-width: 720px), (pointer: coarse) and (max-width: 899px), (pointer: coarse) and (max-height: 559px) {
     .sheet {
       width: calc(100vw - 16px);
       top: calc(env(safe-area-inset-top) + 10px);

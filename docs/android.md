@@ -20,6 +20,14 @@ These are the gestures:
 - **Hold** a to-do to pick it up and drag it somewhere else in the list.
 - **The green plus** makes a to-do. Hold it and carry it to put the new to-do exactly where you let go, or to the Inbox target at the bottom left, or, in a project, to the left margin to make a heading.
 
+## On a tablet
+
+It's the same app on a tablet, and it lays itself out for the screen. Held upright, a tablet gets the phone's layout, just roomier, with tags written out. Turned on its side, it gets two panes: the lists stay on the left the whole time, the to-dos have room on the right, and a to-do opens in place in the list. The gestures above all work there too, the green plus sits in the corner of the list, and Quick Find is the magnifier at the top right.
+
+The S Pen works like a fine pointer. Tap a to-do with it to open it, press on a to-do and move to pick it up straight away without holding, and press the pen's side button as you tap a to-do for its menu: When, Move, Tags, Deadline, Repeat and the rest. While the pen is over the screen, your hand can rest on it: a finger or a palm touching the glass doesn't tap or scroll anything until the pen has moved away.
+
+With a keyboard cover or a mouse, or in DeX, the app switches to the desktop layout and every keyboard shortcut works, with Ctrl where a Mac has ⌘.
+
 ## The Today widget
 
 Long-press the home screen, add the Dvarim widget, and it lists today's to-dos. The box beside each one completes it right there, even on a plane: the tick is kept on the phone and sent when there's a connection again. Tapping the rest of a row opens that to-do in the app. Android only refreshes a widget every half hour, so the arrow in its corner refreshes it now, and so does completing something or opening the app.
