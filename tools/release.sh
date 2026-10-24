@@ -22,6 +22,10 @@
 #   SIGN_KEYCHAIN=Library/Keychains/….keychain-db   where that identity lives
 #   SIGN_PASSWORD_FILE=.config/…   the file that unlocks it, on the Mac
 #   TAP=git@github.com:owner/homebrew-tap.git
+#   PRIVATE_WORDS=~/.config/…      optional: a file of words, one per line, that
+#                                  must not appear anywhere in what ships (names,
+#                                  addresses, team IDs). It stays on the server,
+#                                  and the release stops if any word turns up.
 #
 # Version numbers come from the tag. X.Y.Z is the Android versionName and the
 # Mac's CFBundleShortVersionString; 10000·X + 100·Y + Z is the Android
@@ -147,6 +151,27 @@ OUT="$WORK/out"; mkdir -p "$OUT"
 scp -q -o BatchMode=yes -i "$MAC_KEY" "$MAC:$MAC_DIR/android/app/build/outputs/apk/release/app-release.apk" "$OUT/Dvarim-$VERSION.apk"
 scp -q -o BatchMode=yes -i "$MAC_KEY" "$MAC:$MAC_DIR/mac/build-native/Dvarim-$VERSION-mac.zip" "$OUT/"
 ZIPSUM=$(sha256sum "$OUT/Dvarim-$VERSION-mac.zip" | cut -d' ' -f1)
+
+# ---- what ships, read as text, here on the server: nothing private in it.
+# The Mac's checks above are about how it was built; this is about what is in
+# it, including anything a build picked up from files git does not track.
+say "scanning what ships"
+SCAN="$WORK/scan"; mkdir -p "$SCAN/apk" "$SCAN/mac"
+unzip -q "$OUT/Dvarim-$VERSION.apk" -d "$SCAN/apk"
+unzip -q "$OUT/Dvarim-$VERSION-mac.zip" -d "$SCAN/mac"
+hits() { grep -r -l -a "$@" "$SCAN" 2>/dev/null | sed "s|^$SCAN/||" | head -5 || true; }
+found=$(hits -E '/(Users|home)/[a-z][a-z0-9._-]*/')
+[ -z "$found" ] || { echo "a home folder's path is in: $found" >&2; exit 1; }
+# a tailnet address (100.64.0.0/10)
+found=$(hits -E '(^|[^0-9.])100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.[0-9]{1,3}\.[0-9]{1,3}([^0-9]|$)')
+[ -z "$found" ] || { echo "a tailnet address is in: $found" >&2; exit 1; }
+if [ -n "${PRIVATE_WORDS:-}" ]; then
+  [ -s "$PRIVATE_WORDS" ] || { echo "PRIVATE_WORDS is set but $PRIVATE_WORDS is empty or missing" >&2; exit 1; }
+  found=$(hits -i -F -f <(grep -v '^[[:space:]]*\(#\|$\)' "$PRIVATE_WORDS"))
+  [ -z "$found" ] || { echo "a private word is in: $found" >&2; exit 1; }
+else
+  say "no PRIVATE_WORDS file: names and addresses not scanned for"
+fi
 say "APK $(du -h "$OUT/Dvarim-$VERSION.apk" | cut -f1), Mac zip $(du -h "$OUT/Dvarim-$VERSION-mac.zip" | cut -f1), zip sha256 $ZIPSUM"
 if [ "$DRY" = 1 ]; then
   say "dry run: nothing published"; exit 0
