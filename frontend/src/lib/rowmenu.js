@@ -5,14 +5,16 @@
  *
  * A row inside a larger selection speaks for the whole selection, as it does
  * when it is dragged; any other row is selected first. Not under a thumb: a
- * long press there lifts the row (lib/dnd.svelte.js).
+ * long press there lifts the row (lib/dnd.svelte.js). A pen's side button and
+ * a mouse on a touchscreen still get it.
  */
 import { app, selectOnly, openMenu, openPopover, toggleComplete, cancelTodo, duplicateTodo, convertTodo, deleteTodo,
          completeSelected, cancelSelected, duplicateSelected, deleteSelected } from './store.svelte.js';
 import { touchLayout } from './touch.js';
+import { lastPointerType } from './pen.js';
 
 export function rowMenu(e, todo) {
-  if (touchLayout()) return;
+  if (touchLayout() && !['pen', 'mouse'].includes(e.pointerType || lastPointerType())) return;
   e.preventDefault();
   const group = app.selected.length > 1 && app.selected.includes(todo.id);
   if (!group) selectOnly(todo.id);

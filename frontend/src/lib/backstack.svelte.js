@@ -23,9 +23,13 @@
 // a layer, by whatever route, `sync` pushes or pops entries until the depth in
 // history matches. Back is the one case that runs the other way.
 import { app, useBackStack, closeSettings, closeSource, stopSelecting, viewPath } from './store.svelte.js';
+import { touchLayout } from './touch.js';
 
-/** Where the drawer exists at all; wider than this the sidebar is just there. */
-const phone = () => typeof matchMedia !== 'undefined' && matchMedia('(max-width: 720px)').matches;
+/** Wherever a finger drives: a phone, and a tablet either way up. A tablet turns
+ *  from one layout to the other while the app runs, so Back is the same on both;
+ *  on its side there is no drawer to bring out, and depth 0 is only the last
+ *  step before Back leaves. */
+const touch = () => touchLayout();
 
 let active = false;
 let depth = 0;          // where history is
@@ -124,7 +128,7 @@ function onPop(e) {
 }
 
 export function installBackStack() {
-  if (active || !phone() || typeof history === 'undefined') return;
+  if (active || !touch() || typeof history === 'undefined') return;
   active = true;
   const d = history.state && history.state.depth;
   if (typeof d === 'number') depth = d;     // a reload part-way up the stack
