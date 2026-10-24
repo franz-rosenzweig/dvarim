@@ -89,3 +89,9 @@ builds all of it in Docker, after checking with the engine that the made-up vaul
 - The Mac and Android apps carry their own build of the web app (`frontend/dist`, copied in when they're built) and, keeping a copy of the to-dos, show that one rather than the server's. So a deploy reaches browsers only: a page change the apps should have needs them built again and installed, the Mac with `mac/build.sh`, Android with a new version.
 
 <sub>Next: [The file format](FORMAT.md) →</sub>
+
+## Releases
+
+`tools/release.sh X.Y.Z` cuts one, from the server. It builds what origin/master is at: the web app on the server, then the APK and the Mac app on the Mac over SSH, in a folder of their own, so nothing there in progress is touched. It checks both (the APK's signature, version and bundled web app; the Mac app signed by the Dvarim certificate alone, with no team; no home folder's path in either), puts them on a GitHub release, and points the cask in [the tap](https://github.com/franz-rosenzweig/homebrew-tap) at the new zip. `--dry-run` stops before anything is published. What it needs to know about the Mac (the host, the key, the signing keychain) is in `~/.config/dvarim-release.env` on the server, never in the repository; the top of the script lists it.
+
+The version comes from the tag: X.Y.Z is the version people see, and 10000·X + 100·Y + Z is Android's versionCode and the Mac's build number, so each release outranks the last for Obtainium and for Homebrew. A build made by hand for testing should stay below the latest release's number, or the release won't install over it.

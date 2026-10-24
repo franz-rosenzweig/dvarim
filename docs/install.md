@@ -39,24 +39,38 @@ The installed app opens instantly, because the app itself is cached on the devic
 
 ## 3. The Mac app
 
-The Mac app is a window around the same web app, plus the things only a Mac app can do: Quick Entry on ⌃Space from any app, Today in the menu bar, a Dock badge, notifications, and Shortcuts. [The Mac app](mac.md) has all of it. To build it you need macOS 14 or newer, the Command Line Tools (`xcode-select --install`) and XcodeGen (`brew install xcodegen`). Xcode itself is optional.
+The Mac app is a native app with Dvarim's own engine inside it, plus the things only a Mac app can do: Quick Entry on ⌃Space from any app, Today in the menu bar, a Dock badge, notifications, and Shortcuts. [The Mac app](mac.md) has all of it. It needs macOS 26 or newer.
+
+The easy way is Homebrew. Every release puts a ready-made app on [the Releases page](https://github.com/franz-rosenzweig/dvarim/releases), and my tap installs it:
+
+```bash
+brew install --cask franz-rosenzweig/tap/dvarim
+```
+
+`brew upgrade` brings it up to each new release. It isn't notarized by Apple, so the cask clears the quarantine flag that would otherwise make macOS refuse to open it.
+
+To build it yourself you need the Command Line Tools (`xcode-select --install`), XcodeGen (`brew install xcodegen`) and Node. Xcode itself is optional.
 
 ```bash
 git clone https://github.com/franz-rosenzweig/dvarim.git
-cd dvarim/frontend && ./build.sh       # the web app the Mac app carries inside it (needs Docker)
-cd ../mac && ./build.sh                # build/Dvarim.app, in about ten seconds
-cp -R build/Dvarim.app /Applications/ && open /Applications/Dvarim.app
+cd dvarim/frontend && npm ci           # esbuild, which bundles the engine into the app
+cd ../mac && ./build-native.sh         # build-native/Dvarim.app
+cp -R build-native/Dvarim.app /Applications/ && open /Applications/Dvarim.app
 ```
 
-On a Mac with Node instead of Docker, `npm ci && npm run build` in `frontend/` does the same as `./build.sh`. Keep the app in `/Applications`, because macOS only lets an app there ask for notifications. Then open **Dvarim → Settings…**, give it your server's address, and choose where your to-dos live. The default, **On this Mac, synced with the server**, keeps a copy of them on the Mac, so the app opens and works with no network: sign in once in the Dvarim window and it sets itself up. **On the server only** opens the server the way a browser does, and **In a folder on this Mac** works on a folder, like the Tasks folder of your vault, with no server at all. The menu bar, the badge and Quick Entry use the same to-dos and the same sign-in as the window.
+Keep the app in `/Applications`, because macOS only lets an app there ask for notifications. Then open **Dvarim → Settings…**, give it your server's address, and choose where your to-dos live. The default, **On this Mac, synced with the server**, keeps a copy of them on the Mac, so the app opens and works with no network: sign in once in the Dvarim window and it sets itself up. **On the server only** opens the server the way a browser does, and **In a folder on this Mac** works on a folder, like the Tasks folder of your vault, with no server at all. The menu bar, the badge and Quick Entry use the same to-dos and the same sign-in as the window.
 
-The app carries its own copy of the web app inside it, so when you update, build it again: a new server alone doesn't change what the Mac app shows.
+The app carries its own copy of the engine inside it, so a new server alone doesn't change it: update the app too, with `brew upgrade` or by building it again.
 
 The full notes, including signing and the self-test, are in [the Mac build notes](https://github.com/franz-rosenzweig/dvarim/blob/master/mac/README.md).
 
 ## 4. The Android app
 
-The Android app is the web app in its own window, with a Today widget, sharing into Dvarim from any app, reminders that arrive with the app closed, and a New To-Do tile. [The Android app](android.md) has all of it. It's built with Google's Bubblewrap, and because it has to prove it belongs to your server, it needs a little setup on both sides:
+The Android app is the web app in its own window, with a Today widget, sharing into Dvarim from any app, reminders that arrive with the app closed, and a New To-Do tile. [The Android app](android.md) has all of it.
+
+The easy way is the APK on [the Releases page](https://github.com/franz-rosenzweig/dvarim/releases). To have it update by itself, install [Obtainium](https://github.com/ImranR98/Obtainium), add `https://github.com/franz-rosenzweig/dvarim`, and it installs each new release over the last. The ready-made app is set up for my server, so long-press its icon, choose **Settings** and give it your server's address.
+
+To build your own, which is also how the system comes to trust the app for your server's links, it's built with Google's Bubblewrap, and because it has to prove it belongs to your server, it needs a little setup on both sides:
 
 1. Make a signing key with `keytool` and keep it safe, because a new key means a new app.
 2. Tell your server the key's SHA-256 fingerprint and the app's package name (`DVARIM_ANDROID_FINGERPRINT` and `DVARIM_ANDROID_PACKAGE`), so it publishes `/.well-known/assetlinks.json`.
