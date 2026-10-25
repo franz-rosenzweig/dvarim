@@ -97,8 +97,18 @@ struct ListScreen: View {
         .navigationTitle("")
     }
 
-    /// The list's own keys, while no field has the keyboard.
+    /// The list's own keys, while no field has the keyboard. SwiftUI hands a
+    /// key to this handler on its way to a focused field inside the list (the
+    /// card's title, notes and checklist, a heading's name), so while one has
+    /// the keyboard every key is the field's: Space and Return were swallowed
+    /// here as "open the chosen to-do", and Backspace would have trashed it.
+    /// Escape still closes the card.
     private func keys(_ press: KeyPress) -> KeyPress.Result {
+        if (model.window ?? NSApp.keyWindow)?.firstResponder is NSTextView {
+            guard press.key == .escape, model.openId != nil else { return .ignored }
+            model.close()
+            return .handled
+        }
         let shift = press.modifiers.contains(.shift), command = press.modifiers.contains(.command)
         switch press.key {
         case .upArrow:

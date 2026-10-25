@@ -201,10 +201,12 @@ enum SelfTest {
         check(true, "⌘N makes a to-do and opens its card")
         check(await until(6) { line(folder, id)?.text.contains("New To-Do") == true }, "it is a line in the Inbox's Markdown", line(folder, id)?.file ?? "nowhere")
         await snap("new-card")
-        type("Buy bread")
+        // key by key, through the app's own key handling, as a keyboard types:
+        // the list's keys once swallowed every space typed in the card
+        press("Buy bread")
         await pause(0.4)
         m.close()
-        check(await until(6) { line(folder, id)?.text.contains("Buy bread") == true }, "what was typed is its title once the card closes")
+        check(await until(6) { line(folder, id)?.text.contains("Buy bread") == true }, "typed key by key, spaces and all, it is its title once the card closes", line(folder, id)?.text ?? "gone")
         await snap("typed")
         m.undoManager?.undo()
         check(await until(6) { line(folder, id)?.text.contains("New To-Do") == true }, "⌘Z takes the title back")
@@ -582,6 +584,25 @@ enum SelfTest {
     }
 
     /// Keys as the keyboard sends them, into whatever has the keyboard.
+    /// Keys pressed, each a keyDown and keyUp sent through the app as the
+    /// keyboard's are, so whatever handles keys on the way (SwiftUI's
+    /// onKeyPress included) sees them before the field does.
+    static func press(_ text: String) {
+        NSApp.activate()
+        guard let w = NSApp.windows.first(where: { $0.isVisible && $0.canBecomeKey && !$0.className.contains("Popover") }) else { return }
+        w.makeKeyAndOrderFront(nil)
+        for ch in text {
+            let code: UInt16 = ch == " " ? 49 : 0
+            for kind in [NSEvent.EventType.keyDown, .keyUp] {
+                if let e = NSEvent.keyEvent(with: kind, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                                            windowNumber: w.windowNumber, context: nil, characters: String(ch),
+                                            charactersIgnoringModifiers: String(ch), isARepeat: false, keyCode: code) {
+                    NSApp.sendEvent(e)
+                }
+            }
+        }
+    }
+
     static func type(_ text: String) {
         // the keys go to the key window: be it, whatever else is in front
         NSApp.activate()
