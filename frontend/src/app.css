@@ -301,7 +301,7 @@ h1.t .more:hover{color:var(--text2)}
 @keyframes chipin{from{opacity:0;transform:translateX(55px)}}
 @media (prefers-reduced-motion:reduce){ .card .when.chipin{animation:none} }
 .card .when.star svg{color:var(--star)}.card .when.moon svg{color:var(--moon)}.card .when.date svg{color:var(--upc)}.card .when.some svg{color:var(--some)}
-.card .icons{display:flex;gap:16px;color:var(--text3)}
+.card .icons{display:flex;align-items:center;gap:16px;color:var(--text3)}
 .card .icons button{color:var(--text3);display:grid;place-items:center;width:18px;height:18px}
 .card .icons button svg{width:16px;height:16px}
 .card .icons button:hover{color:var(--text)}
@@ -309,8 +309,11 @@ h1.t .more:hover{color:var(--text2)}
    unrolls in place into a small grey field, with the panel hanging under it. The
    icon row is right-aligned, so a field grows leftward and what is to the right
    of it does not move; the text is simply clipped on the way. Under a thumb the
-   phone's own sheet is right, so none of this is armed there (openField()). */
-@media (min-width:721px){
+   phone's own sheet is right, so none of this is armed there (openField(),
+   touchLayout()): not on a tablet either, wide as it is. Armed there, its 22px
+   box held the thumb-sized 44px buttons of the touch rules, and clipped them,
+   so When, Tags and Deadline sat higher than the checklist and Repeat. */
+@media (min-width:721px) and (pointer:fine),(min-width:721px) and (pointer:none){
   .card .fld{
     display:flex;align-items:center;gap:5px;flex:none;
     width:18px;height:22px;border-radius:5px;overflow:hidden;
