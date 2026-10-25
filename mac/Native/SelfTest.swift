@@ -70,8 +70,9 @@ enum SelfTest {
         }
         await m.signIn(password: password, name: nil)
         check(await until(20) { m.phase == .ready }, "signing in opens the app on a copy of its own", "\(m.phase)")
-        guard let copy = Account.copy, let token = Account.token(for: copy) else { return check(false, "the copy has a token in the Keychain") }
-        check(token.hasPrefix("dvt_"), "the copy's token is kept in the Keychain")
+        guard let copy = Account.copy, let token = Account.token(for: copy) else { return check(false, "the copy has a token") }
+        check(token.hasPrefix("dvt_") && tokenPrivate(copy), "the copy's token is kept in a file only this account can read")
+        await tokenMoves(copy, token)
         let tokens = (try? await RemoteBackend(server: server).request("GET", "/api/tokens", body: nil))?["tokens"].array.compactMap { $0["name"].string } ?? []
         check(tokens.contains(copy.device), "the server lists this Mac as a device", tokens.joined(separator: ", "))
         let folder = Account.folder(for: copy)
@@ -488,6 +489,32 @@ enum SelfTest {
             m.history.undo()
             check(await until(6) { await someday(m, t.id) == false }, "and ⌘Z takes it out")
         }
+    }
+
+    /// The token's file: 0600 in a 0700 folder, and nowhere in the copy, which syncs.
+    static func tokenPrivate(_ c: Account.Copy) -> Bool {
+        let fm = FileManager.default
+        let file = Account.tokenFile(for: c)
+        let mode = { (u: URL) in (try? fm.attributesOfItem(atPath: u.path)[.posixPermissions] as? Int) ?? -1 }
+        return mode(file) == 0o600 && mode(Account.tokensFolder) == 0o700
+            && !file.path.hasPrefix(Account.folder(for: c).path)
+    }
+
+    /// A token a build before this one kept in the Keychain moves to the file
+    /// the first time it's asked for, and leaves the Keychain.
+    static func tokenMoves(_ c: Account.Copy, _ token: String) async {
+        var add = Account.keychainQuery(c)
+        add[kSecValueData as String] = Data(token.utf8)
+        SecItemDelete(Account.keychainQuery(c) as CFDictionary)
+        let added = SecItemAdd(add as CFDictionary, nil) == errSecSuccess
+        try? FileManager.default.removeItem(at: Account.tokenFile(for: c))
+        let moved = Account.token(for: c)
+        var find = Account.keychainQuery(c)
+        find[kSecMatchLimit as String] = kSecMatchLimitOne
+        let left = SecItemCopyMatching(find as CFDictionary, nil) == errSecSuccess
+        check(added && moved == token && tokenPrivate(c) && !left,
+              "a token kept in the Keychain by an older build moves to the file, and leaves the Keychain",
+              "added \(added), moved \(moved == token), left in the Keychain \(left)")
     }
 
     /// Whether the engine has the to-do in Someday.

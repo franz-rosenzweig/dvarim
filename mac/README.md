@@ -35,8 +35,8 @@ Markdown files are still the database.
 - *On this Mac, synced with the server*, the default. It keeps a copy in
   `~/Library/Application Support/Dvarim Native/Copies/<server>/<who>/` and keeps
   it in step with the server's `/dav/` using its own token. The token is named
-  "<this Mac> (Dvarim Native)" and kept in the Keychain. The app opens and
-  works with no network.
+  "<this Mac> (Dvarim Native)" and kept beside the copies, in `Tokens/`, in a
+  file only my account can read. The app opens and works with no network.
 - *On the server only*: every list is asked of the server, and the server's
   event stream says when something changed elsewhere.
 - *In a folder on this Mac*: any folder of Markdown, read and written here.
@@ -234,12 +234,20 @@ to the Trash.
   Dvarim" is in the Services menu.
 - **It kept its own bundle id**, `moe.ptr.dvarim.native`, so its copy, its
   token and its settings stayed where they were. Behind the scenes some names
-  stay "Dvarim Native": the folder in Application Support, the Keychain item,
-  and this Mac's token on the server.
+  stay "Dvarim Native": the folder in Application Support and this Mac's token
+  on the server.
 - **What was the web-view app's is its now.** With that app gone from
   Applications, Quick Entry is on ⌃Space, and Today in the menu bar and the
   reminders are on to begin with. macOS asked again about notifications.
 - **The web-view app went to the Trash.**
+
+**The token out of the Keychain, 25 October 2026.** The releases are signed
+with a certificate of their own, which has no Apple team ID, and the login
+keychain trusts such an app one build at a time. So every launch asked for the
+keychain password, until "Always Allow", and then again after each update.
+The token now lives in a file only my account can read, as the Android app
+keeps its own. The first launch of the new build moves it out of the Keychain
+and deletes the Keychain item.
 
 **Building and testing it:**
 
@@ -310,6 +318,11 @@ What I learned building it:
   panel of its own instead.
 - **A Mac that sleeps stops a build.** It isn't stuck: it waits, at no CPU,
   until the lid opens.
+- **The login keychain trusts an app without a team ID build by build.** It
+  lists the app's code hash in the item's partition list, so each new build
+  asks again, however stable the certificate. Only a team ID, which comes
+  from Apple, makes that stable; a file only the account can read doesn't
+  need one.
 
 ## What you need, and building it
 
