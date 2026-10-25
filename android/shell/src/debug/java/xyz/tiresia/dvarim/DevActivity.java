@@ -2,6 +2,7 @@ package xyz.tiresia.dvarim;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.view.MotionEvent;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
@@ -19,10 +20,13 @@ import android.webkit.WebView;
  */
 public class DevActivity extends Activity {
     private WebView web;
+    private PalmRejection palm;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        // the same palm rejection as FolderActivity, so a pen test here is honest
+        palm = new PalmRejection(getResources().getDisplayMetrics());
         web = new WebView(this);
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -35,6 +39,17 @@ public class DevActivity extends Activity {
         // The widget, the reminders and the outbox follow the page (DevBuild).
         DevBuild.rememberServer(this, url);
         web.loadUrl(url);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent e) {
+        return palm == null ? super.dispatchTouchEvent(e) : palm.touch(e, ev -> super.dispatchTouchEvent(ev));
+    }
+
+    @Override
+    public boolean dispatchGenericMotionEvent(MotionEvent e) {
+        if (palm != null) palm.hover(e, ev -> super.dispatchTouchEvent(ev));
+        return super.dispatchGenericMotionEvent(e);
     }
 
     @Override
