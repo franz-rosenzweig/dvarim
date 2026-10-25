@@ -14,4 +14,5 @@
     <color name="widgetText2">@android:color/system_neutral2_700</color>
     <color name="widgetCheck">@android:color/system_neutral2_400</color>
     <color name="widgetMoon">@android:color/system_accent1_600</color>
+    <color name="widgetAccent">@android:color/system_accent1_600</color>
 </resources>

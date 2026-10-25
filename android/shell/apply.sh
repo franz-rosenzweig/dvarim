@@ -17,10 +17,11 @@
 #                   cookie when the app stops), NewTodoTile, and a monochrome
 #                   launcher icon for Android 13's themed icons.
 #   manifest        The components in manifest-additions.xml and the permissions
-#                   in manifest-permissions.xml, plus three edits to the
-#                   generated one: the share filter moves off the launcher, and
-#                   the activity that renders the site gets our theme and is
-#                   allowed to hear Back. LauncherActivity gets four of its
+#                   in manifest-permissions.xml, plus edits to the generated
+#                   one: the share filter moves off the launcher, and the
+#                   activity that renders the site gets our theme, is allowed
+#                   to hear Back, and takes a resize in its stride (a tablet's
+#                   split screen, DeX). LauncherActivity gets four of its
 #                   own: Reminders.onLaunch, "Settings" in the launcher's
 #                   long-press menu, the address in Server.java, and the
 #                   hand-over to FolderActivity when the to-dos are in a folder.
@@ -141,6 +142,27 @@ def fallback_back(xml):
         return None
     indent = hit.group(1)
     return xml[:hit.end()] + f'android:enableOnBackInvokedCallback="false"\n{indent}' + xml[hit.end():]
+
+
+BIG_SCREEN_CHANGES = 'orientation|screenSize|smallestScreenSize|screenLayout|density|keyboard|keyboardHidden|navigation'
+
+
+def fallback_resize(xml):
+    """On a tablet the window resizes all the time: split screen, a pop-up
+    window, DeX moving it to another display, a keyboard cover clipped on.
+    android-browser-helper's activity takes only rotation in its stride, so
+    each of those reloaded the page; with these it lays itself out again."""
+    name = 'com.google.androidbrowserhelper.trusted.WebViewFallbackActivity'
+    hit = re.search(r'<activity android:name="%s"(.*?)/>' % re.escape(name), xml, re.S)
+    if not hit:
+        raise SystemExit('no WebViewFallbackActivity in the manifest: is fallbackType still "webview"?')
+    block = hit.group(0)
+    if BIG_SCREEN_CHANGES in block:
+        return None
+    new = re.sub(r'android:configChanges="[^"]*"', f'android:configChanges="{BIG_SCREEN_CHANGES}"', block)
+    if new == block:
+        return None
+    return xml[:hit.start()] + new + xml[hit.end():]
 
 
 def our_components(xml):
@@ -425,6 +447,7 @@ def debug_name(gradle):
 patch(manifest, share_target)
 patch(manifest, fallback_theme)
 patch(manifest, fallback_back)
+patch(manifest, fallback_resize)
 patch(manifest, our_components)
 patch(manifest, our_permissions)
 patch(launcher, launch_hook)
