@@ -110,7 +110,7 @@ enum Calendars {
 
     // ---- this Mac's ---------------------------------------------------------------------
 
-    /// EventKit, as the web-view app's folder mode has it (mac/Dvarim/DeviceCalendars.swift):
+    /// EventKit, as the retired web-view app's folder mode had it (DeviceCalendars.swift):
     /// occurrences as docs/BRIDGE.md's `events` gives them, which the engine
     /// splits into its rows (events.js occurrenceRows).
     actor Device {

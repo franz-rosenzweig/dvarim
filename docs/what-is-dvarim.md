@@ -24,7 +24,7 @@ You can run it two ways. With a server, which is how I use it: one Docker contai
 | | Web app | Mac app | Android app |
 | --- | --- | --- | --- |
 | Every list, project and to-do, the to-do card, Quick Find | yes | yes | yes |
-| Keyboard shortcuts, rebindable in Settings → Keyboard | yes | yes, plus the Go and To-Do menus | with a hardware keyboard |
+| Keyboard shortcuts | yes, rebindable in Settings → Keyboard | yes, in the Go and Items menus | with a hardware keyboard |
 | Works without a connection | yes, from a full copy kept in the browser | yes | yes |
 | To-dos in a folder on the device, no server | in the browser's own storage (experimental) | any folder, like your vault's Tasks folder | any folder, through Android's folder picker |
 | Quick Entry from anywhere | over HTTP, from a bot, a Shortcut or a bookmarklet | ⌃Space, and the Services menu | share into Dvarim, the New To-Do tile |

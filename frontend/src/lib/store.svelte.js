@@ -513,8 +513,8 @@ export function toggleSlim(on = !app.slim) {
   if (!!on === app.slim) return;
   app.slim = !!on;
   try { localStorage.setItem('dvarim.slim', app.slim ? '1' : ''); } catch { /* ignore */ }
-  // The Mac app gives the room back: its window narrows by the sidebar's width
-  // and the list stays the size it was (mac/Dvarim/WebView.swift).
+  // The web-view Mac app (retired) gave the room back: its window narrowed by
+  // the sidebar's width and the list stayed the size it was.
   // Told only when it changes here, never on load: a window that opens slim is
   // already the width it was left.
   try {

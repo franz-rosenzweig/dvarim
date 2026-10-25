@@ -58,7 +58,7 @@ cd ../mac && ./build-native.sh         # build-native/Dvarim.app
 cp -R build-native/Dvarim.app /Applications/ && open /Applications/Dvarim.app
 ```
 
-Keep the app in `/Applications`, because macOS only lets an app there ask for notifications. Then open **Dvarim → Settings…**, give it your server's address, and choose where your to-dos live. The default, **On this Mac, synced with the server**, keeps a copy of them on the Mac, so the app opens and works with no network: sign in once in the Dvarim window and it sets itself up. **On the server only** opens the server the way a browser does, and **In a folder on this Mac** works on a folder, like the Tasks folder of your vault, with no server at all. The menu bar, the badge and Quick Entry use the same to-dos and the same sign-in as the window.
+Keep the app in `/Applications`, because macOS only lets an app there ask for notifications. Then open **Dvarim → Settings… → Where**, give it your server's address, and choose where your to-dos live. The default, **On this Mac, synced with the server**, keeps a copy of them on the Mac, so the app opens and works with no network: sign in once in the Dvarim window and it sets itself up. **On the server only** asks the server for every list, and **In a folder on this Mac** works on a folder, like the Tasks folder of your vault, with no server at all. The menu bar, the badge and Quick Entry use the same to-dos and the same sign-in as the window.
 
 The app carries its own copy of the engine inside it, so a new server alone doesn't change it: update the app too, with `brew upgrade` or by building it again.
 

@@ -52,7 +52,7 @@ With Node installed, `tools/phone/devserver.sh --fresh` does the same on port 84
 
 **The browser suites.** `tools/e2e_*.py` drive the real web app in a real Chrome over the DevTools Protocol, so they need no Node and no browser on the host, only a Chrome container with remote debugging on, plus Python with `httpx` and `websockets`. Each takes the server's `--url` and Chrome's `--devtools`, and the ones that read the files take `--root`. They complete, delete and empty things, so they refuse to run against the real vault or the live address. There's one per area: `e2e_smoke` (clicks reach the files), `e2e_dnd`, `e2e_multiselect`, `e2e_checklist`, `e2e_notes`, `e2e_repeat`, `e2e_shortcuts`, `e2e_settings`, `e2e_logging`, `e2e_source`, `e2e_local` (a vault in the browser), `e2e_folder` (the apps' folder, with `tools/bridge_sim.py` standing in for the shell), `e2e_sync`, `e2e_mirror` (the browser's full copy, with the server stopped and started again under it), `e2e_people` (inviting someone and keeping them apart, on one shared browser), `e2e_today_headings` and `e2e_tablet` (which layout a tablet gets, and what a finger, a pen and a resting palm do on one). `e2e_mirror` runs its own server inside the Chrome container's network, because a service worker only works on a secure origin and `localhost` is one, and it sets the browser's time zone to the server's. Run all of them before merging anything that changes how the engine behaves.
 
-**On devices.** `mac/selftest.sh` builds a test copy of the Mac app and drives it against a dev server. `tools/phone/` drives the Android debug build on a real phone over `adb`, because a touch gesture can't be tested with synthesized events, and [its README](https://github.com/franz-rosenzweig/dvarim/blob/master/tools/phone/README.md) says how.
+**On devices.** `mac/selftest-native.sh` builds a test copy of the Mac app and drives it against a throwaway server of its own. `tools/phone/` drives the Android debug build on a real phone over `adb`, because a touch gesture can't be tested with synthesized events, and [its README](https://github.com/franz-rosenzweig/dvarim/blob/master/tools/phone/README.md) says how.
 
 ## How a change reaches my server
 
@@ -85,8 +85,8 @@ builds all of it in Docker, after checking with the engine that the made-up vaul
 
 - A change in behaviour belongs on the guide page that describes it too, and a change to the format in [FORMAT](FORMAT.md).
 - The API is the contract with the Mac and Android apps. [API.md](API.md) lists every route, and a shell should never need a server change.
-- Work for the Mac and Android apps is done on a Mac. Notes on that work go beside their code, in `mac/NEXT.md` and `android/NEXT.md`.
-- The Mac and Android apps carry their own build of the web app (`frontend/dist`, copied in when they're built) and, keeping a copy of the to-dos, show that one rather than the server's. So a deploy reaches browsers only: a page change the apps should have needs them built again and installed, the Mac with `mac/build.sh`, Android with a new version.
+- Work for the Mac and Android apps is done on a Mac. Notes on that work go beside their code, in `mac/README.md` and `android/NEXT.md`.
+- The Android app carries its own build of the web app (`frontend/dist`, copied in when it's built) and, keeping a copy of the to-dos, shows that one rather than the server's. The Mac app carries the engine (`engine/src`, bundled in by `mac/build-native.sh`). So a deploy reaches browsers only: an engine or page change the apps should have needs them built again and installed, the Mac with `mac/build-native.sh`, Android with a new version.
 
 <sub>Next: [The file format](FORMAT.md) →</sub>
 

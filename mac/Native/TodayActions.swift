@@ -115,7 +115,7 @@ struct CrowdedNote: View {
     let crowded: [(id: String, name: String, count: Int)]
 
     var body: some View {
-        (Text("More than one to-do from ") + names + Text(". One next step from each project keeps Today a list of what to do next."))
+        Text(message)
             .font(.system(size: 13))
             .foregroundStyle(Palette.text2)
             .lineSpacing(3)
@@ -126,16 +126,19 @@ struct CrowdedNote: View {
             })
     }
 
-    private var names: Text {
-        var out = Text("")
+    /// The projects' names as links, each with its count.
+    private var message: AttributedString {
+        var out = AttributedString("More than one to-do from ")
         for (i, c) in crowded.enumerated() {
-            if i > 0 { out = out + Text(i == crowded.count - 1 ? " and " : ", ") }
+            if i > 0 { out += AttributedString(i == crowded.count - 1 ? " and " : ", ") }
             var link = AttributedString(c.name)
             link.link = URL(string: "dvarim-project://\(c.id)")
             link.underlineStyle = .single
             link.foregroundColor = Palette.text2
-            out = out + Text(link) + Text(" (\(c.count))")
+            out += link
+            out += AttributedString(" (\(c.count))")
         }
+        out += AttributedString(". One next step from each project keeps Today a list of what to do next.")
         return out
     }
 }

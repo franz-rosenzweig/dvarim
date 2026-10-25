@@ -5,68 +5,14 @@ name: Dvarim
 options:
   bundleIdPrefix: moe.ptr
   deploymentTarget:
-    macOS: "14.0"
+    macOS: "26.0"
   createIntermediateGroups: true
 targets:
-  Dvarim:
-    type: application
-    platform: macOS
-    # a shared scheme, so `xcodebuild -scheme Dvarim` and the Run button agree
-    scheme:
-      configVariants: []
-    sources:
-      - path: Dvarim
-      - path: Shared
-    settings:
-      base:
-        PRODUCT_NAME: Dvarim
-        PRODUCT_BUNDLE_IDENTIFIER: moe.ptr.dvarim
-        MARKETING_VERSION: "0.1.0"
-        CURRENT_PROJECT_VERSION: "1"
-        SWIFT_VERSION: "5.9"
-        ENABLE_HARDENED_RUNTIME: YES
-        # Local-only app: signing to run on this Mac is enough.
-        CODE_SIGN_STYLE: Automatic
-        COMBINE_HIDPI_IMAGES: YES
-    info:
-      path: Dvarim/Info.plist
-      properties:
-        CFBundleName: Dvarim
-        CFBundleDisplayName: Dvarim
-        # XcodeGen otherwise writes 1.0 and 1, whatever the settings above say
-        CFBundleShortVersionString: $(MARKETING_VERSION)
-        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        LSMinimumSystemVersion: "14.0"
-        NSHumanReadableCopyright: ""
-        # The app talks to the server over plain HTTP on the tailnet. If you put
-        # Tailscale Serve in front of it (HTTPS) you can delete this whole block.
-        NSAppTransportSecurity:
-          NSAllowsArbitraryLoads: true
-        NSUserNotificationsUsageDescription: Dvarim shows your to-do reminders.
-        # the device's calendars in Today and Upcoming, in folder mode (DeviceCalendars.swift)
-        NSCalendarsFullAccessUsageDescription: With your to-dos in a folder on this Mac, Dvarim shows your calendars' events in Today and Upcoming.
-        # Services menu, on the selection in any app. Give it a key of your own in
-        # System Settings → Keyboard → Keyboard Shortcuts → Services.
-        NSServices:
-          - NSMenuItem:
-              default: New To-Do in Dvarim
-            NSMessage: newToDo
-            NSPortName: Dvarim
-            NSSendTypes: [public.utf8-plain-text]
-    entitlements:
-      path: Dvarim/Dvarim.entitlements
-      properties:
-        # Sandbox off: the app opens a socket to your own server and registers a
-        # global hotkey. Turn it on with com.apple.security.network.client if you
-        # ever want to ship it anywhere.
-        com.apple.security.app-sandbox: false
-        # the hardened runtime's door to EventKit, for the device's calendars in folder mode
-        com.apple.security.personal-information.calendars: true
-
   # Dvarim on the Mac: SwiftUI and AppKit for every screen, and the engine
   # (engine/src) inside it in JavaScriptCore; built by build-native.sh. Built
-  # beside the web-view app as "Dvarim Native", it took over as Dvarim on
-  # 2026-10-22 and kept its own bundle id, so its copy and settings stayed put.
+  # beside the web-view app it replaced as "Dvarim Native", it took over as
+  # Dvarim on 2026-10-22 and kept that bundle id and target name, so its copy
+  # and settings stayed put.
   DvarimNative:
     type: application
     platform: macOS
