@@ -37,7 +37,7 @@ Shortcuts, Spotlight and Siri know three actions: **Create To-Do** (with a list 
 
 **Settings… → Where** has three choices, and the first is the default:
 
-- **On this Mac, synced with the server.** The app keeps a copy of your to-dos on the Mac, in a folder of its own, and syncs it with the server a moment after each change, when the window comes to the front, and every few minutes. Sign in once and it sets itself up: it adds this Mac to the server's devices (you'll see it, named after the Mac, in the web app's Settings → Sync) and keeps that device's token in the Keychain. From then on it opens with no network. **Sign out** sends what's left, takes the Mac off the server's list, and moves the copy to the Trash.
+- **On this Mac, synced with the server.** The app keeps a copy of your to-dos on the Mac, in a folder of its own, and syncs it with the server a moment after each change, when the window comes to the front, and every few minutes. Sign in once and it sets itself up: it adds this Mac to the server's devices (you'll see it, named after the Mac, in the web app's Settings → Sync) and keeps that device's token in a file on the Mac that only your account can read. From then on it opens with no network. **Sign out** sends what's left, takes the Mac off the server's list, and moves the copy to the Trash.
 - **On the server only.** Every list is asked of the server as you open it.
 - **In a folder on this Mac.** A folder you choose, with no server at all (below).
 

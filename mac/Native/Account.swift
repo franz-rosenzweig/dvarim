@@ -50,7 +50,8 @@ enum Mode: String, CaseIterable, Identifiable, Sendable {
 /// kept: the server answers with a session cookie, which URLSession keeps in
 /// this app's cookie store. Remote mode sends that cookie. For the copy, the
 /// cookie makes this Mac a token of its own (POST /api/tokens takes a session,
-/// never a token), kept in the Keychain and handed to the engine's sync.
+/// never a token), kept in a file only this account can read and handed to the
+/// engine's sync.
 @MainActor
 enum Account {
     struct Person: Sendable {
@@ -107,6 +108,7 @@ enum Account {
     }
 
     private static let copyKey = "copy"
+    /// Where builds before 2026-10-25 kept the token (moved to a file since).
     static let keychainService = "Dvarim Native sync token"
 
     static var copy: Copy? {
@@ -142,7 +144,7 @@ enum Account {
                 let j = try await backend.request("POST", "/api/tokens", body: ["name": name])
                 guard let token = j["token"].string else { throw APIError(status: 500, message: "the server made no token") }
                 let c = Copy(server: server.absoluteString, who: key(person), device: name)
-                guard storeToken(token, for: c) else { throw APIError(status: 500, message: "the Keychain would not keep the token") }
+                guard storeToken(token, for: c) else { throw APIError(status: 500, message: "the token couldn't be kept on this Mac") }
                 Prefs.store.set(try JSONEncoder().encode(c), forKey: copyKey)
                 try FileManager.default.createDirectory(at: folder(for: c), withIntermediateDirectories: true)
                 return c
@@ -178,34 +180,75 @@ enum Account {
         return name.trimmingCharacters(in: .whitespaces)
     }
 
-    // ---- the Keychain ---------------------------------------------------------------
+    // ---- the token -------------------------------------------------------------------
+    //
+    // In a file of the app's own that only this account can read, as the Android
+    // app keeps its token in its own storage; never in the copy, which syncs. Not
+    // the login keychain: it trusts a release signed without an Apple team ID one
+    // build at a time, so every update asked for the keychain password again.
 
-    private static func query(_ c: Copy) -> [String: Any] {
+    /// Application Support/<the app's folder>/Tokens/: apart for the self-test.
+    static var tokensFolder: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent(appFolder, isDirectory: true)
+            .appendingPathComponent("Tokens", isDirectory: true)
+    }
+
+    static func tokenFile(for c: Copy) -> URL {
+        tokensFolder.appendingPathComponent(safe("\(c.server) \(c.who)"))
+    }
+
+    static func token(for c: Copy) -> String? {
+        if let data = FileManager.default.contents(atPath: tokenFile(for: c).path),
+           let t = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !t.isEmpty {
+            return t
+        }
+        // kept in the Keychain by builds before this one: moved here, once
+        guard let old = keychainToken(for: c) else { return nil }
+        if writeToken(old, for: c) { SecItemDelete(keychainQuery(c) as CFDictionary) }
+        return old
+    }
+
+    private static func storeToken(_ token: String, for c: Copy) -> Bool {
+        guard writeToken(token, for: c) else { return false }
+        SecItemDelete(keychainQuery(c) as CFDictionary)
+        return true
+    }
+
+    /// Readable by this account alone from the first byte: the folder 0700, the file 0600.
+    private static func writeToken(_ token: String, for c: Copy) -> Bool {
+        let fm = FileManager.default
+        do {
+            try fm.createDirectory(at: tokensFolder, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: tokensFolder.path)
+            let file = tokenFile(for: c)
+            try? fm.removeItem(at: file)
+            guard fm.createFile(atPath: file.path, contents: Data(token.utf8), attributes: [.posixPermissions: 0o600]) else { return false }
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private static func deleteToken(for c: Copy) {
+        try? FileManager.default.removeItem(at: tokenFile(for: c))
+        SecItemDelete(keychainQuery(c) as CFDictionary)
+    }
+
+    // The Keychain item builds before this one kept, read once to be moved.
+    static func keychainQuery(_ c: Copy) -> [String: Any] {
         [kSecClass as String: kSecClassGenericPassword,
          kSecAttrService as String: keychainService,
          kSecAttrAccount as String: "\(c.server) \(c.who)"]
     }
 
-    static func token(for c: Copy) -> String? {
-        var q = query(c)
+    private static func keychainToken(for c: Copy) -> String? {
+        var q = keychainQuery(c)
         q[kSecReturnData as String] = true
         q[kSecMatchLimit as String] = kSecMatchLimitOne
         var out: AnyObject?
         guard SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess, let data = out as? Data else { return nil }
         return String(data: data, encoding: .utf8)
-    }
-
-    private static func storeToken(_ token: String, for c: Copy) -> Bool {
-        deleteToken(for: c)
-        var q = query(c)
-        q[kSecValueData as String] = Data(token.utf8)
-        q[kSecAttrLabel as String] = "Dvarim Native: \(c.device)"
-        q[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        return SecItemAdd(q as CFDictionary, nil) == errSecSuccess
-    }
-
-    private static func deleteToken(for c: Copy) {
-        SecItemDelete(query(c) as CFDictionary)
     }
 
     private static func safe(_ s: String) -> String {
