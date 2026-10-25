@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.MotionEvent;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -53,6 +54,7 @@ public class FolderActivity extends Activity {
     private final Handler main = new Handler(Looper.getMainLooper());
     private volatile CountDownLatch calendarAnswer;
     private int load;                          // which page load the engine is awaited for
+    private PalmRejection palm;                // a hand on the screen while the S Pen writes
 
     @Override
     protected void onCreate(Bundle state) {
@@ -63,6 +65,7 @@ public class FolderActivity extends Activity {
             toServer();
             return;
         }
+        palm = new PalmRejection(getResources().getDisplayMetrics());
         web = new WebView(this);           // a test build's is open to DevTools already (DevBuild)
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -76,6 +79,20 @@ public class FolderActivity extends Activity {
         setContentView(web);
         live = new WeakReference<>(this);
         web.loadUrl(ORIGIN + startPath(getIntent()));
+    }
+
+    /** Every touch passes PalmRejection before the page, or the WebView's own
+     *  scrolling, sees it; the pen's hover tells it the pen is near. */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent e) {
+        if (palm == null) return super.dispatchTouchEvent(e);
+        return palm.touch(e, ev -> super.dispatchTouchEvent(ev));
+    }
+
+    @Override
+    public boolean dispatchGenericMotionEvent(MotionEvent e) {
+        if (palm != null) palm.hover(e, ev -> super.dispatchTouchEvent(ev));
+        return super.dispatchGenericMotionEvent(e);
     }
 
     /** /today, /new, /share?… — whatever the launcher, a shortcut or a share asked for. */

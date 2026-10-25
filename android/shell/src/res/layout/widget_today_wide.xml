@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Today at its widest, as on a tablet's home screen: Today on the left, with
+     This Evening as its own section, and the next days of Upcoming beside it. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_bg"
+    android:padding="16dp">
+
+    <LinearLayout android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="8dp">
+
+        <ImageView android:layout_width="18dp" android:layout_height="18dp"
+            android:src="@drawable/ic_widget_star"
+            android:contentDescription="@null" />
+
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="@string/widgetToday"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:textColor="@color/widgetText" />
+
+        <TextView android:id="@+id/date"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="@color/widgetText2" />
+
+        <ImageView android:id="@+id/refresh"
+            android:layout_width="18dp" android:layout_height="18dp"
+            android:layout_marginStart="12dp"
+            android:src="@drawable/ic_widget_refresh"
+            android:contentDescription="@string/widgetRefresh" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
+            <ListView android:id="@+id/list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:divider="@null"
+                android:dividerHeight="0dp" />
+            <TextView android:id="@+id/empty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/widgetClear"
+                android:textSize="13sp"
+                android:textColor="@color/widgetText2" />
+        </FrameLayout>
+
+        <View android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="14dp"
+            android:background="@color/widgetCheck"
+            android:alpha="0.5" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <LinearLayout android:id="@+id/upcomingHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="2dp">
+                <ImageView android:layout_width="16dp" android:layout_height="16dp"
+                    android:src="@drawable/ic_widget_upcoming"
+                    android:contentDescription="@null" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginStart="7dp"
+                    android:text="@string/widgetUpcoming"
+                    android:textStyle="bold"
+                    android:textSize="13.5sp"
+                    android:textColor="@color/widgetText" />
+            </LinearLayout>
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+                <ListView android:id="@+id/upcoming"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:divider="@null"
+                    android:dividerHeight="0dp" />
+                <TextView android:id="@+id/upcomingEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="@string/widgetUpcomingClear"
+                    android:textSize="13sp"
+                    android:textColor="@color/widgetText2" />
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

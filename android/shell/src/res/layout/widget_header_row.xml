@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A section in a widget's list: This Evening in Today, a day in Upcoming.
+     A tap opens that list in the app. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/row"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="12dp"
+    android:paddingBottom="4dp">
+
+    <ImageView android:id="@+id/headIcon"
+        android:layout_width="14dp" android:layout_height="14dp"
+        android:layout_marginEnd="6dp"
+        android:src="@drawable/ic_widget_moon"
+        android:contentDescription="@null" />
+
+    <TextView android:id="@+id/head"
+        android:layout_width="0dp" android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textStyle="bold"
+        android:textSize="12.5sp"
+        android:textColor="@color/widgetText2" />
+</LinearLayout>

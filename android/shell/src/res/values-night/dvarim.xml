@@ -11,6 +11,8 @@
     <color name="widgetCheck">#5A5A60</color>
     <color name="widgetMoon">#8E98D2</color>
     <color name="widgetSun">#E8A944</color>
+    <color name="widgetUpcoming">#8FA4BC</color>
+    <color name="widgetAccent">#7E9A66</color>
 
     <style name="Theme.Dvarim" parent="@android:style/Theme.DeviceDefault.NoActionBar">
         <item name="android:windowBackground">@color/dvarimPage</item>

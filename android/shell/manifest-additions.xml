@@ -19,12 +19,23 @@
         <!-- A widget provider is a receiver the home screen broadcasts to, so it
              has to be open. Its refresh and row taps are explicit PendingIntents
              and deliberately have no filter here. -->
-        <receiver android:name=".TodayWidget" android:exported="true">
+        <receiver android:name=".TodayWidget" android:exported="true"
+            android:label="@string/widgetToday">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/widget_today_info" />
+        </receiver>
+
+        <!-- New To-Do on the home screen (NewTodoWidget): one tap to /new. -->
+        <receiver android:name=".NewTodoWidget" android:exported="true"
+            android:label="@string/widgetNewTodo">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/widget_new_info" />
         </receiver>
 
         <service android:name=".TodayWidgetService"
@@ -55,6 +66,16 @@
             </intent-filter>
         </activity>
 
+        <!-- Big screens. Every activity resizes (targetSdk 36 makes it so on a
+             large screen anyway): split screen, pop-up windows and DeX's
+             free-form windows, never letterboxed. The two keep a window alive
+             when DeX moves it to a display of another density, rather than
+             restarting it. FolderActivity also takes a resize, a split, a new
+             density or a keyboard in its stride (configChanges), so the page
+             isn't reloaded each time. -->
+        <meta-data android:name="com.samsung.android.keepalive.density" android:value="true" />
+        <meta-data android:name="com.samsung.android.multidisplay.keep_process_alive" android:value="true" />
+
         <!-- The app on a folder (Folder.java, docs/BRIDGE.md): the web app from
              inside the APK in a plain WebView. The launcher and the share
              sheet hand over to it in folder mode; nothing outside starts it.
@@ -62,13 +83,16 @@
              recreates it and the page follows (Theme.Dvarim). Back reaches the
              page only with enableOnBackInvokedCallback off: from targetSdk 36
              the system otherwise keeps it, and every Back closed the app (see
-             fallback_back in apply.sh). -->
+             fallback_back in apply.sh). A resize, a split, a new density, or
+             a keyboard joining or leaving doesn't recreate it either: the
+             page lays itself out again (the tablet's layouts, lib/touch.js). -->
         <activity android:name=".FolderActivity"
             android:theme="@style/Theme.Dvarim"
             android:enableOnBackInvokedCallback="false"
             android:exported="false"
             android:launchMode="singleTask"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|keyboard|keyboardHidden|navigation" />
 
         <!-- The first sign-in for the copy the app keeps (AppCopy): the server's
              page in the app's own WebView, whose cookie the app can read.

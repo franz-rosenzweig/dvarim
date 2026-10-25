@@ -26,7 +26,13 @@
     <string name="widgetClear">Nothing for today</string>
     <string name="widgetSignIn">Open Dvarim to sign in</string>
     <string name="widgetOffline">Can\'t reach the server</string>
-    <string name="widgetDescription">Today\'s to-dos, with a checkbox on each.</string>
+    <string name="widgetDescription">Today\'s to-dos, with a checkbox on each. Wide, it shows Upcoming beside them.</string>
+    <string name="widgetEvening">This Evening</string>
+    <string name="widgetUpcoming">Upcoming</string>
+    <string name="widgetUpcomingClear">Nothing coming up</string>
+    <string name="widgetTomorrow">Tomorrow</string>
+    <string name="widgetNewTodo">New To-Do</string>
+    <string name="newTodoWidgetDescription">A new to-do, one tap away, ready for the keyboard or the S Pen.</string>
     <string name="remindersChannel">Reminders</string>
     <string name="remindersChannelWhy">A to-do\'s ⏰ time, on the day it is due.</string>
     <string name="remindersComplete">Complete</string>
@@ -39,6 +45,8 @@
     <color name="widgetCheck">#C7C7CC</color>
     <color name="widgetMoon">#4F5A8E</color>
     <color name="widgetSun">#D08E2C</color>
+    <color name="widgetUpcoming">#587089</color>
+    <color name="widgetAccent">#668250</color>
 
     <style name="Theme.Dvarim" parent="@android:style/Theme.DeviceDefault.Light.NoActionBar">
         <item name="android:windowBackground">@color/dvarimPage</item>
