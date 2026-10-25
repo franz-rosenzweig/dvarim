@@ -107,7 +107,7 @@ In order. Each leaves the daily app working; nothing switches over by itself.
 | 0 | Decide | the table above | done 2026-09-23 |
 | 1 | Engine | port format, model, index, views, dates, repeats and ids to `engine/`; prove it against the Python with shared fixtures and a differential fuzzer (same operations, both implementations, compare every file) | done: #54 |
 | 2 | Two backends | the UI's store behind a `Backend` interface; Remote = today's HTTP, Local = engine + on-device storage | done: #56 |
-| 3 | Files on the device | the Mac app bundles the page and gives the engine a folder; Android through the Storage Access Framework; the web app on the server as today | done: #58 (the page), #62 (the Mac), #65 (Android); results in `mac/NEXT.md` and `android/NEXT.md` |
+| 3 | Files on the device | the Mac app bundles the page and gives the engine a folder; Android through the Storage Access Framework; the web app on the server as today | done: #58 (the page), #62 (the Mac), #65 (Android); results in `android/NEXT.md` (the Mac's were in `mac/NEXT.md`, retired with the web-view app) |
 | 4 | Sync you can trust | per-to-do merge, conflict-copy recovery, state that merges, deterministic ids for lines typed in Obsidian, sync status in the UI, a two-device stress suite | done: #59, #60 (`docs/SYNC.md`) |
 | 5 | Built-in sync | WebDAV; the server rebuilt on the engine and serving its folder for sync; Python retired | the server on the engine: #63 (live 2026-09-23), with #64; WebDAV sync, device tokens in Settings → Sync, and the Python's answers kept in `engine/test/golden/`: #67. The Python retired: #70, 2026-09-23 (`backend/` kept at the tag `python-final`). The device checks: the Mac's `sync` self-test (#71) and `tools/phone/local_check.py` on Android, each against a server of its own, with the `http` op on both. Left: the same by hand against dvarim.tiresia.xyz |
 | 6 | On-device extras | reminders as local notifications; calendars from the system (EventKit, CalendarContract); widgets and Quick Entry from local data | the page's side done: the device's calendars through the bridge (#68); lists for reminders and widgets through `window.dvarim.request`. The native side: EventKit, and the badge, menu bar, Quick Entry and reminders from the page, on the Mac (#71); CalendarContract, and the widget and reminders from the page's lists kept on the phone, on Android |
@@ -123,5 +123,5 @@ The Linux server has no Xcode and no Android SDK, so work splits:
 - **on the Mac:** the macOS shell and the Android shell — building, signing,
   installing, and running the conformance tests on real devices.
 
-Notes for the native side go beside its code, `mac/NEXT.md` and
+Notes for the native side go beside its code, `mac/README.md` and
 `android/NEXT.md`, as each phase needs something done there.

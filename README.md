@@ -51,7 +51,7 @@ Basically, instead of a to-do app with an export button, I have my to-dos as fil
 
 ### Every device
 - **The web app.** Opens anywhere and installs as an app from the browser. It keeps a full copy of your to-dos on the device, so every list and every change works without a connection, even a list you haven't opened there yet, and it catches up with the server by itself when it's back.
-- **The Mac app.** Quick Entry on ⌃Space from any app, Today in the menu bar, a Dock badge, notifications with a Complete button, the Services menu, and Shortcuts, Spotlight and Siri.
+- **The Mac app.** A native Mac app, every screen drawn by the Mac, with Quick Entry on ⌃Space from any app, Today in the menu bar, a Dock badge, notifications with a Complete button, the Services menu, and Shortcuts, Spotlight and Siri.
 - **The Android app.** A Today widget you can tick off from, sharing into Dvarim from any app, reminders that arrive with the app closed, and a New To-Do tile.
 - **With or without a server.** Both apps keep their own copy of your to-dos, synced with your server, so they open and work on a plane. They can also work straight on a folder on the device instead, kept in step by Syncthing, iCloud Drive, or the built-in WebDAV sync with a Dvarim server or Nextcloud.
 
@@ -113,7 +113,7 @@ Basically, instead of a to-do app with an export button, I have my to-dos as fil
 Run the server (below), open its address in any browser and sign in. To install it as an app, use the install icon in Chrome's address bar, **File → Add to Dock** in Safari, or **Add to Home screen** in Chrome on Android (that one needs HTTPS). The full steps are in [Install](docs/install.md).
 
 ### Mac
-There's no download yet: you build the Mac app from this repository, which takes about ten seconds once the tools are in place (macOS 14, the Command Line Tools and XcodeGen). Run `frontend/build.sh`, then `mac/build.sh`, and copy `mac/build/Dvarim.app` to `/Applications`. See [Install](docs/install.md#3-the-mac-app) and [the Mac app](docs/mac.md).
+On macOS 26 or newer, install it with Homebrew: `brew install --cask franz-rosenzweig/tap/dvarim`, and `brew upgrade` follows each release. Or build it from this repository (the Command Line Tools, XcodeGen and Node): run `npm ci` in `frontend/`, then `mac/build-native.sh`, and copy `mac/build-native/Dvarim.app` to `/Applications`. See [Install](docs/install.md#3-the-mac-app) and [the Mac app](docs/mac.md).
 
 ### Android
 The Android app is built from this repository too, with Google's Bubblewrap and a signing key of your own, and it needs your server on HTTPS. The steps are in [Install](docs/install.md#4-the-android-app), and what it does is in [the Android app](docs/android.md).
@@ -140,7 +140,7 @@ Start with [Getting started](docs/what-is-dvarim.md).
 - **The engine** (`engine/`) is plain JavaScript with no dependencies: the format, the lists, dates, repeats and the per-to-do merge. The same code runs on the server, in the page, and in the Mac and Android apps.
 - **The server** (`server/`) is Node with nothing to install, in one Docker container. It serves the web app, answers its requests from the folder, watches the folder for changes from Obsidian or a sync, offers the folder over WebDAV for the built-in sync, keeps a separate folder for each person you invite, and talks to CalDAV and Signal.
 - **The web app** (`frontend/`) is Svelte 5, built with Vite. It keeps a full copy of your to-dos in the browser and runs the engine on it, synced with the server over that same WebDAV, so it works offline.
-- **The native apps** are shells around that same web app, which they carry inside them, and by default they keep the to-dos in a folder of the app's own, synced with the server: SwiftUI on the Mac (`mac/`), and on Android (`android/`) Android's own WebView, or a Trusted Web Activity when it opens the server.
+- **The native apps** keep the to-dos in a folder of the app's own by default, synced with the server. On the Mac (`mac/`) every screen is SwiftUI and AppKit, with the engine running inside the app in JavaScriptCore. Android (`android/`) is a shell around the same web app, which it carries inside it, in Android's own WebView, or a Trusted Web Activity when it opens the server.
 
 ## Privacy
 

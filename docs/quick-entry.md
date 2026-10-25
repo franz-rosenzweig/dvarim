@@ -29,7 +29,7 @@ So "Call the plumber tomorrow 3pm #home !fri" becomes "Call the plumber", in Tod
 
 Press ⌃Space in any app and a small panel opens over whatever you're doing: a line for the title, with room for notes underneath. Type, press Return, and it's saved and the panel is gone, without Dvarim ever coming to the front. Escape closes it without saving, and ⌥Return starts a new line in the notes. If the server can't be reached, the Mac keeps the line and sends it later, and the panel says how many are waiting.
 
-You can record a different key in **Dvarim → Settings…**, which is worth doing if macOS already uses ⌃Space for switching keyboard languages. There's also **File → Quick Entry**, a **New To-Do in Dvarim** item in the Services menu of every app (the selected text becomes the to-do), and a **Create To-Do** action in Shortcuts, Spotlight and Siri. See [The Mac app](mac.md).
+You can record a different key in **Dvarim → Settings… → This Mac**, which is worth doing if macOS already uses ⌃Space for switching keyboard languages. There's also **File → Quick Entry**, a **New To-Do in Dvarim** item in the Services menu of every app (the selected text becomes the to-do), and a **Create To-Do** action in Shortcuts, Spotlight and Siri. See [The Mac app](mac.md).
 
 ## On Android: sharing, and New To-Do
 

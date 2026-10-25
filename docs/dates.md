@@ -38,7 +38,7 @@ A reminder is a time on the to-do's When day. In the When popover, click **Add R
 
 Where the reminder reaches you depends on what you use:
 
-- **The Mac app** shows a notification, with a **Complete** button, and clicking it opens the to-do. It's on unless you turn off **Notify me here when a reminder is due** in Dvarim → Settings….
+- **The Mac app** shows a notification, with a **Complete** button, and clicking it opens the to-do. It's on unless you turn off **Remind me on this Mac** in Dvarim → Settings… → This Mac.
 - **The Android app** does the same, even with the app closed, and **Remind me on this phone** in its settings turns it off.
 - **The server** can send each reminder as a Signal message, if it has a Signal sender set up (see [Your own server](server.md)).
 

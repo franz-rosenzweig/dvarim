@@ -22,7 +22,7 @@ import java.util.Set;
  * and sent when it can. Without this a tick on a plane was lost without a word:
  * the reminder went from the shade and the to-do stayed open on the server.
  *
- * The same idea as the Mac's (mac/Dvarim/Outbox.swift), and apart from the web
+ * The same idea as the Mac's (mac/Native/Shell/Outbox.swift), and apart from the web
  * app's own in the window (frontend/src/lib/outbox.js), which covers everything
  * done on the page. Only completions come through here. Completing a done
  * to-do changes nothing, so one whose answer was lost on the way back is simply

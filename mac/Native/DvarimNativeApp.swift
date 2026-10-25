@@ -137,7 +137,8 @@ struct DvarimCommands: Commands {
             Button("Quick Find") { model.finding = true }.keyboardShortcut("f")
         }
         CommandGroup(after: .toolbar) {
-            Button("Reload") { Task { await model.refresh() } }.keyboardShortcut("r")
+            // ⌃⌘R: ⌘R is Anytime, in the Items menu
+            Button("Reload") { Task { await model.refresh() } }.keyboardShortcut("r", modifiers: [.control, .command])
         }
     }
 

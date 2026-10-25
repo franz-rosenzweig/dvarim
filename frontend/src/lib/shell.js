@@ -35,9 +35,9 @@ const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(naviga
 export const IN_ANDROID_SHELL =
   typeof navigator !== 'undefined' && /;\s*wv\)/.test(navigator.userAgent);
 
-/** True inside the macOS shell (mac/Dvarim/WebView.swift names itself in the
- *  user agent). Its settings — server, Quick Entry's chord, the menu bar,
- *  reminders — are under Dvarim → Settings…, and dvarim://settings opens them. */
+/** True inside the web-view macOS shell, which named itself in the user agent.
+ *  It was retired on 2026-10-22 for the native Mac app, which draws its own
+ *  screens and shows no page; this stays false everywhere since. */
 export const IN_MAC_SHELL =
   typeof navigator !== 'undefined' && /\(macOS shell/.test(navigator.userAgent);
 

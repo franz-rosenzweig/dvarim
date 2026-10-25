@@ -68,7 +68,8 @@ Sync, stored only as hashes, and revoked individually (`docs/INTEGRATIONS.md`).
 The server reads `auth.json` again when the command line changes it, so a
 token made or revoked there counts at once. A native client around
 the web app can also reuse the cookie the web view already holds, which is what
-the macOS shell does.
+the web-view Mac app did. The native Mac app signs in with a session of its own
+and makes its copy a token from it.
 
 Anything else without a credential answers `401 {"error":"not signed in"}`. A
 state-changing request whose `Origin` header names another host answers

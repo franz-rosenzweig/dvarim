@@ -20,7 +20,7 @@ DVARIM_CALDAV_PASS: your-password
 
 It only ever reads them, and it asks again at most once a minute. [Your own server](server.md) shows where these go.
 
-**From the device.** When the Mac or Android app works on a folder instead of a server, it can show the device's own calendars, the ones in the Mac's Calendar app or on the phone. Nothing is asked for until you turn it on: in Settings → Calendar, press **Show this device's calendars**, and the device asks you for permission once. If you said no and change your mind, it's in System Settings → Privacy & Security → Calendars on the Mac, and Settings → Apps → Dvarim → Permissions on Android.
+**From the device.** When the Mac or Android app works on a folder instead of a server, it can show the device's own calendars, the ones in the Mac's Calendar app or on the phone. Nothing is asked for until you turn it on: on the Mac, **Use this Mac's calendars** in Settings… → Dvarim; on Android, **Show this device's calendars** in Settings → Calendar. The device asks you for permission once. If you said no and change your mind, it's in System Settings → Privacy & Security → Calendars on the Mac, and Settings → Apps → Dvarim → Permissions on Android.
 
 ## Choosing which calendars
 

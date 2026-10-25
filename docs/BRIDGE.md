@@ -1,8 +1,14 @@
 # The folder bridge
 
-How a native shell (the Mac app, the Android app) gives the page a folder of
-Markdown to keep its to-dos in. This is the contract both shells implement;
-the page's half is `engine/src/storage-bridge.js`.
+How a native shell gives the page a folder of Markdown to keep its to-dos in.
+The Android app implements it; the page's half is `engine/src/storage-bridge.js`.
+
+> **The Mac app doesn't use this bridge any more.** Since 22 October 2026 it's
+> a native app that runs the engine itself (`mac/Native/EngineHost.swift`), on
+> the same file operations the bridge's ops are made of (`mac/Shared/FolderFiles.swift`).
+> What follows about the Mac describes the web-view app it replaced, the first
+> shell to speak this protocol. It's kept because the protocol is still
+> Android's, and a future shell's.
 
 - **Reference implementation:** `tools/bridge_sim.py`, about a hundred lines of
   Python over a real folder.
@@ -163,9 +169,9 @@ different file from the one it wrote.
 - If a platform's own API normalises names, undo that before replying.
 - The conformance check tests this.
 - **macOS:** Foundation decomposes a name when it creates a file or folder, and
-  `standardizedFileURL` decomposes one on the way out. The Mac shell creates
-  through `rename(2)` and `mkdir(2)` and lists with `enumerator(atPath:)`; see
-  `mac/Dvarim/FolderBridge.swift`.
+  `standardizedFileURL` decomposes one on the way out. The Mac creates through
+  `rename(2)` and `mkdir(2)` and lists with `enumerator(atPath:)`; see
+  `mac/Shared/FolderFiles.swift`, which the Mac app's engine uses.
 
 ### Text
 
@@ -257,7 +263,8 @@ folder mode, and the shell tells it where to sync:
   (`lib/shell.js`, `askShell`).
 
 In the Mac and Android apps the copy is the default, set up from the first
-sign-in (mac/Dvarim/AppCopy.swift, android/…/AppCopy.java):
+sign-in (android/…/AppCopy.java; the Mac app makes its copy the same way in
+`mac/Native/Account.swift`, from a sign-in form of its own):
 
 - Until there is a copy the app shows the server's sign-in. Once someone has
   signed in, the shell makes the device a token with `POST /api/tokens`, named
@@ -294,10 +301,11 @@ using the page's `window.dvarim.request(method, path, body)`. That call answers
 any API route from this device's folder, so a shell can use it through
 `callAsyncJavaScript` or `evaluateJavascript` while a window is open.
 
-- **The Mac does this** (`mac/Dvarim/LocalPage.swift`). In folder mode every
-  one of them asks a page. It uses a window's page if one is open. Otherwise it
-  uses a page the app keeps hidden, which also goes on watching the folder and
-  syncing, and which goes as soon as a window opens.
+- **The web-view Mac app did this** (`LocalPage.swift`, retired with it). In
+  folder mode every one of them asked a page: a window's if one was open,
+  otherwise one the app kept hidden, which also went on watching the folder
+  and syncing until a window opened. The native Mac app has no page to ask:
+  its menu bar, badge and reminders ask its engine directly.
 - **Android keeps a copy of the lists** (`Local.java`). With the app closed
   there is no page, so `FolderActivity` keeps the page's Today and Upcoming on
   the phone when the engine comes up and on every `changed`. The widget and
