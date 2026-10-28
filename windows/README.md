@@ -37,11 +37,27 @@ WebView2; unpackaged and self-contained.
   with a message that says so. A file another app holds open is waited for, then
   written in place if it can't be replaced; a junction or link out of the folder is
   refused like `..`.
-- **The window** is put away, not closed, by its close box or Ctrl+W: Dvarim stays in
-  the notification area and its page goes on answering, as the web-view Mac app's
-  hidden page did. F11 is full screen. Only the app ever loads in it; a link
-  elsewhere opens in the browser, and `dvarim://settings` (the page's Settings ›
-  Data) opens the app's own Settings.
+- **The window** has Windows 11's look: the page runs up under a Mica title bar that
+  holds the icon, the menus and the window's name ("Tasks - Dvarim", for the folder
+  or the server), with the system's own caption buttons and Snap Layouts, light or
+  dark with the theme, and thin Fluent scrollbars in the page. It is put away, not
+  closed, by its close box or Ctrl+W: Dvarim stays in the notification area and its
+  page goes on answering, as the web-view Mac app's hidden page did. Only the app ever
+  loads in it; a link elsewhere opens in the browser, and `dvarim://settings` (the
+  page's Settings › Data) opens the app's own Settings.
+- **The menus**: File, Edit, To-Do (the Mac's Items menu: everything you can do to the
+  chosen to-dos), View and Help. Alt and a menu's letter opens it, Alt alone puts the
+  keyboard on the menu bar, and Escape gives it back to the page. Each item runs the
+  page's own command by its id (`window.dvarim.run`), and shows the key the page has
+  for it now (`window.dvarim.commands()`), so Settings › Keyboard's changes show there
+  too; Undo, Cut, Copy, Paste and Select All press their keys in the page. The
+  right-click menu loses the browser's items (Back, Reload, Save as, Print…).
+- **Text size**: Ctrl+Plus, Ctrl+Minus, Ctrl+0 and Ctrl with the mouse wheel change
+  the page's own text size (Settings › General › Text size), as View › Text Size does;
+  the browser never zooms the whole window.
+- **Full screen**: F11 or View › Full Screen, and the page's own full screen, are one
+  state: out is out, whichever way it came in, and the title bar is there exactly when
+  the window isn't full screen. A word at the top says which key gets out.
 - **The notification area**: today's count under the pointer; a click shows Today,
   where a to-do can be ticked off; a right-click has Open, Quick Entry, Settings and
   Quit. They ask the page (`window.dvarim.request`), which answers from the copy or
@@ -57,10 +73,11 @@ WebView2; unpackaged and self-contained.
   missed while Dvarim wasn't running comes when it starts, up to six hours late.
 - **One Dvarim**: opening it again brings the running one forward.
 
-The page needed two lines of its own for Windows: `frontend/src/lib/shell.js` knows
-the user agent `Dvarim/<version> (Windows shell)` (`IN_WINDOWS_SHELL`), so Settings ›
-Data offers the app's own settings; and `window.__dvarimLocal.sync()`, so the shell can
-run a sync round while its window is put away, when the page's own timers don't.
+The page needed three small things of its own for Windows: `frontend/src/lib/shell.js`
+knows the user agent `Dvarim/<version> (Windows shell)` (`IN_WINDOWS_SHELL`), so
+Settings › Data offers the app's own settings; `window.dvarim.textSize(step)`, the
+text size for Ctrl+Plus and the rest; and `window.__dvarimLocal.sync()`, so the shell
+can run a sync round while its window is put away, when the page's own timers don't.
 
 ## Build it
 
@@ -104,9 +121,14 @@ answer, twice:
   file written from outside reaching the page; Quick Entry saving to the Markdown and
   the page reporting `changed`; Today in the notification area, its count, and a tick
   there completing the to-do in the file; a reminder whose time came handed to Windows
-  and one for later waiting; the page's Settings › Data link opening the app's
-  Settings; a link elsewhere going to the browser; and the page still answering with
-  the window put away.
+  and one for later waiting; the title bar's five menus and the window's name, the
+  menus showing the page's own keys and running its commands; Ctrl+Plus, Ctrl+Minus,
+  Ctrl+0 and Ctrl with the wheel changing the page's text size and never the browser's
+  zoom; full screen by F11 and by the page, and out again from both at once with the
+  title bar back; the page's Settings › Data link opening the app's Settings; a link
+  elsewhere going to the browser; and the page still answering with the window put away.
+  The keys and the wheel are sent through DevTools into the page, which shows the page
+  and the shell handle them, but not that a real key gets past WebView2 to the page.
 - **In copy mode**, against the real server (`server/`) started on the runner by
   `windows\tools\test-server.mjs` on a scratch folder with a password made for the
   run: the server's sign-in page with `__dvarimShell`; signing in there; the token
@@ -116,11 +138,12 @@ answer, twice:
   its server and to no other, and with the token; and signing out, which revokes the
   token, forgets it and the copy, and goes back to the sign-in.
 
-What only a person can check: the window, the notification area's icon and its
-Today list as they look and feel, Quick Entry's shortcut from another app and the
-keyboard going back to it, a reminder's notification on screen and its buttons, the
-folder picker, the installer and starting at sign-in, and a real sign-in on your own
-server.
+What only a person can check: the window, its title bar and menus, the notification
+area's icon, its menu and its Today list as they look and feel; real keys (Alt and a
+letter, Ctrl+Plus, F11) reaching the page; Quick Entry's shortcut from another app and
+the keyboard going back to it; a reminder's notification on screen and its buttons;
+the folder picker; the installer and starting at sign-in; and a real sign-in on your
+own server.
 
 ## The pieces
 
@@ -129,7 +152,8 @@ server.
 | `Dvarim/Program.cs` | Main: one Dvarim at a time, a second launch handed to the first |
 | `Dvarim/App.xaml.cs` | the app: launching, the WebView2 environment, quitting |
 | `Dvarim/Vault.cs` | where the to-dos live, and this PC's settings |
-| `Dvarim/ShellWindow.xaml.cs` | the window: the page, the messages both ways, links out, the copy's sign-in |
+| `Dvarim/ShellWindow.xaml.cs` | the window: the title bar, the page, the messages both ways, links out, full screen, the copy's sign-in |
+| `Dvarim/Menus.cs` | the menus in the title bar, and what their items call |
 | `Dvarim/AppCopy.cs` | the copy: the token from the sign-in, and signing out |
 | `Dvarim/FolderBridge.cs` | docs/BRIDGE.md's messages, in order, and the watcher |
 | `Dvarim/AppScheme.cs` | `https://dvarim-app.example/`: the web app from inside Dvarim |

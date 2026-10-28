@@ -886,8 +886,8 @@
         <p class="note">
           A few things belong to the app rather than to your to-dos: where they live and which
           server it syncs with, Quick Entry's shortcut, starting with Windows, and whether reminders
-          arrive on this PC. They are in the app's own settings, which Dvarim's icon in the
-          notification area also opens.
+          arrive on this PC. They are in the app's own settings, which File › App Settings and
+          Dvarim's icon in the notification area also open.
         </p>
         <p><a class="native" href="dvarim://settings">Open the app's own settings</a></p>
       {/if}

@@ -63,7 +63,55 @@ static class Scripts
                 .then(() => (local && typeof local[m.what] === 'function' ? local[m.what]() : null))
                 .then(() => ({ status: local && typeof local[m.what] === 'function' ? 200 : 404, body: null })));
             }
+            // the menus' keys, as the page has them now (Settings › Keyboard can rebind any)
+            if (m.channel === 'commands') {
+              answer(m.id, ready.then(() => ({ status: 200, body: window.dvarim.commands() })));
+            }
+            if (m.channel === 'textSize') textSize(m.step);
           });
+
+          // The text's size, as in any Windows app: Ctrl and + or - (either row of keys),
+          // Ctrl+0 for the usual size, and Ctrl with the mouse wheel or a pinch on the
+          // touchpad. Each goes to the page's own text size (Settings › General), never
+          // the browser's zoom, which would make the whole window bigger.
+          const textSize = (step) => {
+            if (window.dvarim && typeof window.dvarim.textSize === 'function') window.dvarim.textSize(step);
+          };
+          window.addEventListener('keydown', (e) => {
+            if (!e.ctrlKey || e.altKey || e.metaKey) return;
+            const step = (e.code === 'Equal' || e.code === 'NumpadAdd' || e.key === '+') ? 1
+              : (e.code === 'Minus' || e.code === 'NumpadSubtract') ? -1
+              : ((e.code === 'Digit0' || e.code === 'Numpad0') && !e.shiftKey) ? 0 : null;
+            if (step === null) return;
+            e.preventDefault();
+            textSize(step);
+          }, true);
+          let wheel = 0;
+          window.addEventListener('wheel', (e) => {
+            if (!e.ctrlKey) return;
+            e.preventDefault();
+            wheel += e.deltaY;
+            if (Math.abs(wheel) < 50) return;
+            textSize(wheel < 0 ? 1 : -1);
+            wheel = 0;
+          }, { capture: true, passive: false });
+
+          // The menus' keys, as in any Windows app: Alt and a menu's letter opens it
+          // (File, Edit, To-Do, View, Help), and Alt alone, pressed and let go, puts the
+          // keyboard on the menu bar. Only if the page leaves them alone.
+          const letters = ['F', 'E', 'T', 'V', 'H'];
+          let altAlone = false;
+          window.addEventListener('keydown', (e) => {
+            if (e.key === 'Alt') { altAlone = !e.ctrlKey && !e.shiftKey && !e.metaKey; return; }
+            altAlone = false;
+            if (!e.altKey || e.ctrlKey || e.shiftKey || e.metaKey || (e.getModifierState && e.getModifierState('AltGraph'))) return;
+            const m = /^Key([A-Z])$/.exec(e.code || '');
+            if (m && letters.includes(m[1])) setTimeout(() => { if (!e.defaultPrevented) post({ channel: 'window', what: 'menu', letter: m[1] }); }, 0);
+          }, true);
+          window.addEventListener('keyup', (e) => {
+            if (e.key === 'Alt' && altAlone) { altAlone = false; post({ channel: 'window', what: 'menu' }); }
+          }, true);
+          window.addEventListener('blur', () => { altAlone = false; });
 
           // The window's own keys, if the page leaves them alone: Ctrl+W puts the window
           // away (Dvarim stays in the notification area), F11 is full screen. AltGr is

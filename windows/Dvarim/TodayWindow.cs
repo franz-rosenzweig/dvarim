@@ -140,6 +140,7 @@ sealed class TodayWindow
             presenter.IsAlwaysOnTop = true;
         }
         window.AppWindow.IsShownInSwitchers = false;
+        Look.Round(handle);
         window.AppWindow.Closing += (_, e) =>
         {
             e.Cancel = true;
@@ -159,7 +160,7 @@ sealed class TodayWindow
         head.Children.Add(title);
         head.Children.Add(date);
 
-        var open = new Button { Content = "Open Dvarim" };
+        var open = new Button { Content = "Open Dvarim", Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
         open.Click += (_, _) =>
         {
             window.AppWindow.Hide();

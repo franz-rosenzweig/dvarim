@@ -5,7 +5,8 @@ namespace Dvarim;
 
 /// <summary>
 /// Dvarim in the notification area, as the Mac's is in the menu bar: today's count
-/// under the pointer, a click for Today (TodayWindow), a right-click for the rest.
+/// under the pointer, a click for Today (TodayWindow), a right-click for the rest,
+/// in a menu that is light or dark as Windows is.
 /// Its window, never shown, also takes Quick Entry's shortcut from anywhere
 /// (RegisterHotKey) and hears Windows ending the session. Win32, since WinUI has no
 /// notification area of its own; on the windows' thread, whose message loop runs it.
@@ -106,7 +107,7 @@ static class Tray
     [DllImport("user32.dll", EntryPoint = "PostMessageW")]
     static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
 
-    const uint WM_NULL = 0x0000, WM_QUERYENDSESSION = 0x0011, WM_ENDSESSION = 0x0016, WM_CONTEXTMENU = 0x007B, WM_HOTKEY = 0x0312;
+    const uint WM_NULL = 0x0000, WM_QUERYENDSESSION = 0x0011, WM_ENDSESSION = 0x0016, WM_SETTINGCHANGE = 0x001A, WM_CONTEXTMENU = 0x007B, WM_HOTKEY = 0x0312;
     const uint WM_APP = 0x8000, Callback = WM_APP + 1;
     const uint NIN_SELECT = 0x0400, NIN_KEYSELECT = 0x0401;
     const uint NIM_ADD = 0, NIM_MODIFY = 1, NIM_DELETE = 2, NIM_SETVERSION = 4, NOTIFYICON_VERSION_4 = 4;
@@ -152,6 +153,7 @@ static class Tray
             return;
         }
         taskbarCreated = RegisterWindowMessage("TaskbarCreated");
+        Look.ThemedMenus(window);
         icon = LoadTrayIcon();
         Add();
         SetHotKey(Vault.QuickEntryKey);
@@ -284,6 +286,7 @@ static class Tray
                 Add();                                        // Explorer started again: the icon again
                 return IntPtr.Zero;
             }
+            if (message == WM_SETTINGCHANGE) Look.ThemeChanged();          // light or dark: the menu follows
             if (message == WM_QUERYENDSESSION) return new IntPtr(1);
             if (message == WM_ENDSESSION)
             {

@@ -130,6 +130,19 @@ export function installShellBridge() {
       let out = null;
       try { out = await res.json(); } catch { /* no body */ }
       return { status: res.status, body: out };
+    },
+    /**
+     * The text a step bigger (1) or smaller (-1), or the usual size (0): the
+     * same size as Settings → General → Text size, for a shell's Ctrl+Plus,
+     * Ctrl+Minus, Ctrl+0 and Ctrl with the mouse wheel (the Windows app's), so
+     * that they change the text rather than zoom the whole window. Resolves to
+     * the size now, in percent.
+     */
+    async textSize(step) {
+      const { getTextScale, setTextScale } = await import('./store.svelte.js');
+      const s = Number(step) || 0;
+      setTextScale(s === 0 ? 100 : getTextScale() + 5 * Math.sign(s));
+      return getTextScale();
     }
   };
 }

@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using Microsoft.Win32;
 
@@ -87,6 +88,59 @@ static class Startup
     public static void Refresh()
     {
         if (On && !App.Options.SelfTest) On = true;
+    }
+}
+
+/// <summary>Windows 11's look for the small windows: rounded corners, and Win32 menus that follow the light or dark theme.</summary>
+static class Look
+{
+    [DllImport("dwmapi.dll")]
+    static extern int DwmSetWindowAttribute(IntPtr window, int attribute, ref int value, int size);
+
+    // uxtheme's unnamed exports, which Windows' own apps and Notepad++ use for dark menus (Windows 10 1903 and later)
+    [DllImport("uxtheme.dll", EntryPoint = "#135")]
+    static extern int SetPreferredAppMode(int mode);
+
+    [DllImport("uxtheme.dll", EntryPoint = "#133")]
+    static extern bool AllowDarkModeForWindow(IntPtr window, bool allow);
+
+    [DllImport("uxtheme.dll", EntryPoint = "#104")]
+    static extern void RefreshImmersiveColorPolicyState();
+
+    [DllImport("uxtheme.dll", EntryPoint = "#136")]
+    static extern void FlushMenuThemes();
+
+    const int DWMWA_WINDOW_CORNER_PREFERENCE = 33, DWMWCP_ROUND = 2;
+
+    /// <summary>Rounded corners, as Windows 11's flyouts have; nothing on Windows 10.</summary>
+    public static void Round(IntPtr window)
+    {
+        var round = DWMWCP_ROUND;
+        _ = DwmSetWindowAttribute(window, DWMWA_WINDOW_CORNER_PREFERENCE, ref round, sizeof(int));
+    }
+
+    /// <summary>The notification area's menu in the theme Windows is in, light or dark, rather than always light.</summary>
+    public static void ThemedMenus(IntPtr owner)
+    {
+        try
+        {
+            SetPreferredAppMode(1);                  // AllowDark: follow the system
+            AllowDarkModeForWindow(owner, true);
+            RefreshImmersiveColorPolicyState();
+            FlushMenuThemes();
+        }
+        catch (Exception e) { Log.Write($"menus' theme: {e.Message}"); }
+    }
+
+    /// <summary>The theme changed: the menus' with it.</summary>
+    public static void ThemeChanged()
+    {
+        try
+        {
+            RefreshImmersiveColorPolicyState();
+            FlushMenuThemes();
+        }
+        catch (Exception) { }
     }
 }
 

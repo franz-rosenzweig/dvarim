@@ -35,9 +35,14 @@ public partial class App : Application
 
     static Task<CoreWebView2Environment>? web;
 
-    /// <summary>One WebView2 environment, its data beside the settings rather than beside the app.</summary>
+    /// <summary>
+    /// One WebView2 environment, its data beside the settings rather than beside the
+    /// app, with Windows 11's thin scrollbars that widen under the pointer instead of
+    /// a browser's.
+    /// </summary>
     public static Task<CoreWebView2Environment> WebEnvironment =>
-        web ??= CoreWebView2Environment.CreateWithOptionsAsync("", Path.Join(DataDir, "WebView2"), new CoreWebView2EnvironmentOptions()).AsTask();
+        web ??= CoreWebView2Environment.CreateWithOptionsAsync("", Path.Join(DataDir, "WebView2"),
+            new CoreWebView2EnvironmentOptions { ScrollBarStyle = CoreWebView2ScrollbarStyle.FluentOverlay }).AsTask();
 
     /// <summary>The to-dos changed (op <c>changed</c>), or the page has just come up: the tray and reminders ask again.</summary>
     public static event Action? VaultChanged;

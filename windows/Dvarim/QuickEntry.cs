@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics;
 using Windows.System;
 using Windows.UI.Core;
@@ -69,16 +70,26 @@ sealed class QuickEntry
             presenter.IsAlwaysOnTop = true;
         }
         window.AppWindow.IsShownInSwitchers = false;
+        Look.Round(handle);
         window.AppWindow.Closing += (_, e) =>
         {
             e.Cancel = true;
             Close();
         };
 
-        var root = new StackPanel { Padding = new Thickness(18, 14, 18, 14), Spacing = 8 };
-        root.Children.Add(title);
-        root.Children.Add(notes);
-        root.Children.Add(hint);
+        // as Windows 11's own launchers: the app's mark beside the line, on acrylic
+        var lines = new StackPanel { Spacing = 8 };
+        lines.Children.Add(title);
+        lines.Children.Add(notes);
+        lines.Children.Add(hint);
+        var root = new Grid { Padding = new Thickness(18, 16, 18, 14), ColumnSpacing = 14 };
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var png = Vault.WebBundle == null ? null : Path.Join(Vault.WebBundle, "icons", "icon-192.png");
+        if (png != null && File.Exists(png))
+            root.Children.Add(new Image { Source = new BitmapImage(new Uri(png)), Width = 28, Height = 28, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 4, 0, 0) });
+        Grid.SetColumn(lines, 1);
+        root.Children.Add(lines);
         window.Content = root;
         hint.Text = Hint;
 

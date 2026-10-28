@@ -56,7 +56,7 @@ sealed class SettingsWindow
 
     SettingsWindow()
     {
-        window = new Window { Title = "Dvarim Settings" };
+        window = new Window { Title = "App Settings - Dvarim" };
         handle = WindowNative.GetWindowHandle(window);
         window.SystemBackdrop = new MicaBackdrop();
         var icon = Path.Join(AppContext.BaseDirectory, "Assets", "Dvarim.ico");

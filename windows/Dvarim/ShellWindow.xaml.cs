@@ -1,10 +1,13 @@
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using Dvarim.Core;
+using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Web.WebView2.Core;
 using Windows.Graphics;
 using Windows.Storage.Pickers;
@@ -13,18 +16,21 @@ using WinRT.Interop;
 namespace Dvarim;
 
 /// <summary>
-/// Dvarim's window: the page, which draws everything, from inside the app with the
-/// copy or a folder behind it, or the server's. Closing it puts it away rather than
-/// ending Dvarim, so the page goes on answering the notification area, Quick Entry
-/// and reminders (window.dvarim.request), as the web-view Mac app's hidden page did.
-/// Android's is FolderActivity with CopySignInActivity.
+/// Dvarim's window: a Mica title bar holding the menus (Menus), the way a Windows
+/// 11 app has them, over the page, which draws everything else: from inside the app
+/// with the copy or a folder behind it, or the server's. Closing it puts it away
+/// rather than ending Dvarim, so the page goes on answering the notification area,
+/// Quick Entry and reminders (window.dvarim.request), as the web-view Mac app's
+/// hidden page did. Android's is FolderActivity with CopySignInActivity.
 /// </summary>
 public sealed partial class ShellWindow : Window
 {
     public IntPtr Handle { get; }
     WebView2? web;
     FolderBridge? bridge;
+    readonly Menus menus;
     bool started;
+    bool shellFull, pageFull;             // full screen by F11 or the menu; by the page itself (the Fullscreen API)
     ulong opening;                        // the navigation to the page, whose failure is worth a word
     RectInt32 normal;                     // where the window is when it is neither maximised nor full screen
     DispatcherQueueTimer? signIn;          // asks every few seconds whether there is a sign-in to make the copy from
@@ -74,13 +80,17 @@ public sealed partial class ShellWindow : Window
         InitializeComponent();
         Title = "Dvarim";
         Handle = WindowNative.GetWindowHandle(this);
+        menus = new Menus(this, Menu);
         var icon = Path.Join(AppContext.BaseDirectory, "Assets", "Dvarim.ico");
         if (File.Exists(icon)) AppWindow.SetIcon(icon);
+        MakeTitleBar();
         Place();
         AppWindow.Changed += (_, e) =>
         {
             if ((e.DidPositionChange || e.DidSizeChange) && AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Restored })
                 normal = new RectInt32(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
+            if (e.DidSizeChange) FitTitleBar();
+            if (e.DidPresenterChange) Presented();
         };
         // the close box puts the window away: Dvarim stays in the notification area
         AppWindow.Closing += (_, e) =>
@@ -89,7 +99,18 @@ public sealed partial class ShellWindow : Window
             e.Cancel = true;
             HideWindow();
         };
-        Root.Loaded += async (_, _) => await StartAsync();
+        Root.Loaded += async (_, _) =>
+        {
+            FitTitleBar();
+            await StartAsync();
+        };
+        Activated += (_, e) =>
+        {
+            var active = e.WindowActivationState != WindowActivationState.Deactivated;
+            // as any Windows title bar: dimmer while another window is in front
+            TitleText.Opacity = AppIcon.Opacity = active ? 1 : 0.5;
+            if (active) menus.Refresh();
+        };
         Vault.Moved += Reload;
         away = DispatcherQueue.CreateTimer();
         away.Interval = TimeSpan.FromMinutes(5);
@@ -120,6 +141,67 @@ public sealed partial class ShellWindow : Window
         if (App.Options.SelfTest) await SelfTest.Run(this);
     }
 
+    // ---- the title bar ---------------------------------------------------------------
+
+    /// <summary>
+    /// The page's window runs to the top under Mica, as Windows 11's own apps do: the
+    /// icon, the menus and the window's name in one row, the system's own caption
+    /// buttons (and their Snap Layouts) at the right of it.
+    /// </summary>
+    void MakeTitleBar()
+    {
+        SystemBackdrop = new MicaBackdrop();
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(DragArea);
+        var bar = AppWindow.TitleBar;
+        bar.PreferredHeightOption = TitleBarHeightOption.Tall;
+        bar.ButtonBackgroundColor = Colors.Transparent;
+        bar.ButtonInactiveBackgroundColor = Colors.Transparent;
+        PaintCaptionButtons();
+        Root.ActualThemeChanged += (_, _) => PaintCaptionButtons();
+        var png = Vault.WebBundle == null ? null : Path.Join(Vault.WebBundle, "icons", "icon-192.png");
+        if (png != null && File.Exists(png)) AppIcon.Source = new BitmapImage(new Uri(png));
+    }
+
+    /// <summary>The caption buttons in the theme's colours, light or dark, as the system's own title bars have them.</summary>
+    void PaintCaptionButtons()
+    {
+        var dark = Root.ActualTheme == ElementTheme.Dark;
+        var bar = AppWindow.TitleBar;
+        var ink = dark ? Colors.White : Colors.Black;
+        bar.ButtonForegroundColor = ink;
+        bar.ButtonHoverForegroundColor = ink;
+        bar.ButtonPressedForegroundColor = ink;
+        bar.ButtonHoverBackgroundColor = dark ? ColorHelper.FromArgb(0x15, 0xFF, 0xFF, 0xFF) : ColorHelper.FromArgb(0x09, 0, 0, 0);
+        bar.ButtonPressedBackgroundColor = dark ? ColorHelper.FromArgb(0x0B, 0xFF, 0xFF, 0xFF) : ColorHelper.FromArgb(0x06, 0, 0, 0);
+        bar.ButtonInactiveForegroundColor = dark ? ColorHelper.FromArgb(0x5D, 0xFF, 0xFF, 0xFF) : ColorHelper.FromArgb(0x5C, 0, 0, 0);
+    }
+
+    /// <summary>Room for the caption buttons, which the system draws over the row.</summary>
+    void FitTitleBar()
+    {
+        var scale = Root.XamlRoot?.RasterizationScale ?? GetDpiForWindow(Handle) / 96.0;
+        if (scale <= 0) return;
+        LeftPad.Width = new GridLength(AppWindow.TitleBar.LeftInset / scale);
+        RightPad.Width = new GridLength(AppWindow.TitleBar.RightInset / scale);
+    }
+
+    /// <summary>
+    /// The window's name, in the title bar and the taskbar, as Windows names a document's
+    /// window: where the to-dos are, then Dvarim. The folder's name, or the server's.
+    /// </summary>
+    void NameWindow()
+    {
+        var where = Vault.SigningIn ? "Sign in"
+            : Vault.Mode == "folder" && Vault.Folder is { } folder ? Path.GetFileName(Path.TrimEndingDirectorySeparator(folder))
+            : Vault.Server.Host;
+        Title = TitleText.Text = string.IsNullOrEmpty(where) ? "Dvarim" : $"{where} - Dvarim";
+    }
+
+    public IEnumerable<string> MenuTitles => menus.Titles;
+
+    internal Menus MenuBarMenus => menus;
+
     // ---- showing and putting away ---------------------------------------------------------
 
     /// <summary>The window to the front, at <paramref name="path"/> (/todo/aa11bb22, /today) if given.</summary>
@@ -130,17 +212,20 @@ public sealed partial class ShellWindow : Window
         if (AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter) presenter.Restore();
         Activate();
         SetForegroundWindow(Handle);
-        web?.Focus(FocusState.Programmatic);
+        FocusPage();
     }
 
     public void HideWindow()
     {
+        if (IsFullScreen) ToggleFullScreen();
         SavePlace();
-        if (AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen) FullScreen(false);
         AppWindow.Hide();
     }
 
     public bool IsShown => AppWindow.IsVisible;
+
+    /// <summary>The keyboard to the page: after a menu, so typing goes on where it was.</summary>
+    public void FocusPage() => web?.Focus(FocusState.Programmatic);
 
     /// <summary>One of the page's own addresses, in the page there is now.</summary>
     public void Go(string path)
@@ -164,6 +249,7 @@ public sealed partial class ShellWindow : Window
     /// </summary>
     async Task MakeWebViewAsync()
     {
+        NameWindow();
         CoreWebView2Environment environment;
         try { environment = await App.WebEnvironment; }
         catch (Exception e)
@@ -174,7 +260,7 @@ public sealed partial class ShellWindow : Window
             return;
         }
         var view = new WebView2();
-        Grid.SetRow(view, 1);
+        Grid.SetRow(view, 2);
         Root.Children.Add(view);
         web = view;
         await view.EnsureCoreWebView2Async(environment);
@@ -182,7 +268,9 @@ public sealed partial class ShellWindow : Window
         var settings = core.Settings;
         settings.AreBrowserAcceleratorKeysEnabled = false;   // Ctrl+F, Ctrl+P, Ctrl+R… are the page's keys, not the browser's
         settings.IsStatusBarEnabled = false;
-        settings.IsZoomControlEnabled = false;               // the page has its own (Settings › General › Text size)
+        // Zoom control stays on: off, WebView2 keeps Ctrl+Plus and Ctrl+Minus from the
+        // page. Scripts.Shell turns them, and Ctrl and the wheel, into the page's own
+        // text size (View › Text Size), so the browser never zooms the whole window.
         settings.IsPinchZoomEnabled = false;
         settings.IsSwipeNavigationEnabled = false;
         settings.IsGeneralAutofillEnabled = false;
@@ -203,7 +291,11 @@ public sealed partial class ShellWindow : Window
         core.LaunchingExternalUriScheme += OnExternalScheme;
         core.ProcessFailed += OnProcessFailed;
         core.ContextMenuRequested += OnContextMenuRequested;
-        core.ContainsFullScreenElementChanged += (_, _) => FullScreen(core.ContainsFullScreenElement);
+        core.ContainsFullScreenElementChanged += (_, _) =>
+        {
+            pageFull = core.ContainsFullScreenElement;
+            ApplyFullScreen();
+        };
         if (folder != null)
         {
             new AppScheme(Vault.WebBundle!, environment).Attach(core);
@@ -241,6 +333,12 @@ public sealed partial class ShellWindow : Window
         foreach (var w in waiting.Values) w.TrySetException(new ShellError("the page went away"));
         waiting.Clear();
         ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        // a page that was full screen goes with its web view
+        if (pageFull)
+        {
+            pageFull = false;
+            ApplyFullScreen();
+        }
         if (web == null) return;
         Root.Children.Remove(web);
         try { web.Close(); } catch (Exception) { }
@@ -253,7 +351,7 @@ public sealed partial class ShellWindow : Window
         var panel = new StackPanel { Spacing = 12, Margin = new Thickness(48), MaxWidth = 560, VerticalAlignment = VerticalAlignment.Center };
         panel.Children.Add(new TextBlock { Text = title, Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"], TextWrapping = TextWrapping.Wrap });
         panel.Children.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true });
-        Grid.SetRow(panel, 1);
+        Grid.SetRow(panel, 2);
         Root.Children.Add(panel);
     }
 
@@ -286,7 +384,7 @@ public sealed partial class ShellWindow : Window
         if (!on) return;
         SignInBar.Title = "Sign in to keep your to-dos on this PC";
         SignInBar.Message = $"Dvarim keeps a copy of them here, synced with {Vault.Server.Host}, so it works with no network. Another server, or a folder instead:";
-        var settings = new Button { Content = "Settings…" };
+        var settings = new Button { Content = "App Settings…" };
         settings.Click += (_, _) => SettingsWindow.ShowIt();
         SignInBar.ActionButton = settings;
     }
@@ -367,7 +465,8 @@ public sealed partial class ShellWindow : Window
                 switch (J.Text(message["what"]))
                 {
                     case "hide": HideWindow(); break;
-                    case "fullScreen": FullScreen(AppWindow.Presenter.Kind != AppWindowPresenterKind.FullScreen); break;
+                    case "fullScreen": ToggleFullScreen(); break;
+                    case "menu": menus.Open(J.Text(message["letter"])); break;      // Alt, or Alt and a menu's letter
                 }
                 break;
         }
@@ -413,6 +512,28 @@ public sealed partial class ShellWindow : Window
     /// <summary>Quitting: the page's last writes on disk.</summary>
     public Task FlushAsync() => Local("flush", TimeSpan.FromSeconds(3));
 
+    /// <summary>window.dvarim.commands(): every command, its label and its key now; null before the page has them.</summary>
+    public async Task<JsonArray?> Commands()
+    {
+        if (!ready.Task.IsCompleted) return null;
+        var (_, body) = await Send(new JsonObject { ["channel"] = "commands" }, TimeSpan.FromSeconds(5));
+        return body as JsonArray;
+    }
+
+    /// <summary>One of the page's commands by its id (lib/keys.js), with the keyboard back in the page.</summary>
+    public void Run(string command)
+    {
+        FocusPage();
+        _ = web?.CoreWebView2?.ExecuteScriptAsync($"window.dvarim && window.dvarim.run({J.Quote(command)})");
+    }
+
+    /// <summary>The text a step bigger (1) or smaller (-1), or the usual size (0): the page's own (Settings › General › Text size).</summary>
+    public void TextSize(int step)
+    {
+        FocusPage();
+        Post(new JsonObject { ["channel"] = "textSize", ["step"] = step });
+    }
+
     async Task<(int Status, JsonNode? Body)> Send(JsonObject message, TimeSpan within)
     {
         var id = nextId++;
@@ -425,6 +546,37 @@ public sealed partial class ShellWindow : Window
             return await answer.Task.WaitAsync(within);
         }
         finally { waiting.Remove(id); }
+    }
+
+    /// <summary>
+    /// A key pressed in the page as if on the keyboard (DevTools' Input domain), so
+    /// Undo, Cut, Copy, Paste and Select All in the menu do just what their keys do.
+    /// <paramref name="modifiers"/>: 1 Alt, 2 Ctrl, 8 Shift.
+    /// </summary>
+    public async void Key(string key, string code, int virtualKey, int modifiers)
+    {
+        if (web?.CoreWebView2 is not { } core) return;
+        FocusPage();
+        try
+        {
+            foreach (var type in new[] { "rawKeyDown", "keyUp" })
+                await core.CallDevToolsProtocolMethodAsync("Input.dispatchKeyEvent", new JsonObject
+                {
+                    ["type"] = type, ["modifiers"] = modifiers, ["key"] = key, ["code"] = code,
+                    ["windowsVirtualKeyCode"] = virtualKey, ["nativeVirtualKeyCode"] = virtualKey,
+                }.ToJsonString());
+        }
+        catch (Exception e) { Log.Write($"key {code}: {e.Message}"); }
+    }
+
+    /// <summary>The mouse wheel turned over the page (DevTools' Input domain), for the self-test.</summary>
+    public async Task Wheel(double deltaY, int modifiers)
+    {
+        if (web?.CoreWebView2 is not { } core) return;
+        await core.CallDevToolsProtocolMethodAsync("Input.dispatchMouseEvent", new JsonObject
+        {
+            ["type"] = "mouseWheel", ["x"] = 300, ["y"] = 300, ["deltaX"] = 0, ["deltaY"] = deltaY, ["modifiers"] = modifiers,
+        }.ToJsonString());
     }
 
     /// <summary>The bridge's pick, useServer and signOut: the window's to do; the reply goes first, or when the picker closes.</summary>
@@ -459,12 +611,12 @@ public sealed partial class ShellWindow : Window
         });
     }
 
-    /// <summary>An expression in the page, a promise awaited, the value as JSON (for the self-test).</summary>
-    public async Task<JsonNode?> Evaluate(string expression)
+    /// <summary>An expression in the page, a promise awaited, the value as JSON (for the self-test); <paramref name="gesture"/> as if a person had clicked.</summary>
+    public async Task<JsonNode?> Evaluate(string expression, bool gesture = false)
     {
         var core = web?.CoreWebView2 ?? throw new InvalidOperationException("no page yet");
         var json = await core.CallDevToolsProtocolMethodAsync("Runtime.evaluate",
-            new JsonObject { ["expression"] = expression, ["awaitPromise"] = true, ["returnByValue"] = true }.ToJsonString());
+            new JsonObject { ["expression"] = expression, ["awaitPromise"] = true, ["returnByValue"] = true, ["userGesture"] = gesture }.ToJsonString());
         var result = JsonNode.Parse(json);
         if (result?["exceptionDetails"] is { } problem)
             throw new Exception(problem["exception"]?["description"]?.ToString() ?? problem.ToJsonString());
@@ -530,21 +682,105 @@ public sealed partial class ShellWindow : Window
     static readonly HashSet<string> Unwanted =
         ["back", "forward", "reload", "saveAs", "print", "createQrCode", "share", "webCapture", "openLinkInNewWindow", "saveLinkAs", "copyLinkToHighlight"];
 
-    /// <summary>The page's right-click menu, without what belongs to a browser: spelling suggestions, cut, copy and paste stay.</summary>
+    /// <summary>
+    /// The right-click menu WebView2 would show, without what belongs to a browser:
+    /// spelling suggestions, Cut, Copy and Paste stay. A to-do's own menu is the
+    /// page's (a right-click on a row), so nothing of the app's needs adding here.
+    /// </summary>
     void OnContextMenuRequested(CoreWebView2 sender, CoreWebView2ContextMenuRequestedEventArgs e)
     {
         var items = e.MenuItems;
         for (var i = items.Count - 1; i >= 0; i--)
             if (Unwanted.Contains(items[i].Name)) items.RemoveAt(i);
-        // and no separator left at an end or beside another
+        Tidy(items);
+    }
+
+    /// <summary>No separator left at an end of the menu, or beside another.</summary>
+    static void Tidy(IList<CoreWebView2ContextMenuItem> items)
+    {
         for (var i = items.Count - 1; i >= 0; i--)
             if (items[i].Kind == CoreWebView2ContextMenuItemKind.Separator
                 && (i == 0 || i == items.Count - 1 || items[i - 1].Kind == CoreWebView2ContextMenuItemKind.Separator))
                 items.RemoveAt(i);
     }
 
-    public void FullScreen(bool on) =>
-        AppWindow.SetPresenter(on ? AppWindowPresenterKind.FullScreen : AppWindowPresenterKind.Overlapped);
+    // ---- full screen ---------------------------------------------------------------------
+
+    public bool IsFullScreen => AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
+    public bool TitleShown => TitleRow.Visibility == Visibility.Visible;
+
+    /// <summary>
+    /// F11 and View › Full Screen. Out of full screen is out, whichever way it came:
+    /// the page's own full screen too, so nothing is left half-way.
+    /// </summary>
+    public void ToggleFullScreen()
+    {
+        if (shellFull || pageFull || IsFullScreen)
+        {
+            shellFull = false;
+            if (pageFull) _ = web?.CoreWebView2?.ExecuteScriptAsync("document.fullscreenElement && document.exitFullscreen()");
+            pageFull = false;
+        }
+        else shellFull = true;
+        ApplyFullScreen();
+    }
+
+    /// <summary>One state from the two ways in: full screen while either wants it, the title bar exactly when not.</summary>
+    void ApplyFullScreen()
+    {
+        var want = shellFull || pageFull;
+        if (want != IsFullScreen) AppWindow.SetPresenter(want ? AppWindowPresenterKind.FullScreen : AppWindowPresenterKind.Overlapped);
+        Presented();
+        if (want) Hint(pageFull && !shellFull ? "Press Esc to exit full screen" : "Press F11 to exit full screen");
+    }
+
+    /// <summary>
+    /// The presenter changed, by us or by Windows (Win+↓ takes a window out of full
+    /// screen): the title bar follows what the window really is.
+    /// </summary>
+    void Presented()
+    {
+        if (!IsFullScreen && (shellFull || pageFull))
+        {
+            shellFull = false;
+            if (pageFull) _ = web?.CoreWebView2?.ExecuteScriptAsync("document.fullscreenElement && document.exitFullscreen()");
+            pageFull = false;
+        }
+        TitleRow.Visibility = IsFullScreen ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    Border? hint;
+    DispatcherQueueTimer? hintTimer;
+
+    /// <summary>A word at the top for three seconds, as Windows' browsers say how to leave full screen.</summary>
+    void Hint(string text)
+    {
+        if (hint != null) Root.Children.Remove(hint);
+        hint = new Border
+        {
+            Background = new SolidColorBrush(ColorHelper.FromArgb(0xE6, 0x2B, 0x2B, 0x2B)),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(16, 10, 16, 10),
+            Margin = new Thickness(0, 24, 0, 0),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Top,
+            IsHitTestVisible = false,
+            Child = new TextBlock { Text = text, Foreground = new SolidColorBrush(Colors.White) },
+        };
+        Grid.SetRowSpan(hint, 3);
+        Root.Children.Add(hint);
+        var shown = hint;
+        hintTimer?.Stop();
+        hintTimer = DispatcherQueue.CreateTimer();
+        hintTimer.Interval = TimeSpan.FromSeconds(3);
+        hintTimer.IsRepeating = false;
+        hintTimer.Tick += (_, _) =>
+        {
+            Root.Children.Remove(shown);
+            if (hint == shown) hint = null;
+        };
+        hintTimer.Start();
+    }
 
     static string Unreachable(string place, string why)
     {
@@ -555,7 +791,7 @@ public sealed partial class ShellWindow : Window
             @media (prefers-color-scheme:dark){body{color:#bbb;background:#202020} }
             h1{font-size:18px;font-weight:600;color:inherit}
             </style><div><h1>Dvarim could not open {{Esc(place)}}</h1><p>{{Esc(why)}}</p>
-            <p>Another server, or a folder on this PC: Settings, from Dvarim's icon in the notification area.</p></div>
+            <p>Another server, or a folder on this PC: File › App Settings.</p></div>
             """;
     }
 
@@ -613,7 +849,7 @@ public sealed partial class ShellWindow : Window
 
     void SavePlace()
     {
-        if (App.Options.SelfTest || !AppWindow.IsVisible || AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen) return;
+        if (App.Options.SelfTest || !AppWindow.IsVisible || IsFullScreen) return;
         var maximised = AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Maximized };
         Vault.WindowPlace = [normal.X, normal.Y, normal.Width, normal.Height, maximised ? 1 : 0];
     }

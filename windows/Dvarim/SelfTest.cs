@@ -126,6 +126,53 @@ static class SelfTest
         }
         else Add("reminders (not tried: too near midnight for today's)", true);
 
+        // the window: Windows 11's title bar, holding the menus, named for where the to-dos are
+        var titles = string.Join(", ", window.MenuTitles);
+        Add("the title bar holds File, Edit, To-Do, View and Help", titles == "File, Edit, To-Do, View, Help" && window.ExtendsContentIntoTitleBar, titles);
+        Add("the window is named for its folder", window.Title == $"{Path.GetFileName(folder)} - Dvarim", window.Title);
+        window.MenuBarMenus.Refresh();
+        Add("the menus show the page's own keys", await Until(() => window.MenuBarMenus.KeyOf("todo.today") == "Ctrl+T" && window.MenuBarMenus.KeyOf("go.inbox") == "Ctrl+1",
+            TimeSpan.FromSeconds(5)), $"To-Do › Today {window.MenuBarMenus.KeyOf("todo.today")}, View › Inbox {window.MenuBarMenus.KeyOf("go.inbox")}");
+        window.Run("go.upcoming");
+        var went = J.Text(await Until(window, "location.pathname === '/upcoming' ? location.pathname : ''", TimeSpan.FromSeconds(5)));
+        Add("a menu item runs the page's command (View › Upcoming)", went == "/upcoming", went ?? "");
+
+        // the text's size: Ctrl and + / - / 0, and Ctrl with the wheel, go to the page's own text size
+        const string size = "Number(localStorage.getItem('dvarim.textScale')) || 100";
+        var usual = J.Int(await window.Evaluate(size));
+        var ratio = (await window.Evaluate("window.devicePixelRatio"))?.ToJsonString();
+        window.Key("=", "Equal", 0xBB, 2);
+        var bigger = J.Int(await Until(window, $"({size}) > {usual} ? ({size}) : 0", TimeSpan.FromSeconds(3)));
+        Add("Ctrl and + makes the text bigger", bigger == usual + 5, $"{usual}% to {bigger}%");
+        window.Key("-", "Minus", 0xBD, 2);
+        var smaller = J.Int(await Until(window, $"({size}) < {bigger} ? ({size}) : 0", TimeSpan.FromSeconds(3)));
+        Add("Ctrl and - makes it smaller", smaller == usual, $"{bigger}% to {smaller}%");
+        await window.Wheel(-120, 2);
+        var wheeled = J.Int(await Until(window, $"({size}) > {smaller} ? ({size}) : 0", TimeSpan.FromSeconds(3)));
+        Add("Ctrl and the mouse wheel make it bigger", wheeled == smaller + 5, $"{smaller}% to {wheeled}%");
+        var css = J.Text(await window.Evaluate("getComputedStyle(document.documentElement).getPropertyValue('--text-scale').trim()"));
+        Add("the page's text follows (--text-scale)", css == (wheeled / 100.0).ToString(System.Globalization.CultureInfo.InvariantCulture), css ?? "");
+        window.Key("0", "Digit0", 0x30, 2);
+        var reset = J.Int(await Until(window, $"({size}) === 100 ? 100 : 0", TimeSpan.FromSeconds(3)));
+        Add("Ctrl+0 is the usual size again", reset == 100, $"{wheeled}% to {reset}%");
+        var after = (await window.Evaluate("window.devicePixelRatio"))?.ToJsonString();
+        Add("and the browser itself never zoomed the window", window.Core?.Settings.IsZoomControlEnabled == true && after == ratio, $"devicePixelRatio {ratio} then {after}");
+
+        // full screen, in and out, and never a window left without its title bar
+        window.ToggleFullScreen();
+        Add("F11 makes the window full screen, without the title bar", window.IsFullScreen && !window.TitleShown);
+        window.ToggleFullScreen();
+        Add("F11 again brings the window and its title bar back", !window.IsFullScreen && window.TitleShown);
+        await window.Evaluate("document.documentElement.requestFullscreen().then(() => true)", gesture: true);
+        var pageFull = await Until(() => window.IsFullScreen && !window.TitleShown, TimeSpan.FromSeconds(3));
+        Add("the page's own full screen fills the screen too", pageFull);
+        // the way Moshe's got stuck: the menu's Full Screen while the page was full screen
+        window.ToggleFullScreen();
+        var restored = await Until(() => !window.IsFullScreen && window.TitleShown, TimeSpan.FromSeconds(3));
+        var pageOut = J.Bool(await Until(window, "!document.fullscreenElement", TimeSpan.FromSeconds(3)));
+        Add("View › Full Screen then takes both out, title bar and all", restored && pageOut,
+            $"window {(window.IsFullScreen ? "full screen" : "normal")}, title bar {(window.TitleShown ? "shown" : "hidden")}, page {(pageOut ? "out" : "still full screen")}");
+
         // the page's Settings › Data has the way to the app's own settings, dvarim://settings
         var href = J.Text(await window.Evaluate("""
             (async () => {
