@@ -45,10 +45,10 @@ public static class Program
         // a later launch, handed over: on the window's thread, once there is one
         key.Activated += (_, e) => App.UI?.TryEnqueue(() => App.Instance.HandedOver(e));
 
-        Application.Start(_ =>
+        Application.Start(p =>
         {
             SynchronizationContext.SetSynchronizationContext(new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread()));
-            _ = new App();
+            new App();
         });
         return 0;
     }
