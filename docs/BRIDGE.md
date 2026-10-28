@@ -1,7 +1,7 @@
 # The folder bridge
 
 How a native shell gives the page a folder of Markdown to keep its to-dos in.
-The Android app implements it; the page's half is `engine/src/storage-bridge.js`.
+The Android and Windows apps implement it; the page's half is `engine/src/storage-bridge.js`.
 
 > **The Mac app doesn't use this bridge any more.** Since 22 October 2026 it's
 > a native app that runs the engine itself (`mac/Native/EngineHost.swift`), on
@@ -54,6 +54,7 @@ Serve the build (`frontend/dist`, made by `npm ci && npm run build` in
 | --- | --- | --- |
 | macOS | `dvarim-app://app` | a `WKURLSchemeHandler` registered for `dvarim-app` |
 | Android | `https://appassets.androidplatform.net` | `shouldInterceptRequest` answering from `assets/web/` |
+| Windows | `https://dvarim-app.example` | WebView2's `WebResourceRequested`, answering from `web\` beside the app (`.example` is reserved, so no real site is there) |
 
 - **Paths.** A path that names a file in the build returns that file, with its
   MIME type (`.js` is `text/javascript`, `.css`, `.svg`, `.png`, `.webmanifest`,
@@ -66,7 +67,8 @@ Serve the build (`frontend/dist`, made by `npm ci && npm run build` in
   shell. There is nothing to cache, and a cached copy would outlive an app update.
 - **User agent.** Keep the one the shell already sends
   (`Dvarim/… (macOS shell; chromeless)` on the Mac; Android's WebView adds
-  `; wv)` by itself). The page uses it to show the shell's own settings link.
+  `; wv)` by itself; Windows adds `Dvarim/<version> (Windows shell)`). The page
+  uses it to show the shell's own settings link.
 
 ## 2. The messages
 
@@ -104,6 +106,13 @@ web.addJavascriptInterface(bridge, "DvarimStorage");
 
 - Replies may arrive in any order. The page matches them by `id`.
 
+**Windows.** Android's transport, carried over WebView2's web messages
+(`windows/Dvarim/Scripts.cs`). A script the shell adds before the page's own
+defines `window.DvarimStorage.request(id, json)`, which posts
+`{channel: 'storage', id, json}` to the shell; the shell posts the reply back as
+`{channel: 'storage', id, reply}`, and the script hands it to
+`window.__dvarimStorageReply(id, reply)`. The page needs nothing of its own.
+
 **Only the app's own page may call the bridge.**
 - On the Mac, check `message.frameInfo.securityOrigin`. Its protocol must be
   `dvarim-app`.
@@ -111,6 +120,10 @@ web.addJavascriptInterface(bridge, "DvarimStorage");
   ever load the app's own origin there. The folder-mode `WebViewClient` opens
   every other address in the system browser (`dvarim://settings` goes to the
   shell's own settings), so nothing else ever loads alongside the interface.
+- On Windows, the script defines `DvarimStorage` only in the top frame of the
+  app's own origin, and the shell ignores a storage message from any other. The
+  window loads nothing but the app's own page and the server's; every other
+  address opens in the browser, and `dvarim://settings` in the app's Settings.
 
 ### Messages and replies
 
@@ -219,6 +232,8 @@ window.__dvarimFilesChanged()
 - **Mac:** use `FSEventStream` on the folder, with a latency of about 0.3 s.
 - **Android:** the document providers do not report changes. Set `pollSeconds`
   in `info` instead.
+- **Windows:** a `FileSystemWatcher` on the folder, telling the page about 0.3 s
+  after the last change, with `pollSeconds: 0`.
 
 Calling it too often is harmless. The page debounces the calls, reads the
 folder in one `readMany`, and compares contents. It also rescans whenever the
@@ -259,23 +274,26 @@ folder mode, and the shell tells it where to sync:
   script, `window.__dvarimShell = { copy: true }`: it then keeps no copy of its
   own (no mirror, below), and "Keep a full copy on this device" asks the shell
   for its copy instead, posting `{ type: 'useCopy' }` to the Mac's `dvarim`
-  message handler or to Android's `DvarimShell.postMessage(json)`
-  (`lib/shell.js`, `askShell`).
+  message handler or to Android's `DvarimShell.postMessage(json)`, which the
+  Windows app defines too (`lib/shell.js`, `askShell`).
 
-In the Mac and Android apps the copy is the default, set up from the first
+In the Mac, Android and Windows apps the copy is the default, set up from the first
 sign-in (android/…/AppCopy.java; the Mac app makes its copy the same way in
-`mac/Native/Account.swift`, from a sign-in form of its own):
+`mac/Native/Account.swift`, from a sign-in form of its own; Windows in
+`windows/Dvarim/AppCopy.cs`, from the server's page in its window, as Android):
 
 - Until there is a copy the app shows the server's sign-in. Once someone has
   signed in, the shell makes the device a token with `POST /api/tokens`, named
   for the device ("… 2" if the name is taken), using its session cookie, never
   another token. The Mac keeps the token in the Keychain, Android in the app's
-  private storage. Then it reloads into the copy.
+  private storage, Windows in Credential Manager. Then it reloads into the copy.
 - The copy's folder is the app's own: on the Mac
   `~/Library/Application Support/Dvarim/Copies/<host>/<who>/`, on Android
-  `files/copies/<host>/<who>/` (a plain folder, not a SAF tree). `<who>` is
+  `files/copies/<host>/<who>/` (a plain folder, not a SAF tree), on Windows
+  `%LOCALAPPDATA%\Dvarim\Copies\<host>\<who>\`. `<who>` is
   `owner` for the server's owner, otherwise the page's `personKey`. Signing out
-  moves the Mac's copy to the Trash and deletes Android's.
+  moves the Mac's copy to the Trash and Windows' to the Recycle Bin, and deletes
+  Android's.
 - On Android the first sign-in is in the app's own WebView
   (`CopySignInActivity`), not the Trusted Web Activity, because the app cannot
   read Chrome's cookies. Without a document-start script there,
@@ -306,6 +324,11 @@ any API route from this device's folder, so a shell can use it through
   otherwise one the app kept hidden, which also went on watching the folder
   and syncing until a window opened. The native Mac app has no page to ask:
   its menu bar, badge and reminders ask its engine directly.
+- **Windows keeps the page.** Closing the window puts it away with its page
+  still running, so the notification area's Today, Quick Entry and reminders ask
+  that page through `window.dvarim.request`, and hear of every change through
+  `changed`. While the window is put away, the page's own timers don't sync, so the
+  shell asks for a round now and then through `window.__dvarimLocal.sync()`.
 - **Android keeps a copy of the lists** (`Local.java`). With the app closed
   there is no page, so `FolderActivity` keeps the page's Today and Upcoming on
   the phone when the engine comes up and on every `changed`. The widget and

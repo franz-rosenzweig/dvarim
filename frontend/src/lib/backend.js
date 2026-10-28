@@ -181,13 +181,17 @@ async function openBackend() {
   // the built-in sync, if this device was set up for one (Settings → Sync)
   startSync(local).catch((e) => vaultProblem(`could not start syncing: ${e && e.message ? e.message : e}`));
   // for the browser suites (tools/e2e_local.py, e2e_folder.py) and the shells'
-  // selftests, which check the Markdown itself and the storage underneath
+  // selftests, which check the Markdown itself and the storage underneath; and
+  // `sync` for a shell whose window can be put away while the page goes on
+  // (the Windows app's, in the notification area), which a hidden page's own
+  // timers would not sync
   window.__dvarimLocal = {
     kind,
     snapshot: async () => { await store.flush(); return storage.snapshot ? storage.snapshot() : null; },
     flush: () => store.flush(),
     rescan: () => store.scanChanges(),
     conformance: () => checkVault(),
+    sync: () => syncNow(),
   };
 }
 

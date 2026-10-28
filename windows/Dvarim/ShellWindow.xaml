@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dvarim's window: the page, which ShellWindow.xaml.cs adds once it knows where the to-dos are, under a bar that shows only while the copy waits for a sign-in. -->
+<Window
+    x:Class="Dvarim.ShellWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid x:Name="Root" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <InfoBar x:Name="SignInBar" Grid.Row="0" IsOpen="False" IsClosable="False" Severity="Informational" />
+    </Grid>
+</Window>

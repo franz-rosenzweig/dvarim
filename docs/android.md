@@ -67,4 +67,4 @@ With the copy, the whole app works on the phone, and what you do reaches the ser
 
 The build notes, the signing key, and what to do when Bubblewrap misbehaves are in [the Android build notes](https://github.com/franz-rosenzweig/dvarim/blob/master/android/README.md).
 
-<sub>Next: [Sync](syncing.md) →</sub>
+<sub>Next: [The Windows app](windows.md) →</sub>

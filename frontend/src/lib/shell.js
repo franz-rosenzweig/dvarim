@@ -41,6 +41,13 @@ export const IN_ANDROID_SHELL =
 export const IN_MAC_SHELL =
   typeof navigator !== 'undefined' && /\(macOS shell/.test(navigator.userAgent);
 
+/** True inside the Windows app (windows/), which names itself in the user agent
+ *  as `Dvarim/<version> (Windows shell)`. Its own settings — where the to-dos
+ *  live, which server, Quick Entry's shortcut, starting with Windows, reminders —
+ *  open at dvarim://settings, which the app answers itself. */
+export const IN_WINDOWS_SHELL =
+  typeof navigator !== 'undefined' && /\(Windows shell\)/.test(navigator.userAgent);
+
 /**
  * Open an address outside the app: a link in a note.
  *
@@ -131,8 +138,8 @@ export function installShellBridge() {
  * Ask the shell to do something only it can, such as switching from the
  * server's page to a copy of the vault kept in the app ({ type: 'useCopy' }).
  * The Mac's handler is `dvarim`; Android's JavaScript interface is
- * `DvarimShell`, which takes the message as JSON. False if there is no shell
- * to ask.
+ * `DvarimShell`, which takes the message as JSON, and the Windows app puts an
+ * object of the same name in the page. False if there is no shell to ask.
  */
 export function askShell(msg) {
   try {

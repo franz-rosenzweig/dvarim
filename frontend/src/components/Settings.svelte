@@ -6,7 +6,7 @@
   import Icon from './Icon.svelte';
   import Keyboard from './Keyboard.svelte';
   import * as api from '../lib/api.js';
-  import { IN_ANDROID_SHELL, IN_MAC_SHELL, SHELL_KEEPS_COPY, askShell } from '../lib/shell.js';
+  import { IN_ANDROID_SHELL, IN_MAC_SHELL, IN_WINDOWS_SHELL, SHELL_KEEPS_COPY, askShell } from '../lib/shell.js';
   import { where, switchTo, pickFolder, checkVault, showDeviceCalendars } from '../lib/backend.js';
   import { syncConfig, configure, syncNow as davSyncNow, watchSync, davUrl } from '../lib/davsync.js';
   import { app, closeSettings, saveSettings, getTheme, setTheme, getTextScale, setTextScale, toast, toastError, signOut, confirm, showTutorial } from '../lib/store.svelte.js';
@@ -878,6 +878,16 @@
           The app is a window on this server, so a few things belong to the window rather than to
           the server: the address it opens, Quick Entry's shortcut, Today in the menu bar, opening at
           login, and whether reminders arrive on this Mac. They live under Dvarim → Settings….
+        </p>
+        <p><a class="native" href="dvarim://settings">Open the app's own settings</a></p>
+      {/if}
+      {#if IN_WINDOWS_SHELL}
+        <h3>This Windows app</h3>
+        <p class="note">
+          A few things belong to the app rather than to your to-dos: where they live and which
+          server it syncs with, Quick Entry's shortcut, starting with Windows, and whether reminders
+          arrive on this PC. They are in the app's own settings, which Dvarim's icon in the
+          notification area also opens.
         </p>
         <p><a class="native" href="dvarim://settings">Open the app's own settings</a></p>
       {/if}

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- What needs no window: the folder bridge's file operations and its http op, the copy's names,
+       reminders worked out from the lists, the Quick Entry shortcut, and Credential Manager.
+       The app (windows/Dvarim) and the tests (windows/Tests) both use them. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Dvarim.Core</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>

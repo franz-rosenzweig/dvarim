@@ -26,6 +26,7 @@ These pages are how Dvarim works, written down. It's my to-do app, and every to-
 ### Devices & sync
 - [The Mac app](mac.md) — Quick Entry on ⌃Space, Today in the menu bar, notifications, Shortcuts
 - [The Android app](android.md) — the Today widget, sharing into Dvarim, reminders
+- [The Windows app](windows.md) — Today in the notification area, Quick Entry on Ctrl+Alt+Space, reminders
 - [Sync](syncing.md) — a synced folder (Syncthing, iCloud Drive) or the built-in WebDAV sync
 - [Calendars](calendars.md) — your calendar in Today and Upcoming, and your to-dos in other apps
 

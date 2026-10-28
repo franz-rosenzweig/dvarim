@@ -36,3 +36,9 @@ android/local.properties
 
 # The signing passwords. The keystore itself is already ignored above.
 android/keystore.properties
+
+# Windows: dotnet's output, the icon windows/tools/make-icon.ps1 makes, and windows/build.ps1's
+windows/**/bin/
+windows/**/obj/
+windows/Dvarim/Assets/
+build/

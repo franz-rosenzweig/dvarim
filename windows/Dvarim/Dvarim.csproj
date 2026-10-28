@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Dvarim for Windows (windows/README.md): WinUI 3 and WebView2 around the web
+       app, which is built from frontend/ (npm run build) and copied in as web/.
+       Unpackaged and self-contained: the folder dotnet publish makes runs as it
+       is, and the installer only copies it. Program.cs has Main, so that a
+       second launch hands over to the first. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>Dvarim</RootNamespace>
+    <AssemblyName>Dvarim</AssemblyName>
+    <Version>0.1.0</Version>
+    <Product>Dvarim</Product>
+    <AssemblyTitle>Dvarim</AssemblyTitle>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+  </PropertyGroup>
+
+  <!-- windows/tools/make-icon.ps1 makes it from frontend/public/icons -->
+  <PropertyGroup Condition="Exists('Assets\Dvarim.ico')">
+    <ApplicationIcon>Assets\Dvarim.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260921001" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Dvarim.Core\Dvarim.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\Dvarim.ico" Condition="Exists('Assets\Dvarim.ico')" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\Dvarim.png" Condition="Exists('Assets\Dvarim.png')" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\frontend\dist\**\*" LinkBase="web" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

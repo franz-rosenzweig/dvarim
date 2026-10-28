@@ -1,0 +1,96 @@
+# The Windows app (windows/README.md), on GitHub's Windows machines: the web app
+# built into it, the tests of its folder code (with tools/bridge_sim.py as the
+# reference), the app, its self-test on a scratch folder and in copy mode against
+# a Dvarim server started on the runner, and the installer, kept with the run. A
+# tag windows-vX.Y.Z also makes the GitHub release.
+name: Windows
+on:
+  push:
+    branches: [master, 'windows*']
+    tags: ['windows-v*']
+    paths: ['windows/**', 'frontend/**', 'engine/**', 'server/**', 'tools/bridge_sim.py', '.github/workflows/windows.yml']
+  pull_request:
+    paths: ['windows/**', 'frontend/**', 'engine/**', 'server/**', 'tools/bridge_sim.py', '.github/workflows/windows.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: The version
+        id: version
+        shell: pwsh
+        run: |
+          $v = if ($env:GITHUB_REF -like 'refs/tags/windows-v*') { $env:GITHUB_REF_NAME -replace '^windows-v', '' }
+               else { ([xml](Get-Content windows/Dvarim/Dvarim.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1 }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: The web app builds
+        working-directory: frontend
+        run: npm ci && npx vite build
+
+      - name: The tests
+        run: dotnet run --project windows/Tests -c Release -- --repo "${{ github.workspace }}"
+
+      - name: The icon
+        shell: powershell
+        run: windows/tools/make-icon.ps1
+
+      - name: The app builds
+        run: dotnet publish windows/Dvarim/Dvarim.csproj -c Release -r win-x64 -p:Platform=x64 -p:Version=${{ steps.version.outputs.version }} -o build/Dvarim
+
+      - name: The self-test
+        shell: pwsh
+        run: windows/selftest.ps1 -App build/Dvarim/Dvarim.exe
+
+      - name: The installer
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y | Out-Null
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q "/DVersion=${{ steps.version.outputs.version }}" "/DSource=$PWD\build\Dvarim" windows\installer.iss
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Compress-Archive -Path build\Dvarim\* -DestinationPath "build\out\Dvarim-${{ steps.version.outputs.version }}-portable.zip"
+
+      # kept even when a check fails: the self-test's results and logs are the evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Dvarim-${{ steps.version.outputs.version }}-windows
+          path: |
+            build/out/*
+            build/selftest/*
+          if-no-files-found: warn
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/windows-v')
+    needs: windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: The release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "Dvarim for Windows ${GITHUB_REF_NAME#windows-v}" \
+            --notes "Dvarim for Windows. Run the Setup to install it for you alone (no administrator needed), or unzip the portable copy anywhere. Windows warns about an app from an unknown publisher the first time: More info → Run anyway." \
+            dist/*/out/Dvarim-*-Setup.exe dist/*/out/Dvarim-*-portable.zip
