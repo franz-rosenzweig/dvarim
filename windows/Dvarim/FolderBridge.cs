@@ -172,6 +172,13 @@ sealed class FolderBridge : IDisposable
         }
     }
 
+    /// <summary>Signing out is about to take the copy's folder away: nothing to watch, and nothing to tell the page.</summary>
+    public void StopWatching()
+    {
+        watcher?.Dispose();
+        watcher = null;
+    }
+
     void Changed(object sender, FileSystemEventArgs e)
     {
         var name = e.Name ?? "";

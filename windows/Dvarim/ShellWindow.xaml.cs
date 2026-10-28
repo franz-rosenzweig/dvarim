@@ -604,6 +604,7 @@ public sealed partial class ShellWindow : Window
                         break;
                     }
                     Reply(id, J.Ok(null));
+                    bridge?.StopWatching();
                     await AppCopy.SignOut(web?.CoreWebView2);
                     Vault.Reload();
                     break;
