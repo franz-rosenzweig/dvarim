@@ -173,6 +173,14 @@ static class SelfTest
         Add("View › Full Screen then takes both out, title bar and all", restored && pageOut,
             $"window {(window.IsFullScreen ? "full screen" : "normal")}, title bar {(window.TitleShown ? "shown" : "hidden")}, page {(pageOut ? "out" : "still full screen")}");
 
+        // minimised and back: the app lives through it (0.1.0 didn't), and the title bar keeps room for the caption buttons
+        var roomBefore = window.CaptionRoom;
+        var insetBefore = window.CaptionInset;
+        await window.MinimiseAndRestore();
+        Add("minimising and restoring the window", !window.IsMinimised && window.TitleShown && window.CaptionRoom > 0,
+            $"{(window.IsMinimised ? "still minimised" : "restored")}; room for the caption buttons {roomBefore:0} px before, "
+            + $"{window.CaptionRoom:0} after; Windows' inset {insetBefore} before, {window.CaptionInset} after");
+
         // the page's Settings › Data has the way to the app's own settings, dvarim://settings
         var href = J.Text(await window.Evaluate("""
             (async () => {
