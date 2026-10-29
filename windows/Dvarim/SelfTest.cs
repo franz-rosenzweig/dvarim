@@ -244,6 +244,9 @@ static class SelfTest
         var settingsFile = Path.Join(App.DataDir, "settings.json");
         Add("the token is in Credential Manager, not in the settings", token.StartsWith("dvt_", StringComparison.Ordinal) && !File.ReadAllText(settingsFile).Contains(token),
             token.Length == 0 ? "no token" : "");
+        var kept = Vault.SignIn(copy) ?? "";
+        Add("the sign-in is kept there too, for the devices list and signing out", kept.Contains("dvarim_session=") && !File.ReadAllText(settingsFile).Contains(kept),
+            kept.Length == 0 ? "no sign-in kept" : "");
         var copyFolder = Vault.CopyFolder(copy);
         Add("the copy has a folder of its own", Directory.Exists(copyFolder), copyFolder);
 
@@ -280,14 +283,22 @@ static class SelfTest
 
         // signing out: the token goes from the server and from here, and the copy with it
         var target = $"Dvarim sync token {copy.Server} {copy.Who}";
+        var signInTarget = $"Dvarim sign-in {copy.Server} {copy.Who}";
         var signOut = await Bridge(window, "signOut");
         Add("signOut is answered", signOut?["error"] == null, signOut?.ToJsonString() ?? "");
-        var gone = await Until(() => Vault.Copy == null && !Directory.Exists(copyFolder) && Credentials.Read(target) == null, TimeSpan.FromSeconds(20));
-        Add("signing out forgets the copy: the token from Credential Manager, the folder from this PC", gone);
+        var gone = await Until(() => Vault.Copy == null && !Directory.Exists(copyFolder) && Credentials.Read(target) == null && Credentials.Read(signInTarget) == null,
+            TimeSpan.FromSeconds(20));
+        Add("signing out forgets the copy: the token and the sign-in from Credential Manager, the folder from this PC", gone);
         var revoked = await Server(server, token, "/api/auth");
         Add("and the token no longer works on the server", !revoked.Text.Contains("\"authenticated\":true"), revoked.Text);
         var back = await Until(window, $"location.origin === {J.Quote(serverText)} && !!window.__dvarimShell", TimeSpan.FromSeconds(30));
         Add("the window is back at the server's sign-in", J.Bool(back), window.Source?.AbsoluteUri ?? "");
+
+        // and nothing of the sign-in is left in the window: its page signed out, and no second copy made from it
+        var authed = J.Bool(await window.Evaluate("fetch('/api/auth').then((r) => r.json()).then((j) => j.authenticated === true)"));
+        await Task.Delay(4000);                // the sign-in watch asks every 3 seconds
+        Add("and the server's page is signed out too, with no second copy made from the old sign-in", !authed && Vault.Copy == null,
+            authed ? "the page is still signed in" : Vault.Copy is { } again ? $"a copy again, as “{again.Device}”" : "");
     }
 
     // ---- helpers -----------------------------------------------------------------------------

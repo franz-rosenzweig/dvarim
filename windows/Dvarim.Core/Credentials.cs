@@ -47,7 +47,8 @@ public static class Credentials
     static extern void CredFree(IntPtr buffer);
 
     /// <summary>Keep a secret under a name; an error says why if Windows won't.</summary>
-    public static void Write(string target, string user, string secret)
+    public static void Write(string target, string user, string secret,
+        string comment = "Dvarim for Windows: this PC's token for syncing with the server")
     {
         var bytes = Encoding.Unicode.GetBytes(secret);
         var blob = Marshal.AllocHGlobal(Math.Max(bytes.Length, 1));
@@ -59,7 +60,7 @@ public static class Credentials
                 Type = CRED_TYPE_GENERIC,
                 TargetName = target,
                 UserName = user,
-                Comment = "Dvarim for Windows: this PC's token for syncing with the server",
+                Comment = comment,
                 CredentialBlob = blob,
                 CredentialBlobSize = (uint)bytes.Length,
                 Persist = CRED_PERSIST_LOCAL_MACHINE,

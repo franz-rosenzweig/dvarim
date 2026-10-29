@@ -85,6 +85,8 @@ static class Vault
 
     static string TokenName(CopyRecord c) => $"Dvarim sync token {c.Server} {c.Who}";
 
+    static string SignInName(CopyRecord c) => $"Dvarim sign-in {c.Server} {c.Who}";
+
     /// <summary>The copy, if it is for the server in use and its token is there.</summary>
     public static CopyRecord? Copy =>
         settings.Copy is { } c && ServerAddress.Parse(c.Server) is { } s && ServerAddress.SameOrigin(s, Server) && Token(c) != null ? c : null;
@@ -95,15 +97,28 @@ static class Vault
         catch (Exception e) { Log.Write($"Credential Manager: {e.Message}"); return null; }
     }
 
+    /// <summary>
+    /// The server's sign-in the copy was set up with (a Cookie header), kept beside its
+    /// token: WebView2 may leave the server's cookies out while the window shows the
+    /// app's own page (AppCopy.Session), and the devices list and signing out need it.
+    /// </summary>
+    public static string? SignIn(CopyRecord c)
+    {
+        try { return Credentials.Read(SignInName(c)); }
+        catch (Exception e) { Log.Write($"Credential Manager: {e.Message}"); return null; }
+    }
+
     public static string CopiesDir => Path.Join(App.DataDir, "Copies");
 
     public static string CopyFolder(CopyRecord c) => CopyNames.Folder(CopiesDir, ServerAddress.Parse(c.Server) ?? Server, c.Who);
 
-    /// <summary>After the first sign-in: the token kept, and the copy recorded. Throws if Windows won't keep the token.</summary>
-    public static void RecordCopy(string who, string device, string token)
+    /// <summary>After the first sign-in: the token and the sign-in kept, and the copy recorded. Throws if Windows won't keep the token.</summary>
+    public static void RecordCopy(string who, string device, string token, string signIn)
     {
         var c = new CopyRecord { Server = ServerAddress.Text(Server), Who = who, Device = device };
         Credentials.Write(TokenName(c), $"{who}@{Server.Host}", token);
+        try { Credentials.Write(SignInName(c), $"{who}@{Server.Host}", signIn, "Dvarim for Windows: the sign-in on the server, for this PC's devices list and signing out"); }
+        catch (Exception e) { Log.Write($"Credential Manager: {e.Message}"); }
         settings.Copy = c;
         Save();
         Directory.CreateDirectory(CopyFolder(c));
@@ -114,7 +129,11 @@ static class Vault
     {
         if (settings.Copy is { } c)
         {
-            try { Credentials.Delete(TokenName(c)); }
+            try
+            {
+                Credentials.Delete(TokenName(c));
+                Credentials.Delete(SignInName(c));
+            }
             catch (Exception e) { Log.Write($"Credential Manager: {e.Message}"); }
         }
         settings.Copy = null;

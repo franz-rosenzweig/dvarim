@@ -287,6 +287,9 @@ sign-in (android/…/AppCopy.java; the Mac app makes its copy the same way in
   for the device ("… 2" if the name is taken), using its session cookie, never
   another token. The Mac keeps the token in the Keychain, Android in the app's
   private storage, Windows in Credential Manager. Then it reloads into the copy.
+  Windows keeps the session cookie there too: while its window shows the app's
+  own page, WebView2 may leave the server's cookie out of what it lists, and
+  `http` with `session: true` and signing out need it.
 - The copy's folder is the app's own: on the Mac
   `~/Library/Application Support/Dvarim/Copies/<host>/<who>/`, on Android
   `files/copies/<host>/<who>/` (a plain folder, not a SAF tree), on Windows

@@ -95,8 +95,11 @@ windows\build.ps1            # build\Dvarim is the app; build\out the installer
 
 The installer is for one person and needs no administrator: it copies the app to
 `%LOCALAPPDATA%\Programs\Dvarim`. Settings, the page's own storage, the copy and
-`dvarim.log` are in `%LOCALAPPDATA%\Dvarim`; the token is in Credential Manager
-(Windows Credentials, "Dvarim sync token …"). The app isn't signed, so Windows says
+`dvarim.log` are in `%LOCALAPPDATA%\Dvarim`; the copy's token and the sign-in it
+was made from are in Credential Manager (Windows Credentials, "Dvarim sync token …"
+and "Dvarim sign-in …"). The sign-in is kept because while the window shows the
+app's own page, WebView2 may leave the server's cookie out of what it lists, and the
+devices list and signing out need it. The app isn't signed, so Windows says
 the publisher is unknown the first time: More info › Run anyway. The build is about
 180 MB, most of it the Windows App SDK's own parts (its AI and ML libraries among
 them, which Dvarim doesn't use); trimming them is for later.
@@ -132,11 +135,12 @@ answer, twice:
 - **In copy mode**, against the real server (`server/`) started on the runner by
   `windows\tools\test-server.mjs` on a scratch folder with a password made for the
   run: the server's sign-in page with `__dvarimShell`; signing in there; the token
-  made from that session and kept in Credential Manager, not in the settings; the
-  window reloading into the copy; `info.sync`; a to-do from the server arriving in the
-  copy and one made with Quick Entry reaching the server; `http` with the session to
-  its server and to no other, and with the token; and signing out, which revokes the
-  token, forgets it and the copy, and goes back to the sign-in.
+  made from that session, and the session itself, kept in Credential Manager, not in
+  the settings; the window reloading into the copy; `info.sync`; a to-do from the
+  server arriving in the copy and one made with Quick Entry reaching the server;
+  `http` with the session to its server and to no other, and with the token; and
+  signing out, which revokes the token, forgets it, the session and the copy, goes
+  back to the sign-in, and leaves that page signed out with no second copy made.
 
 What only a person can check: the window, its title bar and menus, the notification
 area's icon, its menu and its Today list as they look and feel; real keys (Alt and a

@@ -35,7 +35,6 @@ public sealed partial class ShellWindow : Window
     RectInt32 normal;                     // where the window is when it is neither maximised nor full screen
     DispatcherQueueTimer? signIn;          // asks every few seconds whether there is a sign-in to make the copy from
     bool settingUp;
-    uint browserProcess;
     readonly DispatcherQueueTimer away;   // a sync round now and then while the window is put away
     TaskCompletionSource ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
     readonly Dictionary<int, TaskCompletionSource<(int Status, JsonNode? Body)>> waiting = new();
@@ -303,10 +302,6 @@ public sealed partial class ShellWindow : Window
         web = view;
         await view.EnsureCoreWebView2Async(environment);
         var core = view.CoreWebView2;
-        // a page made again may get a browser process of its own, its cookies behind the last one's (AppCopy.session)
-        if (browserProcess != 0 && core.BrowserProcessId != browserProcess)
-            Log.Write($"WebView2 started another browser process for the page ({browserProcess}, now {core.BrowserProcessId})");
-        browserProcess = core.BrowserProcessId;
         var settings = core.Settings;
         settings.AreBrowserAcceleratorKeysEnabled = false;   // Ctrl+F, Ctrl+P, Ctrl+R… are the page's keys, not the browser's
         settings.IsStatusBarEnabled = false;
