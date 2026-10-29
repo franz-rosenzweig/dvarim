@@ -36,11 +36,32 @@ static class AppCopy
         public int Status { get; } = status;
     }
 
+    /// <summary>
+    /// The sign-in the copy was set up with, while the app runs. The page is made
+    /// again once the copy is set up, and WebView2 may give the new one a browser
+    /// process whose cookies are behind the last one's (the CI self-test caught it):
+    /// then the window has no sign-in for http's session or for signing out, though
+    /// the server would still take this one.
+    /// </summary>
+    static (Uri Server, string Cookie)? session;
+
+    /// <summary>The sign-in signed out with: if WebView2's cookies bring it back, that is no new sign-in.</summary>
+    static string? signedOut;
+
     /// <summary>The server's session cookie as WebView2 holds it, as a Cookie header; null with none.</summary>
     public static async Task<string?> Cookie(CoreWebView2 core, Uri server)
     {
         var cookies = await core.CookieManager.GetCookiesAsync(server.AbsoluteUri);
         return cookies.Count == 0 ? null : string.Join("; ", cookies.Select(c => $"{c.Name}={c.Value}"));
+    }
+
+    /// <summary>The copy's sign-in, for http's session and for signing out: the window's, else the one the copy was set up with.</summary>
+    public static async Task<string?> Session(CoreWebView2? core, Uri server)
+    {
+        var cookie = core == null ? null : await Cookie(core, server);
+        if (cookie != null || session is not { } kept || !ServerAddress.SameOrigin(kept.Server, server)) return cookie;
+        Log.Write("the window's cookies have no sign-in: using the one the copy was set up with");
+        return kept.Cookie;
     }
 
     /// <summary>
@@ -54,6 +75,12 @@ static class AppCopy
         var server = Vault.Server;
         var cookie = await Cookie(core, server);
         if (cookie == null) return false;
+        if (cookie == signedOut)
+        {
+            // the sign-in just signed out with, back from an older browser process's cookies: away with it again
+            foreach (var c in await core.CookieManager.GetCookiesAsync(server.AbsoluteUri)) core.CookieManager.DeleteCookie(c);
+            return false;
+        }
         try
         {
             var auth = JsonNode.Parse(await Call(server, HttpMethod.Get, "/api/auth", null, cookie)) as JsonObject;
@@ -68,6 +95,8 @@ static class AppCopy
                     var made = JsonNode.Parse(await Call(server, HttpMethod.Post, "/api/tokens", new JsonObject { ["name"] = name }, cookie));
                     var token = J.Text(made?["token"]) ?? throw new Exception("the server made no token");
                     Vault.RecordCopy(who, name, token);
+                    session = (server, cookie);
+                    signedOut = null;
                     Log.Write($"keeping a copy on this PC for {who}, synced with {server.Host} as {name}");
                     return true;
                 }
@@ -94,13 +123,15 @@ static class AppCopy
     {
         if (Vault.Copy is not { } copy) return;
         var server = Vault.Server;
-        var cookie = core == null ? null : await Cookie(core, server);
+        var cookie = await Session(core, server);
         try { await Call(server, HttpMethod.Delete, "/api/tokens/" + Uri.EscapeDataString(copy.Device), null, cookie); }
         catch (Exception e) { Log.Write($"could not take this PC off the server's devices: {e.Message}"); }
         try { await Call(server, HttpMethod.Post, "/api/logout", new JsonObject(), cookie); }
         catch (Exception e) { Log.Write($"could not sign out on the server: {e.Message}"); }
         if (core != null)
             foreach (var c in await core.CookieManager.GetCookiesAsync(server.AbsoluteUri)) core.CookieManager.DeleteCookie(c);
+        signedOut = cookie;
+        session = null;
         var folder = Vault.CopyFolder(copy);
         Vault.ForgetCopy();
         try
