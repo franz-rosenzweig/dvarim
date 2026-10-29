@@ -30,7 +30,7 @@ Dvarim's icon sits in the notification area, by the clock, with today's count wh
 
 ## Quick Entry
 
-Press **Ctrl+Alt+Space** in any app and a small panel opens over what you're doing, with a line for the to-do and room for notes under it. Type it the way you'd say it, "Call the bank tomorrow 11am #phone !fri", and press **Enter**: it's saved to the Inbox, or to Today or Upcoming if you gave it a date, and you're back where you were. **Shift+Enter** starts a new line in the notes, and **Escape** closes the panel without saving. To use another shortcut, click the one in **App Settings** and press the one you want; it needs Ctrl, Alt or the Windows key. If another app already has it, App Settings says so, and Quick Entry is still in the icon's menu and the **File** menu.
+Press **Ctrl+Alt+Space** in any app and a small panel opens over what you're doing, with a line for the to-do and room for notes under it. Type it the way you'd say it, "Call the bank tomorrow 11am #phone !fri", and press **Enter**: it's saved to the Inbox, or to Today or Upcoming if you gave it a date, and you're back where you were. **Shift+Enter** starts a new line in the notes, and **Escape** closes the panel without saving. To use another shortcut, click the one in **App Settings** and press the one you want; it needs Ctrl, Alt or the Windows key. If another app already has it, a Windows notification says so once, and its **Choose a shortcut** button opens App Settings; until you choose one, Quick Entry is still in the icon's menu and the **File** menu.
 
 ## Reminders
 

@@ -143,7 +143,7 @@ static class Notifications
             .AddText(r.Title);
         if (r.Sub.Length > 0) builder.AddText(r.Sub);
         builder.AddButton(new AppNotificationButton("Complete").AddArgument("action", "complete").AddArgument("id", r.Id));
-        Send(builder, r.Key);
+        _ = Send(builder, r.Key);
     }
 
     /// <summary>
@@ -157,32 +157,43 @@ static class Notifications
             .AddText("Reminders reach this PC")
             .AddText("A to-do's reminder arrives like this, with a Complete button."), "test");
 
-    static void Send(AppNotificationBuilder builder, string key)
+    /// <summary>Quick Entry's shortcut is another app's (Tray.TakeQuickEntryKey): say so, with the way to choose another. False if Windows didn't take it.</summary>
+    public static bool ShortcutTaken(HotKey key) =>
+        Send(new AppNotificationBuilder()
+            .AddArgument("action", "settings")
+            .AddText("Quick Entry needs another shortcut")
+            .AddText($"Another app already uses {key}. Choose one in App Settings; until then, Quick Entry is in the menu of Dvarim's icon in the notification area.")
+            .AddButton(new AppNotificationButton("Choose a shortcut").AddArgument("action", "settings")), "shortcut", "app");
+
+    static bool Send(AppNotificationBuilder builder, string key, string group = "reminders")
     {
         try
         {
             var note = builder.BuildNotification();
             // the same reminder again replaces itself rather than stacking
             note.Tag = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16];
-            note.Group = "reminders";
+            note.Group = group;
             AppNotificationManager.Default.Show(note);
             Sent.Add(key);
             Problem = null;
+            return true;
         }
         catch (Exception e)
         {
             Problem = e.Message;
             Log.Write($"notification {key}: {e.Message}");
+            return false;
         }
     }
 
-    /// <summary>Pressed: Complete ticks the to-do off through the page; the rest opens it in the window.</summary>
+    /// <summary>Pressed: Complete ticks the to-do off through the page; a shortcut's opens App Settings; the rest opens the to-do in the window.</summary>
     public static void Invoked(AppNotificationActivatedEventArgs e)
     {
         var args = e.Arguments;
         args.TryGetValue("action", out var action);
         args.TryGetValue("id", out var id);
-        if (action == "complete" && !string.IsNullOrEmpty(id)) _ = TodayList.Complete(id, true);
+        if (action == "settings") SettingsWindow.ShowIt();
+        else if (action == "complete" && !string.IsNullOrEmpty(id)) _ = TodayList.Complete(id, true);
         else App.Main.ShowWindow(string.IsNullOrEmpty(id) ? "/today" : "/todo/" + Uri.EscapeDataString(id));
     }
 }

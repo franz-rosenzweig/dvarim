@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -26,6 +27,15 @@ static class SelfTest
     static readonly List<Check> Checks = [];
     static readonly object Gate = new();
     static int calls;
+
+    // a shortcut held as another app would hold it: on this thread, with no window
+    const int HeldHotKeyId = 0x5EF;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    static extern bool RegisterHotKey(IntPtr window, int id, uint modifiers, uint key);
+
+    [DllImport("user32.dll")]
+    static extern bool UnregisterHotKey(IntPtr window, int id);
 
     public static void Start()
     {
@@ -125,6 +135,28 @@ static class SelfTest
             Add("one for later waits for its time", later != null && !Notifications.Sent.Contains(later.Key));
         }
         else Add("reminders (not tried: too near midnight for today's)", true);
+
+        // Quick Entry's shortcut held by another app, as Ctrl+Alt+Space was on the user's PC: a notification
+        // says so, once for that shortcut rather than at every start, and Quick Entry keeps what it had
+        var had = Tray.Registered;
+        var usualKey = Vault.QuickEntryKey;
+        var held = HotKey.Parse("Ctrl+Alt+Shift+F9")!.Value;
+        var holding = RegisterHotKey(IntPtr.Zero, HeldHotKeyId, held.Modifiers, held.Key);
+        Vault.QuickEntryKey = held;
+        var sentBefore = Notifications.Sent.Count(k => k == "shortcut");
+        var first = Tray.TakeQuickEntryKey();
+        var again = Tray.TakeQuickEntryKey();               // as the next start would
+        var notices = Notifications.Sent.Count(k => k == "shortcut") - sentBefore;
+        Add("a shortcut another app holds: one notification says so, not one at every start, and Quick Entry keeps its own",
+            holding && !first && !again && notices == 1 && Tray.Registered == had,
+            $"{(holding ? "held" : "couldn't hold it")}; {notices} notifications; Quick Entry on {Tray.Registered?.ToString() ?? "nothing"}"
+            + (Notifications.Problem is { } trouble ? $"; {trouble}" : ""));
+        UnregisterHotKey(IntPtr.Zero, HeldHotKeyId);
+        var freed = Tray.TakeQuickEntryKey();
+        Add("once it's free, Quick Entry takes it, and would say so again if it were taken later",
+            freed && Tray.Registered == held && Vault.ShortcutTakenTold == null, Tray.Registered?.ToString() ?? "nothing");
+        Vault.QuickEntryKey = usualKey;
+        Tray.TakeQuickEntryKey();
 
         // the window: Windows 11's title bar, holding the menus, named for where the to-dos are
         var titles = string.Join(", ", window.MenuTitles);

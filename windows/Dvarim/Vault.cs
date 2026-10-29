@@ -28,6 +28,7 @@ static class Vault
         public CopyRecord? Copy { get; set; }
         public int[]? Window { get; set; }                    // x, y, width, height, maximised
         public string QuickEntryKey { get; set; } = HotKey.Default.ToString();
+        public string? ShortcutTakenTold { get; set; }        // the shortcut a notification last said another app holds
         public bool Reminders { get; set; } = true;
     }
 
@@ -212,6 +213,18 @@ static class Vault
     {
         get => HotKey.Parse(settings.QuickEntryKey) ?? HotKey.Default;
         set { settings.QuickEntryKey = value.ToString(); Save(); }
+    }
+
+    /// <summary>The shortcut a notification last said another app holds: said once for it, not at every start.</summary>
+    public static string? ShortcutTakenTold
+    {
+        get => settings.ShortcutTakenTold;
+        set
+        {
+            if (settings.ShortcutTakenTold == value) return;
+            settings.ShortcutTakenTold = value;
+            Save();
+        }
     }
 
     public static bool RemindersOn

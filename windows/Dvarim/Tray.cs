@@ -156,7 +156,7 @@ static class Tray
         Look.ThemedMenus(window);
         icon = LoadTrayIcon();
         Add();
-        SetHotKey(Vault.QuickEntryKey);
+        TakeQuickEntryKey();
         Startup.Refresh();
         TodayList.Updated += Update;
         App.VaultChanged += () => _ = TodayList.Refresh();
@@ -230,6 +230,20 @@ static class Tray
 
     // ---- Quick Entry's shortcut ----------------------------------------------------------
 
+    /// <summary>
+    /// Quick Entry's shortcut as Settings has it, at start. If another app holds it, a
+    /// notification says so and opens App Settings to choose another: once for that
+    /// shortcut, not at every start (a first install by hand found Ctrl+Alt+Space
+    /// taken, with only the log and App Settings saying so).
+    /// </summary>
+    public static bool TakeQuickEntryKey()
+    {
+        var key = Vault.QuickEntryKey;
+        if (SetHotKey(key)) return true;
+        if (Vault.ShortcutTakenTold != key.ToString() && Notifications.ShortcutTaken(key)) Vault.ShortcutTakenTold = key.ToString();
+        return false;
+    }
+
     /// <summary>Take this shortcut for Quick Entry, from any app. False if another app has it, keeping the one before.</summary>
     public static bool SetHotKey(HotKey key)
     {
@@ -238,6 +252,7 @@ static class Tray
         if (RegisterHotKey(window, HotKeyId, key.Modifiers | MOD_NOREPEAT, key.Key))
         {
             registered = key;
+            Vault.ShortcutTakenTold = null;          // taken again later, it's worth saying again
             return true;
         }
         Log.Write($"Quick Entry: {key} is taken ({Marshal.GetLastPInvokeError()})");

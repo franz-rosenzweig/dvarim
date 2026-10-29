@@ -66,6 +66,8 @@ WebView2; unpackaged and self-contained.
   ⌃Space is Ctrl+Space, which switches the keyboard's language on Chinese, Japanese
   and Korean layouts). Return saves through `POST /api/quick-add`, Shift+Return is a
   new line in the notes, Escape closes, and the app you were in has the keyboard back.
+  If another app holds the shortcut, a notification says so once for that shortcut
+  (settings.json's `ShortcutTakenTold`), its button opening App Settings.
 - **Reminders**: a Windows notification with **Complete**; pressing it opens the
   to-do. They come from Today and Upcoming and arrive while Dvarim runs, which it does
   from sign-in when "Start Dvarim when I sign in" is on (the installer's box, or
@@ -124,7 +126,8 @@ answer, twice:
   file written from outside reaching the page; Quick Entry saving to the Markdown and
   the page reporting `changed`; Today in the notification area, its count, and a tick
   there completing the to-do in the file; a reminder whose time came handed to Windows
-  and one for later waiting; the title bar's five menus and the window's name, the
+  and one for later waiting; a Quick Entry shortcut held by another app (the
+  self-test holds one) told once by a notification and taken once it's free; the title bar's five menus and the window's name, the
   menus showing the page's own keys and running its commands; Ctrl+Plus, Ctrl+Minus,
   Ctrl+0 and Ctrl with the wheel changing the page's text size and never the browser's
   zoom; full screen by F11 and by the page, and out again from both at once with the
