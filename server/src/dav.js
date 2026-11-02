@@ -12,11 +12,16 @@
 // Only what a sync carries is here: the notes and the two state files
 // (store.js, syncable). Never the rest of .dvarim/, where auth.json can live.
 import { sha1 } from '../../engine/src/sha1.js';
+import { parse } from '../../engine/src/mdformat.js';
 import { STATE_PATH, STAMPS_PATH, syncable } from '../../engine/src/store.js';
 
 export const DAV_PREFIX = '/dav/';
 const STATE_FILES = new Set([STATE_PATH, STAMPS_PATH]);
 const MAX_FILE = 8 * 1024 * 1024;
+// beside the state, where no sync and no Obsidian reaches (syncable, .stignore)
+const BACKUPS = '.dvarim/backups';
+
+const todoCount = (text, rel) => [...parse(text, rel).allTodos()].length;
 
 const etagOf = (text) => `"${sha1(text)}"`;
 const esc = (s) => s.replace(/[&<>"]/gu, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -28,10 +33,35 @@ function listed(header, etag) {
 }
 
 export class Dav {
-  /** @param {import('../../engine/src/store.js').Store} store */
-  constructor(store) {
+  /**
+   * @param {import('../../engine/src/store.js').Store} store
+   * @param {{log?: (message: string) => void}} [opts]
+   */
+  constructor(store, opts = {}) {
     this.store = store;
+    this.log = opts.log || (() => {});
     this._scanned = 0;
+  }
+
+  /**
+   * A note about to be written or deleted for a device: said in the log, with
+   * its to-dos before and after and the device's user agent; and if it is
+   * losing most of its to-dos, kept as it was in .dvarim/backups/ first. On
+   * 1 November 2026 a device emptied Standalone.md (122 to-dos), and nothing
+   * here said which device, or kept what had been there. A write is still
+   * taken as it is — the device merged it (above) — but its cost is now a copy
+   * back, not a search through history. The copy goes into the store's queue,
+   * not straight to disk: nothing may await between the check a write passed
+   * and the write (current, above).
+   */
+  _noteWrite(method, rel, before, after, headers) {
+    const was = before === undefined ? 0 : todoCount(before, rel);
+    const now = after === null ? 0 : todoCount(after, rel);
+    this.log(`dav: ${method} ${rel}: ${was} → ${now} to-dos (${String(headers['user-agent'] || 'no user agent').slice(0, 80)})`);
+    if (was - now < 3 || now >= was / 2) return;
+    const copy = `${BACKUPS}/${rel.replace(/\.md$/u, '')}.${new Date(this.store.now()).toISOString().replace(/[:.]/gu, '-')}.md`;
+    this.store._enqueue({ op: 'write', path: copy, text: before });
+    this.log(`dav: ${rel} lost ${was - now} of its ${was} to-dos; as it was is in ${copy}`);
   }
 
   /** Every file offered, as it is now: path -> text. A device lists a folder
@@ -155,6 +185,7 @@ export class Dav {
       if (rel === STATE_PATH) store.receiveState(text, store._stampsText());
       else store.receiveState(null, text);
     } else {
+      this._noteWrite('PUT', rel, current, text, headers);
       store.receive(rel, text);
     }
     await store.flush();
@@ -172,6 +203,7 @@ export class Dav {
       return Dav.dirs(files, this.store.tree).has(rel) ? { status: 403, body: 'folders are not deleted over WebDAV' } : { status: 404, body: 'not found' };
     }
     if (!Dav.precondition(current, headers)) return { status: 412, body: 'the file here changed; fetch it and merge again' };
+    this._noteWrite('DELETE', rel, current, null, headers);
     this.store.receive(rel, null);
     await this.store.flush();
     return { status: 204 };

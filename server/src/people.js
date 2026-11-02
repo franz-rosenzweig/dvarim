@@ -15,7 +15,7 @@ import { Dav } from './dav.js';
 export class Household {
   /**
    * @param {string} root  DVARIM_PEOPLE: one folder per person, by key
-   * @param {{now?: () => number, today?: () => Day, onWriteError?: Function}} [opts]
+   * @param {{now?: () => number, today?: () => Day, onWriteError?: Function, log?: (message: string) => void}} [opts]
    */
   constructor(root, opts = {}) {
     this.root = resolve(root);
@@ -50,7 +50,8 @@ export class Household {
       now: this.opts.now, today: this.opts.today, onWriteError: this.opts.onWriteError, tutorial: true,
     });
     await store.flush();
-    return { folder, store, api: new Api(store, {}), dav: new Dav(store) };
+    const log = this.opts.log ? (message) => this.opts.log(`${key}: ${message}`) : undefined;
+    return { folder, store, api: new Api(store, {}), dav: new Dav(store, { log }) };
   }
 
   /** Their folder put aside, never deleted: <root>/.removed/<key> <date>.

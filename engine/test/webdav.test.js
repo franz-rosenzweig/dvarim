@@ -170,6 +170,47 @@ test('a vault with a tour of its own keeps it as it is: a new device\'s untouche
   assert.deepEqual(await notes(B.store), await notes(A.store));
 });
 
+test('a note blank on a device, its to-dos in no other note there, is not sent: the vault\'s comes back', async () => {
+  // 1 November 2026: a device's copy of Standalone.md was blank, how is not
+  // known. Sent, or merged as if every to-do in it had been deleted there, it
+  // emptied the note everywhere: 122 to-dos.
+  const LOOSE = '---\ncreated: 2026-09-19T16:30\n---\n- [ ] One 🆔 stan0001\n- [ ] Two 🆔 stan0002\n- [x] Three 🆔 stan0003 ✅ 2026-09-20\n';
+  const cloud = new Nextcloudish();
+  const A = await device('a', cloud, { ...VAULT, 'Standalone.md': LOOSE });
+  await A.sync.sync();
+  const blank = async () => { await A.storage.write('Standalone.md', ''); await A.store.scanChanges(); };
+
+  // the vault's unchanged: what was agreed is put back
+  await blank();
+  let r = await A.sync.sync();
+  await A.store.flush();
+  assert.ok(!r.sent.includes('Standalone.md') && !r.merged.includes('Standalone.md'));
+  assert.equal(cloud.files.get('Standalone.md').text, LOOSE);
+  assert.equal(A.storage.files.get('Standalone.md').text, LOOSE);
+  assert.equal(A.store.getTodo('stan0002')[2].title, 'Two');
+
+  // changed there meanwhile (Obsidian stamping it): not merged with the blank, taken
+  await blank();
+  const stamped = LOOSE.replace('---\n-', 'updated: 2026-11-01T17:51\n---\n-');
+  cloud.put('Standalone.md', stamped);
+  r = await A.sync.sync();
+  await A.store.flush();
+  assert.ok(!r.sent.includes('Standalone.md') && !r.merged.includes('Standalone.md'));
+  assert.equal(cloud.files.get('Standalone.md').text, stamped);
+  assert.equal(A.storage.files.get('Standalone.md').text, stamped);
+  assert.ok(A.store.syncLog.some((e) => e.path === 'Standalone.md'), 'and said, in the sync log');
+
+  // every to-do moved out of a note leaves it blank too, and that is sent
+  A.store.moveTodo('stan0001', { projectId: 'pcoo0001' });
+  A.store.moveTodo('stan0002', { projectId: 'pcoo0001' });
+  A.store.deleteTodo('stan0003');
+  await A.store.flush();
+  r = await A.sync.sync();
+  assert.ok(r.sent.includes('Standalone.md') || r.merged.includes('Standalone.md'));
+  assert.doesNotMatch(cloud.files.get('Standalone.md').text, /stan000/u);
+  assert.match(cloud.files.get('Areas/Personal/Cooking & Baking.md').text, /Two 🆔 stan0002/u);
+});
+
 test('changed on both: merged against what both last had; a write that lost a race waits for the next round', async () => {
   const cloud = new Nextcloudish();
   const A = await device('a', cloud, VAULT);
