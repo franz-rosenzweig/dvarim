@@ -203,6 +203,25 @@ test('a scan that was reading while the store wrote does not put back what it re
   assert.ok(Object.keys(snap).some((f) => f.endsWith('Begun meanwhile.md')), Object.keys(snap).join(', '));
 });
 
+test('a scan does not read a file the store is still writing', async () => {
+  // A change made while the scan waits for the store's earlier writes is
+  // counted before the folder is read, but over a bridge it reaches the folder
+  // a moment later. Read before then, the file was as it had been, the scan
+  // took that for someone else's edit, and the change was gone from the store
+  // until the next scan: a to-do moved out of a file was back in it, and a
+  // sync round in between sent it there again, so it was in two files.
+  const { storage, store } = await vault({ 'Inbox.md': '- [ ] From before 🆔 aa11bb22\n' });
+  await store.flush();
+  const write = storage.write.bind(storage);
+  storage.write = async (path, text) => { await new Promise((r) => setTimeout(r, 5)); return write(path, text); };
+  const scanning = store.scanChanges();
+  const t = store.createTodo({ title: 'Made as the scan began', inbox: true });
+  await scanning;
+  assert.equal(store.getTodo(t.id)[2].title, 'Made as the scan began');
+  await store.flush();
+  assert.match(storage.snapshot()['Inbox.md'], /- \[ \] Made as the scan began/);
+});
+
 test('what is not there says so', async () => {
   const { store } = await vault();
   assert.throws(() => store.completeTodo('zzzzzzzz'), NotFound);

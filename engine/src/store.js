@@ -583,6 +583,10 @@ export class Store {
     for (let attempt = 0; attempt < tries; attempt++) {
       await this.flush();                 // our own writes first, or they read as someone else's
       const seen = this._writes;
+      // A write made while that flush was awaited is counted in `seen` but may
+      // not be in the folder yet: read now, the file would be as it was before
+      // it, and taken for someone else's. So it is waited for too.
+      if (this._flushing) continue;
       const listing = await this.storage.list();
       const tree = { files: new Set(listing.files), dirs: new Set(listing.dirs) };
       const onDisk = new Map();
