@@ -24,7 +24,8 @@
 // What was last agreed lives in .dvarim/webdav.json, on this device only.
 import { parseXml, findAll, find, findText } from './xml.js';
 import { mergeText, sameContent } from './merge.js';
-import { IGNORED_DIRS, STATE_PATH, STAMPS_PATH, syncable, readText } from './store.js';
+import { parse } from './mdformat.js';
+import { IGNORED_DIRS, STATE_PATH, STAMPS_PATH, TRASH, syncable, readText } from './store.js';
 import { TUTORIAL_PATH, isUntouchedTutorial } from './tutorial.js';
 
 const DAV = 'DAV:';
@@ -47,6 +48,20 @@ function base64(text) {
 
 /** A vault path as the last part of a URL: each segment escaped, the slashes kept. */
 const encodePath = (rel) => rel.split('/').map(encodeURIComponent).join('/');
+
+/**
+ * A note blank here that held to-dos when both sides last agreed, none of
+ * which is in any other note here now. Nothing done on this device empties a
+ * note that way: a to-do leaves a note only for another one (moved, or put in
+ * the Trash), and leaves the vault only from the Trash. Sent, or merged as if
+ * every to-do in it had been deleted here, such a copy emptied the note on
+ * every device (1 November 2026: Standalone.md, 122 to-dos). So it is not this
+ * device's change, and the vault's version is put back instead.
+ */
+function blankedHere(store, rel, text, base) {
+  if (text.trim() || rel === TRASH) return false;
+  return [...parse(base, rel).allTodos()].some((t) => t.id && !store.todoIndex.has(t.id));
+}
 
 /**
  * @param {string} url   the folder on the server, e.g. https://cloud.example.com/remote.php/dav/files/me/Dvarim/
@@ -225,8 +240,17 @@ export class WebDavSync {
       .filter((p) => syncable(p) && !STATE_FILES.includes(p)).sort();
     for (const rel of paths) {
       const L = local.get(rel), R = remote.get(rel), S = agreed[rel];
-      const here = S ? L !== S.base : L !== undefined;
+      const blanked = L !== undefined && S !== undefined && blankedHere(store, rel, L, S.base);
+      const here = !blanked && (S ? L !== S.base : L !== undefined);
       const there = S ? R !== S.etag : R !== undefined;
+      if (blanked) {
+        store._logSync({ path: rel, kind: 'blank here, its to-dos in no other note: not sent, the vault\'s taken', conflicts: [] });
+        if (!there) {                                            // the server's is still what was agreed
+          store.receive(rel, S.base);
+          out.taken.push(rel);
+          continue;
+        }
+      }
       if (!here && !there) continue;
       // Whatever is decided below was decided on L. If the page changed the
       // file while the server was being asked, it waits for the next round.
