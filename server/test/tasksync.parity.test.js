@@ -123,7 +123,8 @@ async function session(seed, steps) {
   const store = await Store.open(new NodeStorage(root), { today: () => day, newId: counterIds() });
   await store.flush();
   const dav = new FakeCalDAV();
-  const sync = new TaskSync(store, dav, { root });
+  // the Python's merge, which these answers are; what replaced it is pinned below
+  const sync = new TaskSync(store, dav, { root, pythonMerge: true });
   const recorded = [], results = [];
   for (let n = 0; n < steps; n++) {
     const step = pick(store, dav, r, n);
@@ -133,7 +134,9 @@ async function session(seed, steps) {
   recorded.push({ sync: true });
   results.push(await run(store, dav, sync, { sync: true }));
   const snap = tree(root);
-  const state = snap['.dvarim/vtodo.json'] ? JSON.parse(snap['.dvarim/vtodo.json']) : null;
+  // without the base each to-do now keeps, which the Python never had
+  const state = snap['.dvarim/vtodo.json']
+    ? Object.fromEntries(Object.entries(JSON.parse(snap['.dvarim/vtodo.json'])).map(([k, { base, ...rec }]) => [k, rec])) : null;
   rmSync(root, { recursive: true, force: true });
   return { files, recorded, results, snap, dav, state };
 }
@@ -268,5 +271,145 @@ test('a to-do another tool marked [/] is the same to-do to the mirror: ticked th
   assert.equal(mine.length, 1, mine.join('\n'));
   assert.match(mine[0], /^- \[x\] Rename the shared folder /u);
   assert.equal([...store.openTodos()].length, 0, 'nothing new in the Inbox');
+  rmSync(root, { recursive: true, force: true });
+});
+
+// ---- what a client changed, read against what was sent ---------------------------
+// The Python read a client's copy against our to-do as it is now, so a copy
+// saved again unedited undid whatever had been done here since it went. On
+// 1 November 2026 Reminders saved its whole list again: a to-do ticked here a
+// minute before was open again, and every to-do with a start date and no due
+// date lost it, since Reminders keeps only due dates.
+
+/** The copy, line by unfolded line, through edit; a line it makes null is dropped. */
+const relined = (ics, edit) => vtodo.unfold(ics).map(edit).filter((l) => l !== null).join('\r\n') + '\r\n';
+
+/** A copy as Reminders saves it again: its own PRODID and sort order, every
+ *  other property kept, and of the dates only DUE, with DTSTART a copy of it. */
+function asReminders(ics, edit = (l) => l) {
+  const out = [];
+  for (const l of vtodo.unfold(ics)) {
+    if (l.startsWith('PRODID:')) out.push('PRODID:-//Apple Inc.//macOS 27.2//EN');
+    else if (l.startsWith('DTSTART')) continue;
+    else if (l.startsWith('DUE')) out.push(l.replace(/^DUE/u, 'DTSTART'), l);
+    else if (l === 'END:VTODO') out.push('X-APPLE-SORT-ORDER:48', l);
+    else out.push(l);
+  }
+  return relined(out.join('\r\n'), edit);
+}
+
+/** A copy as Tasks.org (through DAVx⁵) saves it, which keeps start dates. */
+const asTasksOrg = (edit) => (ics) => relined(ics, (l) => (l.startsWith('PRODID:') ? 'PRODID:DAVx5/4.5.19-ose ical4j/4.3.0 (org.tasks)' : edit(l)));
+
+/** Someone else writes the copy of this to-do there. */
+function written(dav, id, text) {
+  const href = `/dav/dvarim/${id}.ics`;
+  dav.items.set(href, text(dav.items.get(href)));
+  dav.n += 1;
+  dav.etags.set(href, `e${dav.n}`);
+}
+
+const todo = (store, id) => store.getTodo(id)[2];
+
+test('Reminders saving the whole list again undoes nothing done here: no start date lost, nothing ticked reopened', async () => {
+  const { root, store, dav, sync } = await setup();
+  const start = store.createTodo({ title: 'Step 11', when: TODAY });
+  const due = store.createTodo({ title: 'Taxes', deadline: '2026-09-30' });
+  const both = store.createTodo({ title: 'Grill', when: TODAY, deadline: '2026-09-30' });
+  const same = store.createTodo({ title: 'Recipes script', when: '2026-09-25', deadline: '2026-09-25' });
+  const ticked = store.createTodo({ title: 'Set a date for the second shot', when: TODAY });
+  const renamed = store.createTodo({ title: 'Makor shortcut', when: TODAY, tags: ['phone'] });
+  await sync.sync();
+  store.completeTodo(ticked.id);
+  store.updateTodo(renamed.id, { title: 'Makor shortcut, on the phone' });
+  for (const t of [start, due, both, same, ticked, renamed]) written(dav, t.id, asReminders);
+  const r = await sync.sync();
+  await store.flush();
+  assert.equal(r.pulled, 0, 'nothing taken from copies nobody edited');
+  assert.equal(todo(store, start.id).when, TODAY);
+  assert.equal(todo(store, due.id).when, null, 'a due date is not a start date');
+  assert.equal(todo(store, due.id).deadline, '2026-09-30');
+  assert.deepEqual([todo(store, both.id).when, todo(store, both.id).deadline], [TODAY, '2026-09-30']);
+  assert.deepEqual([todo(store, same.id).when, todo(store, same.id).deadline], ['2026-09-25', '2026-09-25']);
+  assert.equal(todo(store, ticked.id).status, 'done');
+  assert.equal(todo(store, renamed.id).title, 'Makor shortcut, on the phone');
+  assert.deepEqual(todo(store, renamed.id).tags, ['phone']);
+  // and what is there says so again, before another app reads it as it is
+  const there = (t) => vtodo.fromIcs(dav.items.get(`/dav/dvarim/${t.id}.ics`));
+  assert.equal(there(start).when, TODAY);
+  assert.equal(there(due).when, undefined);
+  assert.equal(there(renamed).title, 'Makor shortcut, on the phone');
+  assert.ok(!dav.items.has(`/dav/dvarim/${ticked.id}.ics`), 'the ticked one is gone from the list');
+  // Reminders saving them all once more costs nothing more
+  for (const t of [start, due, both, same, renamed]) written(dav, t.id, asReminders);
+  await sync.sync();
+  for (const t of [start, due, both, same, renamed]) written(dav, t.id, asReminders);
+  const again = await sync.sync();
+  assert.equal(again.pulled, 0);
+  assert.equal(todo(store, start.id).when, TODAY);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('what is changed in Reminders still comes back: ticked, renamed, the due date moved or cleared', async () => {
+  const { root, store, dav, sync } = await setup();
+  const tick = store.createTodo({ title: 'Call the clinic', when: TODAY });
+  const name = store.createTodo({ title: 'Grill', when: TODAY });
+  const moved = store.createTodo({ title: 'Recipes script', when: '2026-09-25', deadline: '2026-09-25' });
+  const later = store.createTodo({ title: 'Taxes', when: TODAY, deadline: '2026-09-30' });
+  const cleared = store.createTodo({ title: 'Nane', when: TODAY, deadline: '2026-09-30' });
+  await sync.sync();
+  written(dav, tick.id, (x) => asReminders(x, (l) => (l === 'STATUS:NEEDS-ACTION' ? 'STATUS:COMPLETED\r\nCOMPLETED:20260919T101010Z' : l)));
+  written(dav, name.id, (x) => asReminders(x, (l) => (l.startsWith('SUMMARY:') ? 'SUMMARY:Grill on Sunday' : l)));
+  written(dav, moved.id, (x) => asReminders(x).replace(/20260925/gu, '20261001'));
+  written(dav, later.id, (x) => asReminders(x).replace(/20260930/gu, '20261003'));
+  written(dav, cleared.id, (x) => asReminders(x, (l) => (/^(DUE|DTSTART)/u.test(l) ? null : l)));
+  await sync.sync();
+  await store.flush();
+  assert.equal(todo(store, tick.id).status, 'done');
+  assert.equal(todo(store, name.id).title, 'Grill on Sunday');
+  assert.equal(todo(store, name.id).when, TODAY);
+  assert.deepEqual([todo(store, moved.id).when, todo(store, moved.id).deadline], ['2026-10-01', '2026-10-01'], 'a start that was the due date moves with it');
+  assert.deepEqual([todo(store, later.id).when, todo(store, later.id).deadline], [TODAY, '2026-10-03'], 'a start of its own stays');
+  assert.deepEqual([todo(store, cleared.id).when, todo(store, cleared.id).deadline], [TODAY, null]);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('an app that keeps start dates is still believed when it drops one; an edit there and one here both stay', async () => {
+  const { root, store, dav, sync } = await setup();
+  const t = store.createTodo({ title: 'Step 11', when: TODAY, notes: 'Pages 3-5' });
+  const u = store.createTodo({ title: 'Willingness', when: TODAY });
+  await sync.sync();
+  written(dav, t.id, asTasksOrg((l) => (l.startsWith('DTSTART') ? null : l)));
+  store.updateTodo(u.id, { notes: 'Read it twice' });
+  written(dav, u.id, asTasksOrg((l) => (l.startsWith('SUMMARY:') ? 'SUMMARY:Willingness, again' : l)));
+  await sync.sync();
+  await store.flush();
+  assert.equal(todo(store, t.id).when, null, 'cleared there, cleared here');
+  assert.equal(todo(store, t.id).notes, 'Pages 3-5');
+  assert.equal(todo(store, u.id).title, 'Willingness, again');
+  assert.equal(todo(store, u.id).notes, 'Read it twice');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('a state kept before there was a base: read against ours where it has not moved since, and nothing taken where it has', async () => {
+  const { root, store, dav, sync } = await setup();
+  const start = store.createTodo({ title: 'Step 11', when: TODAY });
+  const ticked = store.createTodo({ title: 'Set a date for the second shot', when: TODAY });
+  const renamed = store.createTodo({ title: 'Spiritual literature', when: TODAY });
+  await sync.sync();
+  const path = join(root, '.dvarim', 'vtodo.json');
+  const old = Object.fromEntries(Object.entries(JSON.parse(readFileSync(path, 'utf8'))).map(([k, { base, ...rec }]) => [k, rec]));
+  writeFileSync(path, JSON.stringify(old));
+  store.completeTodo(ticked.id);
+  written(dav, start.id, asReminders);
+  written(dav, ticked.id, asReminders);
+  written(dav, renamed.id, (x) => asReminders(x, (l) => (l.startsWith('SUMMARY:') ? 'SUMMARY:Spiritual literature, chapter 2' : l)));
+  await sync.sync();
+  await store.flush();
+  assert.equal(todo(store, start.id).when, TODAY);
+  assert.equal(todo(store, ticked.id).status, 'done');
+  assert.equal(todo(store, renamed.id).title, 'Spiritual literature, chapter 2');
+  const kept = JSON.parse(readFileSync(path, 'utf8'));
+  assert.ok(kept[start.id].base && kept[renamed.id].base, 'and from then on a base is kept');
   rmSync(root, { recursive: true, force: true });
 });

@@ -44,7 +44,10 @@ replayed (`engine/README.md`). The Python itself is at the git tag
   cancellations, folding and broken dates.
 - **`test/tasksync.parity.test.js`**: random sessions of work, of edits in
   another CalDAV app and of sync cycles, through both mirrors. Every answer,
-  file, collection item and the mirror's state must match.
+  file, collection item and the mirror's state must match. The sessions run
+  with the Python's merge (`pythonMerge`); the one that replaced it, reading a
+  client's write against what was sent (docs/INTEGRATIONS.md), is pinned by
+  the cases at the end, Reminders saving its whole list again among them.
 - **`test/modules.parity.test.js`**:
   - VTODO both ways, and the merge of what a CalDAV app changed;
   - the mirror's content hash;
