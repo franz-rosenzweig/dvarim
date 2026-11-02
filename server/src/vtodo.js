@@ -153,22 +153,52 @@ export function fromIcs(text) {
 export const CLIENT_OWNED = ['title', 'notes', 'status', 'completed', 'when', 'deadline', 'tags'];
 
 const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+const sorted = (tags) => [...(tags || [])].sort();
 
-/** The patch to apply to our to-do, given what the CalDAV side now says. */
-export function mergeFromClient(ours, theirs) {
+/** Of what fromIcs read, the fields a client may change. */
+export const said = (fields) => Object.fromEntries(CLIENT_OWNED.filter((f) => f in fields).map((f) => [f, fields[f]]));
+
+/** A to-do as a client reads it once we have sent it: what its next write is
+ *  compared with, to see what it changed. */
+export const shown = (todo) => said(fromIcs(toIcs(todo)));
+
+/** Does the copy there say what our to-do does, as far as a client can tell? */
+export function agrees(theirs, todo) {
+  const a = said(theirs), b = shown(todo);
+  return CLIENT_OWNED.every((f) => (f === 'tags' ? same(sorted(a.tags), sorted(b.tags)) : same(a[f], b[f])));
+}
+
+/** Written by Apple's Reminders, which keeps one date, the due date: its
+ *  DTSTART is only ever a copy of DUE, and a to-do with a start date and no
+ *  due date comes back from it with neither. */
+export const startless = (text) => /^PRODID:-\/\/Apple Inc\.\/\//imu.test(text);
+
+/**
+ * The patch to apply to our to-do, given what the CalDAV side now says.
+ *
+ * `base` is that copy as we last wrote it, as a client reads it (shown): only
+ * what the client changed from it is taken. On 1 November 2026 Reminders saved
+ * its whole list again unedited, and read against our to-dos instead, every
+ * copy undid what had been done here since it went: a to-do ticked a minute
+ * before was open again, and to-dos with a start date and no due date lost it.
+ * Without a base, ours stands in for it, as the Python's rule was.
+ * `startless`: the copy is Reminders' (above).
+ */
+export function mergeFromClient(ours, theirs, base = ours, { startless: noStart = false } = {}) {
   const patch = {};
   for (const field of CLIENT_OWNED) {
-    if (!(field in theirs)) {
-      // the client dropped it: no opinion — except for dates, where dropping means cleared
-      if ((field === 'when' || field === 'deadline') && ours[field]) patch[field] = null;
-      continue;
-    }
-    const next = theirs[field];
+    // a start date from Reminders is a copy of the due date: believed only of a
+    // to-do whose start was its due date when it went
+    if (field === 'when' && noStart && !(base.when && base.when === base.deadline)) continue;
+    let next;
+    if (field in theirs) next = theirs[field];
+    else if (field === 'when' || field === 'deadline') next = null;    // dropping a date is how CalDAV clears it
+    else continue;                                                     // the client dropped it: no opinion
     if (field === 'tags') {
-      if (!same([...next].sort(), [...(ours.tags || [])].sort())) patch.tags = next;
+      if (!same(sorted(next), sorted(base.tags)) && !same(sorted(next), sorted(ours.tags))) patch.tags = next;
       continue;
     }
-    if (!same(next, ours[field])) patch[field] = next;
+    if (!same(next, base[field]) && !same(next, ours[field])) patch[field] = next;
   }
   // completing there should not silently also move the date around
   if (patch.status === 'done' && !('completed' in patch)) patch.completed = theirs.completed ?? null;

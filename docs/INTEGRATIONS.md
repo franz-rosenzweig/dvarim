@@ -138,6 +138,21 @@ This Evening exactly as they were. There is a test named after this.
 
 The one exception is dates: a client that drops `DTSTART` or `DUE` really does
 mean you cleared them, since that is how clearing a date looks over CalDAV.
+Except Apple's Reminders, which keeps one date, the due date: it writes
+`DTSTART` only as a copy of `DUE`, and a to-do with a start date and no due
+date comes back from it with neither. So from Reminders (its `PRODID`) a start
+date is not read at all, unless the to-do's start was its due date, when the
+two move together.
+
+**Only what a client changed is taken.** Each to-do's copy is remembered as it
+was sent, and a client's write is compared with that, not with the to-do as it
+is now. A copy saved again unedited changes nothing, however long ago it went
+and whatever was done here since. On 1 November 2026 Reminders saved the whole
+list again: compared with the to-dos instead, a to-do ticked here a minute
+before was open again, and every to-do with a start date and no due date lost
+it. A copy that does not say what the files do (what Reminders could not keep)
+is written again in the same cycle, before another app reads it and sends it
+back as an edit.
 
 Reminders a client adds are not the to-do. Tasks.org (through DAVx⁵) gives each
 to-do with a due date two `VALARM`s whose `DESCRIPTION` is the words *Default
@@ -154,10 +169,13 @@ it turns up.
 3. Tasks appear as a list. Completing one there reaches the Markdown file on the
    next cycle, within five minutes, or immediately if you press Sync now.
 
-Conflicts are resolved in favour of whoever wrote last: the CalDAV side is read
+An edit there and one here to different fields both stay. The same field
+changed on both sides between two cycles goes to the CalDAV side: it is read
 first each cycle, then our state is published. State lives in
 `<root>/.dvarim/vtodo.json` and is disposable; losing it costs one extra round of
-writes, never data.
+writes, never data. Without it, what moved over there cannot be told from what
+moved here, so the files win: nothing is taken from the collection's copies,
+and they are written again from the files.
 
 ## Reminders (phase 2)
 

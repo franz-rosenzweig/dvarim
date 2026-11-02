@@ -58,7 +58,10 @@ export class TaskSync {
   /**
    * @param {import('../../engine/src/store.js').Store} store
    * @param {import('./caldav.js').CalDAV} client
-   * @param {{includeSomeday?: boolean, adoptNew?: boolean, trashDeleted?: boolean, root?: string}} [opts]
+   * @param {{includeSomeday?: boolean, adoptNew?: boolean, trashDeleted?: boolean, root?: string, pythonMerge?: boolean}} [opts]
+   *   pythonMerge: a client's copy read against our to-do as it is now, not
+   *   against what was sent, and left as it is: the Python's rule, for the
+   *   parity suite to hold the rest of the mirror to its answers. Set nowhere else.
    */
   constructor(store, client, opts = {}) {
     this.store = store;
@@ -66,6 +69,7 @@ export class TaskSync {
     this.includeSomeday = !!opts.includeSomeday;
     this.adoptNew = opts.adoptNew ?? true;
     this.trashDeleted = opts.trashDeleted ?? true;
+    this.pythonMerge = !!opts.pythonMerge;
     this.root = opts.root || store.storage.root;
     this.collection = null;
     this.log = [];
@@ -129,7 +133,7 @@ export class TaskSync {
   async _sync() {
     const s = this.store;
     if (this.collection === null) this.collection = await this.client.ensureTaskCollection(COLLECTION, DISPLAY);
-    const state = this._loadState();                       // { todo id: { href, etag, key } }
+    const state = this._loadState();                       // { todo id: { href, etag, key, base } }
     const byHref = {};
     for (const [k, v] of Object.entries(state)) if (v && v.href) byHref[v.href] = k;
     const remote = await this.client.listEtags(this.collection);
@@ -140,9 +144,10 @@ export class TaskSync {
       let tid = byHref[href];
       const known = tid ? state[tid] : null;
       if (known && known.etag === etag) continue;         // untouched since our write
-      let parsed;
+      let text, parsed;
       try {
-        parsed = vtodo.fromIcs(await this.client.getText(href));
+        text = await this.client.getText(href);
+        parsed = vtodo.fromIcs(text);
       } catch (e) {
         this._note(`could not read ${href}: ${e && e.message ? e.message : e}`);
         continue;
@@ -156,13 +161,20 @@ export class TaskSync {
             title: parsed.title, notes: parsed.notes ?? '', when: parsed.when ?? null, deadline: parsed.deadline ?? null,
             tags: parsed.tags || [], inbox: !parsed.when,
           });
-          state[made.id] = { href, etag, key: contentKey(made) };
+          state[made.id] = { href, etag, key: contentKey(made), base: vtodo.said(parsed) };
           counts.adopted += 1;
           this._note(`adopted from CalDAV: ${[...parsed.title].slice(0, 50).join('')}`);
         }
         continue;
       }
-      const patch = vtodo.mergeFromClient(ours, parsed);
+      // the copy as we last wrote it. With none kept (the state lost, or kept by
+      // a server from before there was one), ours is that copy if it has not
+      // moved since — its key says so; otherwise what moved there cannot be
+      // told, nothing is taken from it, and the push puts ours back
+      const base = this.pythonMerge ? ours
+        : (known && known.base) || (known && known.key === contentKey(ours) ? vtodo.shown(ours) : null);
+      const patch = !base ? {} : this.pythonMerge ? vtodo.mergeFromClient(ours, parsed)
+        : vtodo.mergeFromClient(ours, parsed, base, { startless: vtodo.startless(text) });
       if (Object.keys(patch).length) {
         if (patch.status === 'done') s.completeTodo(tid);
         else if (patch.status === 'canceled') s.cancelTodo(tid);
@@ -176,6 +188,11 @@ export class TaskSync {
       state[tid] = state[tid] || {};
       state[tid].href = href;
       state[tid].etag = etag;
+      // a copy that does not say what the files do (what Reminders could not
+      // keep, a change not taken) is written again, before another app reads
+      // it as it is and sends it back as an edit
+      const after = this.pythonMerge ? null : this._ours(tid);
+      if (after && !vtodo.agrees(parsed, after)) delete state[tid].key;
     }
 
     // ---- deletions over there
@@ -203,7 +220,10 @@ export class TaskSync {
     for (const [tid, todo] of wanted) {
       const key = contentKey(todo);
       const rec = state[tid] || {};
-      if (rec.key === key && rec.href) continue;
+      if (rec.key === key && rec.href) {
+        if (!rec.base) rec.base = vtodo.shown(todo);        // there as it is here: the key says so
+        continue;
+      }
       const href = rec.href || `${this.collection}${tid}.ics`;
       let etag;
       try {
@@ -212,7 +232,7 @@ export class TaskSync {
         this._note(`could not write ${[...todo.title].slice(0, 40).join('')}: ${e && e.message ? e.message : e}`);
         continue;
       }
-      state[tid] = { href, etag: etag || '', key };
+      state[tid] = { href, etag: etag || '', key, base: vtodo.shown(todo) };
       counts.pushed += 1;
     }
 

@@ -33,6 +33,8 @@ In Settings → **Calendar**, **Show calendar events in Today and Upcoming lists
 
 The server can also keep a copy of your open to-dos in a task list on your CalDAV server, called **Dvarim**, so that Tasks.org on Android, Apple Reminders or any other CalDAV app can show them. It goes both ways. Tick one off there and it's ticked in the Markdown file; change its title, dates or tags and those come back too; make a new one there and it lands in your Inbox; delete one and Dvarim moves it to the Trash, where you can still get it back.
 
+Only what you actually change in the other app comes back. If the app saves its whole list again without you editing anything, as Reminders sometimes does, nothing changes in your files. Reminders has no start dates, only due dates, so a to-do's ⏳ date stays as it is in Dvarim whatever Reminders shows.
+
 It's off unless you turn it on, because it writes to your calendar server:
 
 ```yaml
