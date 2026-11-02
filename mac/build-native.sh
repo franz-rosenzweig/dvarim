@@ -48,9 +48,19 @@ sed -e "s/\$(DEVELOPMENT_LANGUAGE)/en/" -e "s/\$(EXECUTABLE_NAME)/$NAME/" \
     -e "s/\$(CURRENT_PROJECT_VERSION)/$BUILD/" -e "s/\$(PRODUCT_NAME)/$NAME/" Native/Info.plist > "$APP/Contents/Info.plist"
 plutil -lint -s "$APP/Contents/Info.plist"
 
-# the app's icon, the same paper slips as build.sh's, already on Apple's grid
+# the app's icon, the paper slips. With Xcode's actool, layered as Icon Composer
+# makes them (AppIcon.icon: the slips from the web app's icon.svg over its white),
+# so macOS draws it as it draws its own, light, dark, tinted and clear; actool also
+# writes the .icns. Without it, AppIcon-1024.png, already on Apple's grid.
 SRC=AppIcon-1024.png
-if [[ -f $SRC ]]; then
+if xcrun -f actool >/dev/null 2>&1; then
+    # full paths: actool hands the work to a helper that may still be running from another build's folder
+    xcrun actool "$PWD/AppIcon.icon" --compile "${APP:a}/Contents/Resources" --app-icon AppIcon --platform macosx \
+        --minimum-deployment-target $MACOS --output-partial-info-plist "${OUT:a}/icon-partial.plist" >/dev/null
+    rm -f $OUT/icon-partial.plist
+    plutil -replace CFBundleIconFile -string AppIcon "$APP/Contents/Info.plist"
+    plutil -replace CFBundleIconName -string AppIcon "$APP/Contents/Info.plist"
+elif [[ -f $SRC ]]; then
     SET=$OUT/AppIcon.iconset && rm -rf $SET && mkdir -p $SET
     for s in 16 32 128 256 512; do
         sips -z $s $s $SRC --out $SET/icon_${s}x${s}.png >/dev/null
