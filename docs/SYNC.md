@@ -170,6 +170,21 @@ refused and the file waits for the next round, which merges again. The server
 applies a write through its store like any other change, so it can't land
 under an edit the app is making at the same moment.
 
+**A blank copy is not an edit.** A note that is blank on the device, though it
+held to-dos when both sides last agreed and none of them is in any other note
+on the device now, is not sent, and not merged as if every to-do in it had been
+deleted. The server's version is put back instead, and Settings → Sync says
+so. Nothing the app does empties a note that way: a to-do leaves a note only
+for another one, or for the Trash. On 1 November 2026 a device's blank copy of
+`Standalone.md`, merged, emptied it everywhere: 122 to-dos. Emptying the Trash
+is still sent.
+
+**Every write is on record.** The server logs each note a device writes or
+deletes, with its to-dos before and after and the device's user agent. A write
+that takes at least three to-dos out of a note and leaves fewer than half is
+still taken, but the note as it was goes first to `.dvarim/backups/` on the
+server, where no sync and no Obsidian reaches.
+
 **What goes.** Every note the app reads, and `.dvarim/state.json` and
 `stamps.json`, which merge by their stamps as above. Nothing else: not the
 rest of `.dvarim/`, where the server's password file can live, not
@@ -212,6 +227,7 @@ until they do, sync from a browser or app with a Dvarim server.
   - two devices and the server in step while all three change the same file,
     delete, and are edited in Obsidian;
   - a round cut off halfway;
+  - every write logged, and a note losing most of its to-dos backed up first;
   - and a fuzzer: two devices and the server working at random and syncing
     now and then, which must end identical, with every to-do made still there
     and every to-do completed still done. 480 sessions of 50 steps pass
@@ -219,7 +235,9 @@ until they do, sync from a browser or app with a Dvarim server.
 - `engine/test/webdav.test.js`: the client against a strict server in the
   manner of Nextcloud (no `Depth: infinity`, no folders made for a PUT, opaque
   ETags, absolute URLs), with file names that have spaces, an `&` and
-  Hebrew in them, and a write that loses a race.
+  Hebrew in them, a write that loses a race, and a blank copy of a note that
+  is put back rather than sent (while every to-do moved out of a note is
+  still sent).
 - Nine planted faults each fail the suites. Among them: taking the server's
   file without merging, merging without the base, unconditional writes, a
   server ignoring `If-Match`, `auth.json` offered, the password accepted in

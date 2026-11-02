@@ -161,7 +161,7 @@ export async function createApp(cfg) {
   const staticDir = cfg.staticDir ? resolve(cfg.staticDir) : null;
   const streams = new Set();
 
-  const dav = new Dav(store);
+  const dav = new Dav(store, { log });
   const owner = { folder: resolve(cfg.root), store, api, dav };
 
   // Other people's folders: beside the auth file (outside the owner's folder,
@@ -170,7 +170,7 @@ export async function createApp(cfg) {
   // landing on the owner's devices.
   const peopleRoot = resolve(cfg.peopleRoot || join(dirname(auth.path), 'people'));
   const household = peopleRoot === owner.folder || peopleRoot.startsWith(owner.folder + sep) ? null
-    : new Household(peopleRoot, { now: cfg.now, today: cfg.today, onWriteError: (e, op) => log(`could not write ${op.path || op.from}: ${e && e.message}`) });
+    : new Household(peopleRoot, { now: cfg.now, today: cfg.today, log, onWriteError: (e, op) => log(`could not write ${op.path || op.from}: ${e && e.message}`) });
   const peopleOff = () => (!auth.enabled ? 'set a password first: other people need you to have one'
     : !household ? 'other people need a folder outside yours: set DVARIM_PEOPLE' : null);
   // Requests for an account, from the sign-in page: beside auth.json, apart from it

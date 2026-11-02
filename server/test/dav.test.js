@@ -5,7 +5,7 @@
 // server's own app, and Obsidian on its folder, changing things too.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { serve } from './fixture.js';
 import { Auth } from '../src/auth.js';
@@ -18,8 +18,8 @@ import { parse } from '../../engine/src/mdformat.js';
 
 const PW = 'correct horse battery';
 
-async function server(t) {
-  const s = await serve({ password: PW }, {}, t);
+async function server(t, cfg = {}) {
+  const s = await serve({ password: PW }, cfg, t);
   const token = s.app.auth.addToken('test device');
   const bearer = { Authorization: `Bearer ${token}` };
   const dav = (method, path, { headers = {}, raw } = {}) => s.call(method, '/dav/' + path, { headers: { ...bearer, ...headers }, raw });
@@ -119,6 +119,37 @@ test('a write lands only on the version it was made from, and the app sees it at
   assert.equal((await s.dav('DELETE', 'Projects/From a phone.md', { headers: { 'If-Match': p.headers.get('etag') } })).status, 204);
   assert.ok(!existsSync(join(s.root, 'Projects', 'From a phone.md')));
   assert.equal((await s.dav('DELETE', '.dvarim/state.json')).status, 403);
+});
+
+test('every note written over WebDAV is in the log; one that loses most of its to-dos is kept as it was first', async (t) => {
+  // 1 November 2026: a device sent Standalone.md with none of its 122 to-dos,
+  // and nothing here said which device, or kept what had been there.
+  const lines = [];
+  const s = await server(t, { log: (...a) => lines.push(a.join(' ')) });
+  const said = () => lines.join('\n');
+  const full = Array.from({ length: 6 }, (_, i) => `- [ ] Loose ${i} 🆔 loos000${i}\n`).join('');
+  let got = await s.dav('GET', 'Standalone.md');
+  let put = await s.dav('PUT', 'Standalone.md', { raw: full, headers: { 'If-Match': got.headers.get('etag'), 'User-Agent': 'Dvarim/1 CFNetwork/1568' } });
+  assert.equal(put.status, 204);
+  assert.match(said(), /PUT Standalone\.md: 0 → 6 to-dos \(Dvarim\/1 CFNetwork\/1568\)/u);
+  assert.ok(!existsSync(join(s.root, '.dvarim', 'backups')), 'adding to-dos keeps nothing');
+
+  got = await s.dav('GET', 'Standalone.md');
+  put = await s.dav('PUT', 'Standalone.md', { raw: '---\nupdated: 2026-11-01T17:51\n---\n', headers: { 'If-Match': got.headers.get('etag') } });
+  assert.equal(put.status, 204, 'still written: the device merged it, and the server takes it as it is');
+  const kept = readdirSync(join(s.root, '.dvarim', 'backups'));
+  assert.equal(kept.length, 1);
+  assert.equal(readFileSync(join(s.root, '.dvarim', 'backups', kept[0]), 'utf8'), full);
+  assert.match(said(), /Standalone\.md lost 6 of its 6 to-dos/u);
+  assert.ok(!(await s.dav('PROPFIND', '', { headers: { Depth: '1' } })).text.includes('backups'), 'and never offered to a device');
+
+  // deleted, likewise
+  got = await s.dav('GET', 'Standalone.md');
+  await s.dav('PUT', 'Standalone.md', { raw: full, headers: { 'If-Match': got.headers.get('etag') } });
+  got = await s.dav('GET', 'Standalone.md');
+  assert.equal((await s.dav('DELETE', 'Standalone.md', { headers: { 'If-Match': got.headers.get('etag') } })).status, 204);
+  assert.equal(readdirSync(join(s.root, '.dvarim', 'backups')).length, 2);
+  assert.match(said(), /DELETE Standalone\.md: 6 → 0 to-dos/u);
 });
 
 test('a token made on the command line works at once, and one revoked stops working at once', async (t) => {
