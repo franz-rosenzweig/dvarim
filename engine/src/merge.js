@@ -307,6 +307,20 @@ export function mergeText(base, ours, theirs, path) {
     }
   }
 
+  // The same next to-do of a repeating series, made on both sides: two devices
+  // each ticked the same to-do before they synced, and each made the one that
+  // comes next under an id of its own. One is kept, the same one on both sides:
+  // the smaller id.
+  const twin = (x) => json([x.title, x.repeat, x.when]);
+  const fresh = (side, other) => [...side].filter(([id, x]) => !tb.has(id) && !other.has(id) && x.repeat && x.status === 'open' && !x.trashed);
+  const madeO = new Map(fresh(to, tt).map(([id, x]) => [twin(x), id]));
+  for (const [id, x] of fresh(tt, to)) {
+    const other = madeO.get(twin(x));
+    if (other === undefined || !kept.has(other) || !kept.has(id)) continue;
+    kept.delete(id < other ? other : id);
+    madeO.delete(twin(x));
+  }
+
   // headings, and what is under each
   const sb = new Map(B.sections.map((s) => [sectionKey(s), s]));
   const so = new Map(O.sections.map((s) => [sectionKey(s), s]));
