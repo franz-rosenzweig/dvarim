@@ -28,6 +28,8 @@ When you tick off a repeating to-do, Dvarim marks that line done and puts a fres
 
 With **On a schedule**, the next date is the next one in the schedule after the one you just did, even if that's already past. So if you skipped a week, the missed one comes up in Today rather than quietly disappearing. With **After completion**, the next date is counted from the day you ticked it off.
 
+A repeating to-do only ever has one copy waiting. If there's already an open one for that day or later, ticking makes no new one, so ticking, unticking and ticking again doesn't leave you two. And if your phone and your tablet both tick the same one before they've synced, each makes the next copy, and the sync keeps just one of them.
+
 ## Changing or stopping it
 
 To move just this one, change its When date the normal way: the rule stays the same, and the next copy follows the rule. To change the rule, open the Repeat editor and press **Update**. To stop it repeating, open the editor and press **Stop repeating**, and it becomes an ordinary to-do.

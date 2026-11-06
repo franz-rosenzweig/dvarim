@@ -122,6 +122,27 @@ test('a to-do goes into the file, and a repeat makes the next one', async () => 
   assert.match(storage.snapshot()['Inbox.md'], /- \[x\] Water plants 🆔 00000001 🔁 every 3 days ➕ 2026-09-23 ⏳ 2026-09-23 ✅ 2026-09-23/u);
 });
 
+test('a repeating to-do has one open copy: ticking never makes a second next one', async () => {
+  const { store } = await vault();
+  const open = () => [...store.files.get('Inbox.md').allTodos()].filter((x) => x.status === 'open' && x.title === 'Morning pages');
+  const t = store.createTodo({ title: 'Morning pages', inbox: true, when: '2026-09-23', repeat: 'every day' });
+  // a tick, an untick and a tick: still one next copy
+  assert.equal(store.completeTodo(t.id).next.when, '2026-09-24');
+  store.reopenTodo(t.id);
+  assert.equal(store.completeTodo(t.id).next, null, 'the next one is already waiting');
+  assert.deepEqual(open().map((x) => x.when), ['2026-09-24']);
+  // two copies of one day, as two devices each ticking the same one left them:
+  // a tick makes the next day's, the tick on the other copy does not
+  const twin = store.createTodo({ title: 'Morning pages', inbox: true, when: '2026-09-24', repeat: 'every day' });
+  const [first] = open().filter((x) => x.id !== twin.id);
+  assert.equal(store.completeTodo(first.id).next.when, '2026-09-25');
+  assert.equal(store.completeTodo(twin.id).next, null);
+  assert.deepEqual(open().map((x) => x.when), ['2026-09-25'], 'the pair is one again');
+  // another series in the same note is its own
+  const other = store.createTodo({ title: 'Morning pages', inbox: true, when: '2026-09-23', repeat: 'every week' });
+  assert.ok(store.completeTodo(other.id).next, 'a different rule is a different series');
+});
+
 test('projects, headings and areas are files and folders', async () => {
   const { storage, store } = await vault();
   const a = store.createArea({ name: 'Work' });

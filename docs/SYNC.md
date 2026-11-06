@@ -47,6 +47,13 @@ brings them together.
   did, such as deleting a to-do the app just added.
 - **A line typed in Obsidian gets the same id on every device** (#59). With
   three devices meeting the same new line, it must not become three to-dos.
+- **A repeating to-do's next copy, made on two devices, is one to-do.** When
+  both ticked the same repeating to-do before they synced, each made the next
+  copy under an id of its own. Where both sides added an open to-do with the
+  same title, rule and date, the merge keeps the one with the smaller id, the
+  same one on every device. Ticking a repeating to-do also makes no next copy
+  when one for that day or later is already waiting, so two copies of a day
+  become one again with the next tick.
 
 ## How
 

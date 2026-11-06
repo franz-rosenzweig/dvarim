@@ -1243,7 +1243,14 @@ export class Store {
           if (!(e instanceof Invalid || e instanceof RangeError)) throw e;
           adv = null;
         }
-        if (adv !== null) {
+        // One open to-do per repeating series: no next one when the series
+        // already has one waiting, on that day or later. Two copies of a day
+        // (two devices each ticked the same to-do before they synced, or a
+        // tick, an untick and a tick) would otherwise each make their own,
+        // and every day after would come in pairs.
+        const waiting = adv !== null && [...f.allTodos()].some((o) => o !== t && o.status === 'open' && !o.trashed
+          && o.title === t.title && o.repeat === t.repeat && o.when && cmpStr(o.when, adv[0]) >= 0);
+        if (adv !== null && !waiting) {
           const [newWhen, newDeadline] = adv;
           nxt = new Todo({ id: this.newId(), title: t.title, notes: t.notes, tags: [...t.tags], when: newWhen,
             evening: t.evening, reminder: t.reminder, deadline: newDeadline, repeat: t.repeat,

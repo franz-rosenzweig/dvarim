@@ -234,3 +234,23 @@ test(`the merge keeps its promises on ${FUZZ} pairs of edit sessions`, () => {
   }
   if (problems.length) assert.fail(`${problems.length} broken promises; the first:\n${problems[0].slice(0, 4000)}`);
 });
+
+test('the same next copy of a repeating to-do, made on two devices, merges into one, the same one either way', () => {
+  const base = '- [ ] Morning pages 🆔 day00001 🔁 every day ➕ 2026-11-04 ⏳ 2026-11-05\n';
+  // each device ticked it before they synced, and made the next one with an id of its own
+  const ours = '- [ ] Morning pages 🆔 next000b 🔁 every day ➕ 2026-11-05 ⏳ 2026-11-06\n'
+    + '- [x] Morning pages 🆔 day00001 🔁 every day ➕ 2026-11-04 ⏳ 2026-11-05 ✅ 2026-11-05\n';
+  const theirs = '- [ ] Morning pages 🆔 next000a 🔁 every day ➕ 2026-11-05 ⏳ 2026-11-06\n'
+    + '- [x] Morning pages 🆔 day00001 🔁 every day ➕ 2026-11-04 ⏳ 2026-11-05 ✅ 2026-11-05\n';
+  const one = mergeText(base, ours, theirs, 'Standalone.md');
+  const two = mergeText(base, theirs, ours, 'Standalone.md');
+  assert.equal(one.text, two.text, 'symmetric');
+  assert.equal(one.text.match(/- \[ \] Morning pages/gu).length, 1, one.text);
+  assert.match(one.text, /next000a/u, 'the smaller id stays');
+  // a to-do both made on purpose is not a repeat's next copy, and both stay
+  const plain = mergeText('', '- [ ] Buy milk 🆔 milk000b\n', '- [ ] Buy milk 🆔 milk000a\n', 'Inbox.md');
+  assert.equal(plain.text.match(/Buy milk/gu).length, 2);
+  // nor do two next copies for different days
+  const days = mergeText(base, ours, theirs.replace('⏳ 2026-11-06', '⏳ 2026-11-07'), 'Standalone.md');
+  assert.equal(days.text.match(/- \[ \] Morning pages/gu).length, 2);
+});
