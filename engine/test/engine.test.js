@@ -191,6 +191,49 @@ test('a line typed elsewhere gets the same id on every device', async () => {
   assert.match(ids[0][1], /^[0-9a-z]{8}$/u);
 });
 
+test('a header written over by another app is put back: the project keeps its id, its tags, its notes', async () => {
+  // 6 November 2026: an Obsidian plugin wrote a header of its own, 60 bytes,
+  // over the first 60 bytes of a project note without shortening the file.
+  // The old header lost its id and first tag, the rest of it was left at the
+  // top of the notes, and Dvarim gave the "new" project an id of its own.
+  const path = 'Areas/Work/Launch.md';
+  const good = '---\nid: plaunch1\ntype: project\nstatus: open\ntags:\n  - work\n  - planning\n  - launch\n'
+    + 'created: 2026-09-19\nupdated: 2026-11-06T05:12\n---\nNotes about the launch.\n\n- [ ] A to-do 🆔 aa11bb22\n';
+  const plugin = '---\ncreated: 2026-11-06T05:12\nupdated: 2026-11-06T05:14\n---\n';
+  const overwritten = plugin + good.slice(plugin.length);
+  assert.ok(overwritten.startsWith(plugin + ' - planning\n  - launch\ncreated: 2026-09-19\n'));   // as it was found
+  const { storage, store } = await vault({ [path]: good, 'Areas/Work/Work.md': '---\nid: awork001\ntype: area\n---\n' });
+  await storage.write(path, overwritten);
+  await store.scanChanges();
+  await store.flush();
+  assert.equal(storage.snapshot()[path], good);
+  assert.equal(store.fileIndex.get('plaunch1'), path);
+  assert.equal(store.syncLog.at(-1).kind, 'header written over: the one read before put back');
+
+  // A header put in front of the old one: the old one is taken out of the
+  // notes, and a key only the new one has stays.
+  await storage.write(path, '---\nupdated: 2026-11-06T05:14\nsource: plugin\n---\n' + good);
+  await store.scanChanges();
+  await store.flush();
+  assert.equal(storage.snapshot()[path], good.replace('---\nNotes about', 'source: plugin\n---\nNotes about'));
+
+  // A project note Dvarim never had an id for still gets one.
+  await storage.write('Areas/Work/Typed.md', '- [ ] Typed in Obsidian\n');
+  await store.scanChanges();
+  await store.flush();
+  assert.match(storage.snapshot()['Areas/Work/Typed.md'], /^---\nid: p\d+\ntype: project\nstatus: open\n/u);
+
+  // A header deleted on purpose leaves nothing of itself behind, and stays
+  // deleted: a note outside the project folders is no longer a project.
+  await storage.write('Loose.md', '---\nid: ploose01\ntype: project\nstatus: open\n---\n- [ ] Here 🆔 cc33dd44\n');
+  await store.scanChanges();
+  assert.equal(store.fileIndex.get('ploose01'), 'Loose.md');
+  await storage.write('Loose.md', '- [ ] Here 🆔 cc33dd44\n');
+  await store.scanChanges();
+  await store.flush();
+  assert.equal(storage.snapshot()['Loose.md'], '- [ ] Here 🆔 cc33dd44\n');
+});
+
 test('a scan that was reading while the store wrote does not put back what it read', async () => {
   // Reading the folder takes a while, and the store goes on answering: a to-do
   // made then — and a project, in a file of its own — must come out of the

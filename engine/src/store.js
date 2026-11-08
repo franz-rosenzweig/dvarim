@@ -20,6 +20,7 @@ import { derivedId, lineId, newId as randomId } from './ids.js';
 export { lineId };
 import { Conflict, Invalid, Missing, NotFound } from './errors.js';
 import { parse, serialize } from './mdformat.js';
+import * as frontmatter from './frontmatter.js';
 import { ChecklistItem, Heading, Section, TaskFile, Todo } from './model.js';
 import * as repeat from './repeat.js';
 import { IGNORED_DIRS, readEach } from './storage.js';
@@ -107,6 +108,50 @@ export function fmTags(fm) {
   if (typeof v === 'string') v = [v];
   if (!Array.isArray(v)) return [];
   return v.filter((t) => t !== null && t !== undefined && typeof t !== 'boolean' && pyStr(t).trim()).map((t) => pyStr(t));
+}
+
+/**
+ * A project or area read with an id, read again without one and with the
+ * end of the header it had at the top of its notes: the header was written
+ * over, not edited, and is put back (_load).
+ *
+ * On 6 November 2026 an Obsidian plugin that keeps `created` and `updated`
+ * wrote a header of its own, 60 bytes, over the first 60 bytes of a long
+ * project note on another device without shortening the file. The old header
+ * lost its first lines (id, type, status, a tag) and the rest of it was left
+ * at the top of the notes. Read as it came, the note was a project with no id, so it
+ * was given a new one, and the damage was written back to every device.
+ *
+ * So the header read before comes back, with any key only the new one has
+ * kept, and what was left of it at the top of the notes (its end, or all of it
+ * when something put a header in front of it) is taken out. A header deleted
+ * on purpose leaves nothing behind, and is left deleted: a note outside the
+ * project folders is then no longer a project. Returns the note as read with
+ * that done, or null.
+ */
+function headerPutBack(before, text, rel) {
+  const now = parse(text, rel);
+  const head = now.fmRaw === null ? '' : frontmatter.dump(now.frontmatter, now.fmRaw);
+  const old = frontmatter.dump(before.frontmatter, before.fmRaw);
+  const cut = old && text.startsWith(head) ? leftOver(old, text.slice(head.length)) : 0;
+  if (!cut) return null;
+  const f = parse(head + text.slice(head.length + cut), rel);
+  const values = clone(before.frontmatter);
+  for (const k of Object.keys(f.frontmatter)) if (!has(values, k)) values[k] = f.frontmatter[k];
+  f.frontmatter = values;
+  f.fmRaw = before.fmRaw;
+  return f;
+}
+
+/** How much of the start of `body` is the end of `header` ('---\n…\n---\n'),
+ *  or all of it: at least the closing fence and something of the line before
+ *  it, as a note's own text would hardly start. 0 if none. */
+function leftOver(header, body) {
+  const fence = header.lastIndexOf('\n', header.length - 2) + 1;   // where the closing --- starts
+  for (let i = 0; i <= fence - 2; i++) {
+    if (body.startsWith(header.slice(i)) && header.slice(i, fence).trim()) return header.length - i;
+  }
+  return 0;
 }
 
 /** What the Python store reads: Path.read_text uses universal newlines, so a
@@ -480,13 +525,26 @@ export class Store {
   _load(rel) {
     const r = this._disk.get(rel);
     if (!r) return null;
+    const before = this.files.get(rel);              // the copy read before, if any
     const previous = new Map();
-    if (this.files.has(rel)) for (const t of this.files.get(rel).allTodos()) previous.set(t.id, t.status);
-    const f = parse(r.text, rel);
+    if (before) for (const t of before.allTodos()) previous.set(t.id, t.status);
+    let f = parse(r.text, rel);
+    let dirty = false;
+    // A project or area whose id has gone, with what is left of its header in
+    // its notes, was written over: given a new id it would be a new project
+    // (headerPutBack).
+    if (before && (before.kind === 'project' || before.kind === 'area') && truthy(get(before.frontmatter, 'id'))
+        && !truthy(get(f.frontmatter, 'id'))) {
+      const put = headerPutBack(before, r.text, rel);
+      if (put) {
+        f = put;
+        dirty = true;
+        this._logSync({ path: rel, kind: 'header written over: the one read before put back', conflicts: [] });
+      }
+    }
     this._renames.delete(rel);                       // made on the copy read before: _repairIds works them out again
     const kind = this._classify(rel, f);
     if (kind === null) return null;
-    let dirty = false;
     const fm = f.frontmatter;
     if (kind === 'project' || kind === 'area') {
       if (fm.type !== kind) { fm.type = kind; dirty = true; }
