@@ -1333,6 +1333,68 @@ export class Store {
     return this.todoJson(t, f);
   }
 
+  /**
+   * A to-do that repeats by the day and was not ticked is let go once its
+   * next day has come: it is canceled, and that day's copy takes its place
+   * (in Today's order too). Missed days are not owed, so a few days away mean
+   * one tick on coming back, not one for every day missed (docs/repeats.md).
+   * Only "every day" and "every N days": a missed weekly report or monthly
+   * bill is still owed, and waits as before. Nor "when done" rules (they never
+   * pile up), one in progress, or one put away in Someday.
+   *
+   * The canceled copy keeps its own day as the day it was let go, and the new
+   * one is made only if the series has none waiting, so a server and a device
+   * doing this to the same file agree line for line, and two new copies of
+   * one day merge into one (merge.js). Returns how many were let go.
+   */
+  letGoMissedRepeats() {
+    const today = this.today();
+    let n = 0;
+    for (const f of [...this.files.values()]) {
+      if (this.isTrashedFile(f) || ['done', 'canceled'].includes(f.frontmatter.status)) continue;
+      let changed = false;
+      for (const sec of f.sections) {
+        for (const t of [...sec.todos]) {
+          if (t.status !== 'open' || t.mark || t.someday || t.trashed || !t.repeat || !t.when) continue;
+          let r, w;
+          try { r = repeat.parseRule(t.repeat); w = Day.fromISO(t.when); } catch { continue; }
+          if (r.freq !== 'day' || r.whenDone || w.compare(today) >= 0) continue;
+          // the last day of its schedule up to today; none, and it is not missed yet
+          let day = null;
+          try {
+            for (const d of repeat.occurrences(r, w)) {
+              if (d.compare(today) > 0) break;
+              if (d.compare(w) > 0) day = d;
+            }
+          } catch (e) {
+            if (!(e instanceof repeat.RuleError || e instanceof RangeError)) throw e;
+            continue;
+          }
+          if (day === null) continue;
+          t.status = 'canceled';
+          t.mark = null;
+          t.completed = t.when;
+          const waiting = [...f.allTodos()].some((o) => o !== t && o.status === 'open' && !o.trashed
+            && o.title === t.title && o.repeat === t.repeat && o.when && cmpStr(o.when, day.iso()) >= 0);
+          let nxt = null;
+          if (!waiting) {
+            const deadline = t.deadline ? Day.fromISO(t.deadline).addDays(day.minus(w)).iso() : null;
+            nxt = new Todo({ id: this.newId(), title: t.title, notes: t.notes, tags: [...t.tags], when: day.iso(),
+              evening: t.evening, reminder: t.reminder, deadline, repeat: t.repeat, created: this.todayIso(),
+              checklist: t.checklist.map((c) => new ChecklistItem(c.text, false)), heading: t.heading });
+            sec.todos.splice(sec.todos.indexOf(t), 0, nxt);
+            this.todoIndex.set(nxt.id, f.path);
+          }
+          this._todayOrderSwap(t.id, nxt ? nxt.id : null);
+          changed = true;
+          n += 1;
+        }
+      }
+      if (changed) this._write(f);
+    }
+    return n;
+  }
+
   reopenTodo(tid) {
     const [f, , t] = this.getTodo(tid);
     t.status = 'open';
@@ -1451,6 +1513,14 @@ export class Store {
       o.splice(o.indexOf(tid), 1);
       this.saveState();
     }
+  }
+
+  /** The new copy where the old one was in Today, or the old one out of it. */
+  _todayOrderSwap(oldId, newId) {
+    const o = has(this.state, 'todayOrder') ? this.state.todayOrder : [];
+    if (newId === null || !o.includes(oldId) || o.includes(newId)) { this._todayOrderRemove(oldId); return; }
+    o[o.indexOf(oldId)] = newId;
+    this.saveState();
   }
 
   /** A day that has been and gone has no order worth keeping. */

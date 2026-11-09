@@ -54,6 +54,11 @@ brings them together.
   same one on every device. Ticking a repeating to-do also makes no next copy
   when one for that day or later is already waiting, so two copies of a day
   become one again with the next tick.
+- **A missed day-by-day repeat is let go the same way everywhere**
+  (docs/repeats.md, "When you miss a day"). The canceled copy keeps its own
+  date as the day it was let go, so two writers doing it agree line for line,
+  and their two new copies of the day are one by the rule above. With a Dvarim
+  server, only the server does it; a device does it only without one.
 
 ## How
 
