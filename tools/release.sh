@@ -56,6 +56,9 @@ CONF=${DVARIM_RELEASE_ENV:-$HOME/.config/dvarim-release.env}
 SSH="ssh -o BatchMode=yes -o ConnectTimeout=10 -i $MAC_KEY"
 mac() { $SSH "$MAC" "$@"; }
 say() { echo "release: $*"; }
+# Commits and tags that go public carry GitHub's noreply address, whatever
+# this machine's own git identity is (it may be a personal one)
+NOREPLY=(-c user.name=franz-rosenzweig -c user.email=159979406+franz-rosenzweig@users.noreply.github.com)
 
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 WORK=$(mktemp -d)
@@ -184,7 +187,7 @@ gh release create "v$VERSION" "$OUT/Dvarim-$VERSION.apk" "$OUT/Dvarim-$VERSION-m
   --target "$SHA" --title "Dvarim $VERSION" --notes-file "$NOTESFILE"
 git clone -q "$TAP" "$WORK/tap"
 sed -i -E "s/^  version \"[^\"]*\"/  version \"$VERSION\"/; s/^  sha256 \"[^\"]*\"/  sha256 \"$ZIPSUM\"/" "$WORK/tap/Casks/dvarim.rb"
-git -C "$WORK/tap" commit -q -am "Dvarim $VERSION"
-git -C "$WORK/tap" pull -q --rebase
+git -C "$WORK/tap" "${NOREPLY[@]}" commit -q -am "Dvarim $VERSION"
+git -C "$WORK/tap" "${NOREPLY[@]}" pull -q --rebase
 git -C "$WORK/tap" push -q
 say "released: $(gh release view "v$VERSION" --json url -q .url)"
