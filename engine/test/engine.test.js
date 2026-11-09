@@ -143,6 +143,74 @@ test('a repeating to-do has one open copy: ticking never makes a second next one
   assert.ok(store.completeTodo(other.id).next, 'a different rule is a different series');
 });
 
+test('a day-by-day repeat nobody ticked is let go when its next day comes; weekly ones are still owed', async () => {
+  // today is 2026-09-23
+  const { storage, store } = await vault({ 'Standalone.md': [
+    '- [ ] Morning 🆔 morn0001 🔁 every day ➕ 2026-09-19 ⏳ 2026-09-20',
+    '    - [x] Read',
+    '- [ ] Due today 🆔 tday0001 🔁 every day ⏳ 2026-09-23',
+    '- [ ] Water 🆔 watr0001 🔁 every 3 days ⏳ 2026-09-21',
+    '- [ ] Plants 🆔 plnt0001 🔁 every 3 days ⏳ 2026-09-17',
+    '- [ ] Report 🆔 rept0001 🔁 every week ⏳ 2026-09-09',
+    '- [ ] Walk 🆔 walk0001 🔁 every day when done ⏳ 2026-09-20',
+    '- [ ] Pages 🆔 page0001 🔁 every day ⏳ 2026-09-21 📅 2026-09-22',
+    '- [/] Started 🆔 strt0001 🔁 every day ⏳ 2026-09-20',
+    '- [ ] Evening 🆔 even0001 🔁 every day ⏳ 2026-09-22',
+    '- [ ] Evening 🆔 even0002 🔁 every day ⏳ 2026-09-23',
+    '',
+  ].join('\n') });
+  store._todayOrderAdd('tday0001');
+  store._todayOrderAdd('morn0001');
+  const all = () => [...store.files.get('Standalone.md').allTodos()];
+  const open = (title) => all().filter((x) => x.title === title && x.status === 'open');
+  const status = (id) => all().find((x) => x.id === id).status;
+
+  assert.equal(store.letGoMissedRepeats(), 4);
+  // missed days are let go: one copy for today, not one for every day missed
+  assert.equal(status('morn0001'), 'canceled');
+  assert.equal(all().find((x) => x.id === 'morn0001').completed, '2026-09-20', 'let go on its own day');
+  const [morning] = open('Morning');
+  assert.equal(morning.when, '2026-09-23');
+  assert.deepEqual(morning.checklist.map((c) => [c.text, c.done]), [['Read', false]]);
+  assert.deepEqual(store.state.todayOrder, ['tday0001', morning.id], 'in the old one\'s place in Today');
+  // every N days: the latest day of its rhythm, and only once that day has come
+  assert.deepEqual(open('Plants').map((x) => x.when), ['2026-09-23']);
+  assert.equal(status('watr0001'), 'open', 'its next day (the 24th) has not come');
+  // the deadline moves with it
+  assert.deepEqual(open('Pages').map((x) => [x.when, x.deadline]), [['2026-09-23', '2026-09-24']]);
+  // a copy already waiting is not made twice
+  assert.equal(status('even0001'), 'canceled');
+  assert.deepEqual(open('Evening').map((x) => x.id), ['even0002']);
+  // left alone: today's, a weekly one (still owed), "when done", one in progress
+  for (const id of ['tday0001', 'rept0001', 'walk0001', 'strt0001']) assert.equal(status(id), 'open', id);
+
+  // done once; a second pass changes nothing
+  await store.flush();
+  const text = storage.snapshot()['Standalone.md'];
+  assert.equal(store.letGoMissedRepeats(), 0);
+  await store.flush();
+  assert.equal(storage.snapshot()['Standalone.md'], text);
+});
+
+test('two devices letting go of the same missed day agree, and their new copies merge into one', async () => {
+  const file = { 'Standalone.md': '- [ ] Morning 🆔 morn0001 🔁 every day ➕ 2026-09-19 ⏳ 2026-09-20\n' };
+  const ids = ['aaaa', 'bbbb'];
+  const texts = [];
+  for (const p of ids) {
+    const storage = new MemoryStorage({ ...file });
+    let n = 0;
+    const store = await Store.open(storage, { today: () => D('2026-09-23'), newId: () => p + String(++n).padStart(4, '0') });
+    store.letGoMissedRepeats();
+    await store.flush();
+    texts.push(storage.snapshot()['Standalone.md']);
+  }
+  const { mergeText } = await import('../src/merge.js');
+  const merged = mergeText(file['Standalone.md'], texts[0], texts[1], 'Standalone.md').text;
+  assert.equal(merged, mergeText(file['Standalone.md'], texts[1], texts[0], 'Standalone.md').text, 'symmetric');
+  assert.equal(merged.match(/- \[ \] Morning/gu).length, 1, merged);
+  assert.equal(merged.match(/morn0001/gu).length, 1, merged);
+});
+
 test('projects, headings and areas are files and folders', async () => {
   const { storage, store } = await vault();
   const a = store.createArea({ name: 'Work' });

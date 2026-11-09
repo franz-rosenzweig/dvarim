@@ -12,6 +12,7 @@ import { createApp } from '../src/app.js';
 import { Auth } from '../src/auth.js';
 import { start } from '../src/main.js';
 import { fixture, serve } from './fixture.js';
+import { Day } from '../../engine/src/day.js';
 
 test('with no password, everything is open, as before', async (t) => {
   const s = await serve({}, {}, t);
@@ -182,3 +183,25 @@ test('an idle connection outlives the tunnel\'s own (so the tunnel never sends i
   agent.destroy();
 });
 
+
+test('a day-by-day repeat nobody ticked is let go at start and when a new day comes', async (t) => {
+  const f = fixture();
+  writeFileSync(join(f.root, 'Standalone.md'), '- [ ] Morning 🆔 morn0001 🔁 every day ➕ 2026-09-19 ⏳ 2026-09-20\n');
+  let today = Day.fromISO('2026-09-23');
+  const app = await createApp({ root: f.root, staticDir: f.staticDir, authFile: f.authFile, log: () => {},
+    tutorial: false, quietMs: 1, today: () => today, dayWatchMs: 20 });
+  t.after(async () => { await app.close(); rmSync(f.root, { recursive: true, force: true }); });
+  await app.store.flush();
+  const text = () => readFileSync(join(f.root, 'Standalone.md'), 'utf8');
+  assert.match(text(), /- \[-\] Morning 🆔 morn0001 .*❌ 2026-09-20/u);
+  assert.match(text(), /- \[ \] Morning 🆔 \S+ 🔁 every day ➕ 2026-09-23 ⏳ 2026-09-23/u);
+  // the next morning, unticked again: the server lets that one go too
+  today = Day.fromISO('2026-09-24');
+  for (let i = 0; i < 100 && !/⏳ 2026-09-24/u.test(text()); i++) {
+    await new Promise((ok) => setTimeout(ok, 20));
+    await app.store.flush();
+  }
+  assert.equal(text().match(/- \[ \] Morning/gu).length, 1, text());
+  assert.match(text(), /- \[ \] Morning .*⏳ 2026-09-24/u);
+  assert.equal(text().match(/- \[-\] Morning/gu).length, 2, text());
+});

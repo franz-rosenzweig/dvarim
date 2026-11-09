@@ -26,9 +26,17 @@ An open repeating to-do shows the repeat icon on its row, and its card says the 
 
 When you tick off a repeating to-do, Dvarim marks that line done and puts a fresh copy above it, with the next When date, and the deadline moved on by the same distance if it had one. The copy keeps the title, notes, tags, This Evening and the reminder time, and its checklist comes back with every item unticked.
 
-With **On a schedule**, the next date is the next one in the schedule after the one you just did, even if that's already past. So if you skipped a week, the missed one comes up in Today rather than quietly disappearing. With **After completion**, the next date is counted from the day you ticked it off.
+With **On a schedule**, the next date is the next one in the schedule after the one you just did, even if that's already past. So if you skipped a week, the missed one comes up in Today rather than quietly disappearing, because a missed weekly report or monthly bill is usually still owed. Things that repeat by the day work differently, as the next section explains. With **After completion**, the next date is counted from the day you ticked it off.
 
 A repeating to-do only ever has one copy waiting. If there's already an open one for that day or later, ticking makes no new one, so ticking, unticking and ticking again doesn't leave you two. And if your phone and your tablet both tick the same one before they've synced, each makes the next copy, and the sync keeps just one of them.
+
+## When you miss a day
+
+A to-do that repeats every day, or every few days, isn't owed for the days you missed. If you leave one unticked, Dvarim lets it go once its next day comes. The old one is marked canceled on its own day and goes to the Logbook, and a fresh copy for the new day takes its place, in the same spot in Today. So after a weekend away you tick your morning routine once on Monday, not three times. If you did do the one you missed and want it to show as done, find it in the Logbook and tick it there.
+
+This is only for repeats counted in days. A weekly, monthly or yearly one waits for you as described above, and so does one you've marked as in progress or put in Someday. After completion repeats never pile up in the first place, so they're left as they are.
+
+When your devices sync with a Dvarim server, the server does this just after midnight, so every device sees the same thing. Without one, each device does it when you open Dvarim on a new day.
 
 ## Changing or stopping it
 

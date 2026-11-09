@@ -49,6 +49,7 @@ export class Household {
     const store = await Store.open(new NodeStorage(folder), {
       now: this.opts.now, today: this.opts.today, onWriteError: this.opts.onWriteError, tutorial: true,
     });
+    store.letGoMissedRepeats();             // as the owner's are (app.js), and on each new day after
     await store.flush();
     const log = this.opts.log ? (message) => this.opts.log(`${key}: ${message}`) : undefined;
     return { folder, store, api: new Api(store, {}), dav: new Dav(store, { log }) };

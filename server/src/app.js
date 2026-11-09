@@ -154,6 +154,16 @@ export async function createApp(cfg) {
     onWriteError: (e, op) => log(`could not write ${op.path || op.from}: ${e && e.message}`),
   });
   await store.flush();
+  // A to-do that repeats by the day and was not ticked is let go when its
+  // next day comes (Store.letGoMissedRepeats): now, and on each new day after.
+  const letGo = (s, who = null) => {
+    try {
+      const n = s.letGoMissedRepeats();
+      if (n) log(`let go of ${n} missed repeating to-do${n === 1 ? '' : 's'}${who ? ` (${who})` : ''}`);
+    } catch (e) { log('letting go of missed repeating to-dos:', e); }
+  };
+  letGo(store);
+  let day = store.todayIso();
   const auth = Auth.load(cfg.root, cfg.authFile);
   const throttle = new Throttle();
   const services = cfg.services || {};
@@ -171,6 +181,15 @@ export async function createApp(cfg) {
   const peopleRoot = resolve(cfg.peopleRoot || join(dirname(auth.path), 'people'));
   const household = peopleRoot === owner.folder || peopleRoot.startsWith(owner.folder + sep) ? null
     : new Household(peopleRoot, { now: cfg.now, today: cfg.today, log, onWriteError: (e, op) => log(`could not write ${op.path || op.from}: ${e && e.message}`) });
+  // the day is looked at every minute rather than timed to midnight, so a
+  // server that slept through it, or a clock put right, still notices
+  const dayWatch = setInterval(() => {
+    if (store.todayIso() === day) return;
+    day = store.todayIso();
+    letGo(store);
+    if (household) for (const [key, p] of household.open) p.then((ctx) => letGo(ctx.store, key)).catch(() => {});
+  }, cfg.dayWatchMs ?? 60000);
+  if (dayWatch.unref) dayWatch.unref();
   const peopleOff = () => (!auth.enabled ? 'set a password first: other people need you to have one'
     : !household ? 'other people need a folder outside yours: set DVARIM_PEOPLE' : null);
   // Requests for an account, from the sign-in page: beside auth.json, apart from it
@@ -558,6 +577,7 @@ export async function createApp(cfg) {
       return new Promise((ok) => server.listen(port, host, () => ok(server.address())));
     },
     async close() {
+      clearInterval(dayWatch);
       for (const s of streams) { clearInterval(s.alive); s.stop(); s.res.end(); }
       streams.clear();
       await new Promise((ok) => server.close(() => ok()));

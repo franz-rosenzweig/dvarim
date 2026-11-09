@@ -178,6 +178,7 @@ async function openBackend() {
   window.addEventListener('dvarim:sync-config', (e) => { if (local) local.server = serverOf((info && info.sync) || e.detail, storage, info); });
   installFetchShim(api);
   watchForOthers(store, kind, info);
+  watchTheDay(store);
   // the built-in sync, if this device was set up for one (Settings → Sync)
   startSync(local).catch((e) => vaultProblem(`could not start syncing: ${e && e.message ? e.message : e}`));
   // for the browser suites (tools/e2e_local.py, e2e_folder.py) and the shells'
@@ -189,6 +190,23 @@ async function openBackend() {
     rescan: () => store.scanChanges(),
     conformance: () => checkVault(),
   };
+}
+
+/** A missed day-by-day repeat is let go when its next day comes
+ *  (Store.letGoMissedRepeats): here, on opening and on each new day, unless
+ *  this device syncs with a Dvarim server, which does it for every device. */
+function watchTheDay(store) {
+  let day = null;
+  const look = () => {
+    if (!local || local.server) return;
+    const today = store.todayIso();
+    if (today === day) return;
+    day = today;
+    try { store.letGoMissedRepeats(); } catch (e) { console.error('letting go of missed repeating to-dos:', e); }
+  };
+  look();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') look(); });
+  setInterval(look, 60000);
 }
 
 /** Read the vault again when someone else may have changed it. */
