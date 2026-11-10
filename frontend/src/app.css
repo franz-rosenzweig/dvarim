@@ -729,7 +729,11 @@ h1.t .more:hover{color:var(--text2)}
      The list comes down with the finger and a magnifier with it, in the room
      that opens under the bar: a grey ring until the pull is far enough, then
      solid blue, which is when letting go opens Quick Find. */
-  .content{transform:translateY(var(--pull,0px));transition:transform .24s cubic-bezier(.2,.9,.25,1)}
+  .content{transition:transform .24s cubic-bezier(.2,.9,.25,1)}
+  /* Only while a pull is on or springing back (lib/pullfind). A transform at
+     rest makes the list the frame position:fixed is measured from, and the
+     notes' format bar rode up with the list's scroll, off the keyboard. */
+  .main.pulling .content,.main.pullback .content{transform:translateY(var(--pull,0px))}
   .main.pulling .content{transition:none}
   .pullmark{
     display:grid;place-items:center;position:absolute;z-index:1;
