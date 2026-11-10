@@ -39,9 +39,19 @@ export function pullFind(node) {
     }
   }
 
+  // The list keeps its transform for as long as it takes to spring back, and
+  // not a moment longer: see .pullback in app.css.
+  let back = null;
+
   function clear() {
     releaseTouch('pull');
-    pane().classList.remove('pulling', 'armed');
+    const p = pane();
+    if (p.classList.contains('pulling')) {
+      p.classList.add('pullback');
+      clearTimeout(back);
+      back = setTimeout(() => p.classList.remove('pullback'), 320);
+    }
+    p.classList.remove('pulling', 'armed');
     pane().style.removeProperty('--pull');
     pane().style.removeProperty('--pullp');
   }
@@ -109,6 +119,7 @@ export function pullFind(node) {
 
   return {
     destroy() {
+      clearTimeout(back);
       release();
       node.removeEventListener('pointerdown', down);
       node.removeEventListener('pointermove', move);
