@@ -33,6 +33,21 @@ const watchers = new Set();
 
 function tell() { for (const cb of watchers) { try { cb({ ...status }); } catch { /* a watcher must not stop a sync */ } } }
 
+// A computer waking up: its timers did not run while it slept, so nothing
+// above says the copy here is hours or days behind, and the next round could
+// be five minutes off while the screen shows what it had. A gap in a steady
+// tick does say.
+let waking = null;
+function watchForWaking() {
+  if (waking) return;
+  let last = Date.now();
+  waking = setInterval(() => {
+    const now = Date.now();
+    if (now - last > 60000 && sync) syncNow().catch(() => {});
+    last = now;
+  }, 10000);
+}
+
 /** The saved choice: null, or { kind: 'dvarim', address, token } | { kind: 'webdav', url, user, password }. */
 export function syncConfig() {
   try {
@@ -148,6 +163,7 @@ export async function startSync(backend) {
   document.addEventListener('visibilitychange', () => { if (sync && front() && stale()) syncNow().catch(() => {}); });
   window.addEventListener('online', () => { if (sync) syncNow().catch(() => {}); });
   periodic = setInterval(() => { if (sync && front()) syncNow().catch(() => {}); }, EVERY);
+  watchForWaking();
   // an app that keeps its own copy says where it syncs (info.sync); otherwise Settings → Sync did
   const cfg = (local.info && local.info.sync) || syncConfig();
   if (!cfg) return;
@@ -224,6 +240,7 @@ export async function startMirror(backend, { first = false } = {}) {
   document.addEventListener('visibilitychange', () => { if (sync && front()) syncNow().catch(() => {}); });
   window.addEventListener('online', () => { if (sync) syncNow().catch(() => {}); });
   periodic = setInterval(() => { if (sync && front()) syncNow().catch(() => {}); }, EVERY);
+  watchForWaking();
   listenToServer();
   if (!first) setTimeout(() => { if (sync) syncNow().catch(() => {}); }, 300);
 }

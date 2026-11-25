@@ -52,6 +52,8 @@ export class Household {
     store.letGoMissedRepeats();             // as the owner's are (app.js), and on each new day after
     await store.flush();
     const log = this.opts.log ? (message) => this.opts.log(`${key}: ${message}`) : undefined;
+    // and when a device of theirs brings copies that were never here to be let go
+    store.letGoAsTheyCome((n, e) => { if (e && log) log(`letting go of missed repeating to-dos: ${e.message || e}`); });
     return { folder, store, api: new Api(store, {}), dav: new Dav(store, { log }) };
   }
 

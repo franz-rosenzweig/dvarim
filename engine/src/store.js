@@ -1290,6 +1290,26 @@ export class Store {
     const [f, sec, t] = this.getTodo(tid);
     let nxt = null;
     if (t.status !== 'done') {
+      // A tick on a day-by-day to-do whose day has gone by, before anything
+      // let it go (a device back from days asleep shows the copy it had): it is
+      // today's tick. One tick, as if the missed days had been let go first;
+      // ticked as it stood, each tick made the next missed day's copy, so a
+      // week away took a week of ticks.
+      const day = this._missedDay(t);
+      if (day !== null) {
+        const w = Day.fromISO(t.when);
+        if (t.deadline) t.deadline = Day.fromISO(t.deadline).addDays(day.minus(w)).iso();
+        t.when = day.iso();
+        // the series' other copies up to that day (today's own, from a sync, among them) go with it
+        for (const o of [...f.allTodos()]) {
+          if (o === t || o.status !== 'open' || o.trashed || o.title !== t.title || o.repeat !== t.repeat
+              || !o.when || cmpStr(o.when, t.when) > 0) continue;
+          o.status = 'canceled';
+          o.mark = null;
+          o.completed = o.when;
+          this._todayOrderRemove(o.id);
+        }
+      }
       t.status = 'done';
       t.mark = null;
       t.completed = this._onDay(on);
@@ -1355,22 +1375,9 @@ export class Store {
       let changed = false;
       for (const sec of f.sections) {
         for (const t of [...sec.todos]) {
-          if (t.status !== 'open' || t.mark || t.someday || t.trashed || !t.repeat || !t.when) continue;
-          let r, w;
-          try { r = repeat.parseRule(t.repeat); w = Day.fromISO(t.when); } catch { continue; }
-          if (r.freq !== 'day' || r.whenDone || w.compare(today) >= 0) continue;
-          // the last day of its schedule up to today; none, and it is not missed yet
-          let day = null;
-          try {
-            for (const d of repeat.occurrences(r, w)) {
-              if (d.compare(today) > 0) break;
-              if (d.compare(w) > 0) day = d;
-            }
-          } catch (e) {
-            if (!(e instanceof repeat.RuleError || e instanceof RangeError)) throw e;
-            continue;
-          }
+          const day = this._missedDay(t, today);
           if (day === null) continue;
+          const w = Day.fromISO(t.when);
           t.status = 'canceled';
           t.mark = null;
           t.completed = t.when;
@@ -1393,6 +1400,58 @@ export class Store {
       if (changed) this._write(f);
     }
     return n;
+  }
+
+  /** For an open to-do that repeats by the day and whose day has gone by: the
+   *  last day of its schedule up to today, the day it is let go to. Null for
+   *  anything else, and for one whose next day has not come yet. */
+  _missedDay(t, today = this.today()) {
+    if (t.status !== 'open' || t.mark || t.someday || t.trashed || !t.repeat || !t.when) return null;
+    let r, w;
+    try { r = repeat.parseRule(t.repeat); w = Day.fromISO(t.when); } catch { return null; }
+    if (r.freq !== 'day' || r.whenDone || w.compare(today) >= 0) return null;
+    let day = null;
+    try {
+      for (const d of repeat.occurrences(r, w)) {
+        if (d.compare(today) > 0) break;
+        if (d.compare(w) > 0) day = d;
+      }
+    } catch (e) {
+      if (!(e instanceof repeat.RuleError || e instanceof RangeError)) throw e;
+      return null;
+    }
+    return day;
+  }
+
+  /**
+   * Missed days let go whenever something arrives, not only when the day
+   * turns: a device back after days away brings the copies it had, which the
+   * server never saw and so never let go, and a device that slept through
+   * midnight hears of the server's in its next sync. A moment after each
+   * change, so a sync's files are all in first. Returns the stop.
+   */
+  letGoAsTheyCome(onLetGo = null, ms = 300) {
+    let timer = null;
+    const run = () => {
+      timer = null;
+      try {
+        const n = this.letGoMissedRepeats();
+        if (n && onLetGo) onLetGo(n);
+      } catch (e) {
+        if (onLetGo) onLetGo(0, e);
+      }
+    };
+    const heard = () => {
+      if (timer !== null) return;
+      timer = setTimeout(run, ms);
+      if (timer.unref) timer.unref();
+    };
+    this.listeners.push(heard);
+    return () => {
+      clearTimeout(timer);
+      const i = this.listeners.indexOf(heard);
+      if (i >= 0) this.listeners.splice(i, 1);
+    };
   }
 
   reopenTodo(tid) {

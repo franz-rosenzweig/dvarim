@@ -36,7 +36,9 @@ A to-do that repeats every day, or every few days, isn't owed for the days you m
 
 This is only for repeats counted in days. A weekly, monthly or yearly one waits for you as described above, and so does one you've marked as in progress or put in Someday. After completion repeats never pile up in the first place, so they're left as they are.
 
-When your devices sync with a Dvarim server, the server does this just after midnight, so every device sees the same thing. Without one, each device does it when you open Dvarim on a new day.
+Every copy of Dvarim does this: the server just after midnight, and each device when you open it, when a new day comes, and whenever a sync brings something in. That matters for a device you haven't opened in a while, like a laptop that slept for a week. It shows what it had until its next sync, and it lets those old days go itself rather than waiting for the server's word.
+
+If you tick one of those old copies anyway, before anything has let it go, the tick counts for today. It moves to today, any other copy of today goes, and the next one is tomorrow's. One tick, however many days you were away. When the server has made today's copy in the meantime, the sync keeps your tick and drops the server's copy.
 
 ## Changing or stopping it
 

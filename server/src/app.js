@@ -163,6 +163,12 @@ export async function createApp(cfg) {
     } catch (e) { log('letting go of missed repeating to-dos:', e); }
   };
   letGo(store);
+  // and whenever something arrives: a device back after days away brings the
+  // copies it kept, which were never here to be let go at midnight
+  const stopLettingGo = store.letGoAsTheyCome((n, e) => {
+    if (e) log('letting go of missed repeating to-dos:', e);
+    else log(`let go of ${n} missed repeating to-do${n === 1 ? '' : 's'} that arrived`);
+  }, cfg.letGoMs ?? 300);
   let day = store.todayIso();
   const auth = Auth.load(cfg.root, cfg.authFile);
   const throttle = new Throttle();
@@ -578,6 +584,7 @@ export async function createApp(cfg) {
     },
     async close() {
       clearInterval(dayWatch);
+      stopLettingGo();
       for (const s of streams) { clearInterval(s.alive); s.stop(); s.res.end(); }
       streams.clear();
       await new Promise((ok) => server.close(() => ok()));

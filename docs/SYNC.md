@@ -57,8 +57,13 @@ brings them together.
 - **A missed day-by-day repeat is let go the same way everywhere**
   (docs/repeats.md, "When you miss a day"). The canceled copy keeps its own
   date as the day it was let go, so two writers doing it agree line for line,
-  and their two new copies of the day are one by the rule above. With a Dvarim
-  server, only the server does it; a device does it only without one.
+  and their two new copies of the day are one by the rule above. Every writer
+  does it, the server and each device, and whenever something arrives as well
+  as when the day turns: a device back after days away brings copies the
+  server never saw. A day ticked on one side is not owed again because the
+  other side made a copy of it before it heard: the merge keeps the tick and
+  drops the copy (a late tick on a missed day counts for today, so the two
+  name the same day).
 
 ## How
 

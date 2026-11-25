@@ -205,3 +205,25 @@ test('a day-by-day repeat nobody ticked is let go at start and when a new day co
   assert.match(text(), /- \[ \] Morning .*⏳ 2026-09-24/u);
   assert.equal(text().match(/- \[-\] Morning/gu).length, 2, text());
 });
+
+test('missed days a device brings back after days away are let go when they arrive, not at midnight', async (t) => {
+  const f = fixture();
+  writeFileSync(join(f.root, 'Standalone.md'), '- [ ] Morning 🆔 morn0002 🔁 every day ➕ 2026-09-23 ⏳ 2026-09-23\n');
+  const app = await createApp({ root: f.root, staticDir: f.staticDir, authFile: f.authFile, log: () => {},
+    tutorial: false, quietMs: 1, today: () => Day.fromISO('2026-09-23'), letGoMs: 10 });
+  t.after(async () => { await app.close(); rmSync(f.root, { recursive: true, force: true }); });
+  await app.store.flush();
+  // what a device's PUT hands the store: its own old copy, made before it went quiet
+  app.store.receive('Standalone.md', [
+    '- [ ] Morning 🆔 morn0002 🔁 every day ➕ 2026-09-23 ⏳ 2026-09-23',
+    '- [ ] Morning 🆔 morn0001 🔁 every day ➕ 2026-09-16 ⏳ 2026-09-17',
+    '',
+  ].join('\n'));
+  const text = () => readFileSync(join(f.root, 'Standalone.md'), 'utf8');
+  for (let i = 0; i < 100 && !/- \[-\] Morning 🆔 morn0001/u.test(text()); i++) {
+    await new Promise((ok) => setTimeout(ok, 20));
+    await app.store.flush();
+  }
+  assert.match(text(), /- \[-\] Morning 🆔 morn0001 .*❌ 2026-09-17/u);
+  assert.equal(text().match(/- \[ \] Morning/gu).length, 1, 'today\'s copy is already there: no second one');
+});
