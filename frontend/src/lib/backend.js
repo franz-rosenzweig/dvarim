@@ -193,20 +193,26 @@ async function openBackend() {
 }
 
 /** A missed day-by-day repeat is let go when its next day comes
- *  (Store.letGoMissedRepeats): here, on opening and on each new day, unless
- *  this device syncs with a Dvarim server, which does it for every device. */
+ *  (Store.letGoMissedRepeats): here too, though a Dvarim server does it as
+ *  well. The copy here is what is on the screen, and a device back after days
+ *  asleep shows the days it missed until its next sync, which can be minutes
+ *  away: each would have taken a tick. So on opening, on each new day (looked
+ *  at often, as a computer waking up does not say so), and whenever a sync or
+ *  another app brings something in. Two copies of the same day, made here and
+ *  on the server, merge into one (merge.js). */
 function watchTheDay(store) {
   let day = null;
   const look = () => {
-    if (!local || local.server) return;
     const today = store.todayIso();
     if (today === day) return;
     day = today;
     try { store.letGoMissedRepeats(); } catch (e) { console.error('letting go of missed repeating to-dos:', e); }
   };
   look();
+  store.letGoAsTheyCome((n, e) => { if (e) console.error('letting go of missed repeating to-dos:', e); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') look(); });
-  setInterval(look, 60000);
+  window.addEventListener('focus', look);
+  setInterval(look, 10000);
 }
 
 /** Read the vault again when someone else may have changed it. */
@@ -374,6 +380,7 @@ async function openMirror() {
   local = mine;
   installFetchShim(api);
   watchForOthers(store, 'mirror', mine.info);
+  watchTheDay(store);
   window.__dvarimLocal = {
     kind: 'mirror',
     name,

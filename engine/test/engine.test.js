@@ -211,6 +211,61 @@ test('two devices letting go of the same missed day agree, and their new copies 
   assert.equal(merged.match(/morn0001/gu).length, 1, merged);
 });
 
+test('a tick on a day-by-day repeat whose day has gone by is today\'s tick: one, not one per missed day', async () => {
+  // today is 2026-09-23; a device back after days away shows the copy it had
+  const { store } = await vault({ 'Standalone.md': [
+    '- [ ] Morning 🆔 morn0001 🔁 every day ➕ 2026-09-16 ⏳ 2026-09-17 📅 2026-09-18',
+    '- [ ] Morning 🆔 morn0002 🔁 every day ➕ 2026-09-23 ⏳ 2026-09-23',
+    '- [ ] Report 🆔 rept0001 🔁 every week ⏳ 2026-09-09',
+    '',
+  ].join('\n') });
+  const all = () => [...store.files.get('Standalone.md').allTodos()];
+  const r = store.completeTodo('morn0001');
+  assert.equal(r.todo.status, 'done');
+  assert.equal(r.todo.when, '2026-09-23', 'counted for today');
+  assert.equal(all().find((x) => x.id === 'morn0001').deadline, '2026-09-24', 'the deadline moves with it');
+  assert.equal(all().find((x) => x.id === 'morn0002').status, 'canceled', 'today\'s other copy goes');
+  assert.equal(r.next.when, '2026-09-24', 'the next one is tomorrow\'s, not the 18th');
+  assert.deepEqual(all().filter((x) => x.title === 'Morning' && x.status === 'open').map((x) => x.when), ['2026-09-24']);
+  // a missed weekly one is still owed: ticked late, the next one comes from its own day
+  assert.equal(store.completeTodo('rept0001').next.when, '2026-09-16');
+});
+
+test('a device back after days away ticks its old copy while the server let it go: one copy of today, ticked', async () => {
+  const { mergeText } = await import('../src/merge.js');
+  const base = '- [ ] Morning 🆔 morn0001 🔁 every day ➕ 2026-09-16 ⏳ 2026-09-17\n';
+  const side = async (p, act) => {
+    const storage = new MemoryStorage({ 'Standalone.md': base });
+    let n = 0;
+    const store = await Store.open(storage, { today: () => D('2026-09-23'), newId: () => p + String(++n).padStart(4, '0') });
+    act(store);
+    await store.flush();
+    return storage.snapshot()['Standalone.md'];
+  };
+  const server = await side('srvr', (s) => s.letGoMissedRepeats());        // midnight: canceled, today's made
+  const device = await side('devc', (s) => s.completeTodo('morn0001'));    // still asleep then: ticked as it was
+  for (const [o, t] of [[device, server], [server, device]]) {
+    const merged = mergeText(base, o, t, 'Standalone.md').text;
+    const lines = merged.split('\n').filter((l) => l.includes('Morning'));
+    assert.equal(lines.length, 2, merged);
+    assert.match(lines.find((l) => l.includes('morn0001')), /- \[x\] .*⏳ 2026-09-23 ✅ 2026-09-23/u, 'the tick stands, for today');
+    assert.match(lines.find((l) => !l.includes('morn0001')), /- \[ \] .*⏳ 2026-09-24/u, 'and tomorrow\'s waits');
+  }
+});
+
+test('a to-do duplicated and one of the two ticked keeps both, through a sync', async () => {
+  const { mergeText } = await import('../src/merge.js');
+  const base = '- [ ] Other 🆔 othr0001\n';
+  const ours = [
+    '- [ ] Morning 🆔 dupe0002 🔁 every day ⏳ 2026-09-23',
+    '- [x] Morning 🆔 dupe0001 🔁 every day ⏳ 2026-09-23 ✅ 2026-09-23',
+    '- [ ] Other 🆔 othr0001',
+    '',
+  ].join('\n');
+  const merged = mergeText(base, ours, base, 'Standalone.md').text;
+  assert.ok(merged.includes('dupe0002') && merged.includes('dupe0001'), merged);
+});
+
 test('projects, headings and areas are files and folders', async () => {
   const { storage, store } = await vault();
   const a = store.createArea({ name: 'Work' });

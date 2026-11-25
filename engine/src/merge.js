@@ -320,6 +320,18 @@ export function mergeText(base, ours, theirs, path) {
     kept.delete(id < other ? other : id);
     madeO.delete(twin(x));
   }
+  // A day one side ticked is not owed again because the other side made a
+  // copy of it before it heard: a device back from days away ticked its old
+  // copy, which counts for today (Store.completeTodo), while the server let
+  // that copy go and made today's. The tick stands; the copy made apart goes.
+  // Only a tick from the other side: a to-do duplicated and one of the two
+  // ticked, both here, are left as they are.
+  const ticked = (side) => new Set([...side.values()].filter((x) => x.repeat && x.status === 'done' && !x.trashed && x.when).map(twin));
+  for (const [side, other] of [[to, tt], [tt, to]]) {
+    const done = ticked(other);
+    if (!done.size) continue;
+    for (const [id, x] of fresh(side, other)) if (done.has(twin(x))) kept.delete(id);
+  }
 
   // headings, and what is under each
   const sb = new Map(B.sections.map((s) => [sectionKey(s), s]));
